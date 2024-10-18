@@ -10,13 +10,22 @@ import (
 	"github.com/DevReaper0/libra/util"
 )
 
+var SM Manager
+
 type Manager struct {
 	sources   map[string]Source
 	sourceIDs []string
 }
 
-func InitManager() Manager {
-	return Manager{}
+func InitManager() {
+	if SM.sources != nil {
+		logging.Warn().Msg("Source manager already initialized")
+		return
+	}
+	SM = Manager{
+		sources:   map[string]Source{},
+		sourceIDs: []string{},
+	}
 }
 
 func (sm Manager) IsHigherPriority(first string, second string) bool {
@@ -25,7 +34,7 @@ func (sm Manager) IsHigherPriority(first string, second string) bool {
 	return firstPriority < secondPriority || (firstPriority == -1 && secondPriority != -1) || second == ""
 }
 
-func (sm Manager) EnableSources() {
+func (sm *Manager) EnableSources() {
 	for _, source := range config.Conf.General.EnabledSources {
 		err := sm.EnableSource(source)
 		if err != nil {
@@ -34,19 +43,19 @@ func (sm Manager) EnableSources() {
 	}
 }
 
-func (sm Manager) EnableSource(sourceStr string) (err error) {
+func (sm *Manager) EnableSource(sourceStr string) (err error) {
 	var source Source
 
 	switch strings.ToLower(sourceStr) {
 	case "youtube", "yt":
-		source, err = InitYouTubeSource(sm)
+		source, err = InitYouTubeSource()
 	case "spotify", "sp":
-		source, err = InitSpotifySource(sm)
+		source, err = InitSpotifySource()
 	default:
 		if strings.HasPrefix(sourceStr, "file:") {
-			source, err = InitLocalFileSource(sm, strings.TrimPrefix(sourceStr, "file:"))
+			source, err = InitLocalFileSource(strings.TrimPrefix(sourceStr, "file:"))
 		} else if util.IsValidSourceURL(sourceStr) {
-			source, err = InitWebSource(sm, sourceStr)
+			source, err = InitWebSource(sourceStr)
 		} else {
 			err = types.InvalidSourceError{SourceID: sourceStr}
 			return

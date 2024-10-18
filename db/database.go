@@ -1,8 +1,11 @@
 package db
 
 import (
+	"strings"
 	"time"
 
+	"github.com/DevReaper0/libra/config"
+	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
 )
 
@@ -48,6 +51,27 @@ type Database interface {
 	BlacklistToken(token string, expiration time.Time) error
 	CleanExpiredTokens() error
 	IsTokenBlacklisted(token string) (bool, error)
+}
+
+func ConnectDatabase() {
+	if DB != nil {
+		logging.Warn().Msg("Database already connected")
+		return
+	}
+
+	var err error
+
+	switch strings.ToLower(config.Conf.Database.Engine) {
+	case "sqlite", "sqlite3":
+		panic("unimplemented")
+	case "postgresql", "postgres", "postgre", "pgsql", "psql", "pg":
+		DB, err = ConnectPostgreSQL()
+	default:
+		logging.Fatal().Msgf("Unsupported database engine: %s\n", config.Conf.Database.Engine)
+	}
+	if err != nil {
+		logging.Fatal().Err(err).Msg("Error connecting to database")
+	}
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries

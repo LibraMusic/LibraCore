@@ -139,7 +139,7 @@ elif action == "content":
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([f"https://www.youtube.com/watch?v={video_id}"])
-elif action == "track" or action == "video":
+elif action in ("track", "video"):
     if "id" not in args:
         print("Error: Missing id argument")
         sys.exit()
