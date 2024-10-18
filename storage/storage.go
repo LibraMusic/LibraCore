@@ -32,69 +32,9 @@ func CleanOverfilledStorage() {
 		return
 	}
 
-	var dirs []os.FileInfo
-	for _, file := range files {
-		if file.IsDir() {
-			name := file.Name()
-			if name != "tracks" && name != "videos" {
-				continue
-			}
-
-			info, err := file.Info()
-			if err != nil {
-				logging.Error().Err(err).Msg("")
-				continue
-			}
-			dirs = append(dirs, info)
-		}
-	}
-
-	var contentFiles []string
-
-	for _, dir := range dirs {
-		dirPath := filepath.Join(path, dir.Name())
-		files, err := os.ReadDir(dirPath)
-		if err != nil {
-			logging.Error().Err(err).Msg("")
-			continue
-		}
-
-		prefix := dir.Name()[:len(dir.Name())-1]
-
-		for _, file := range files {
-			if !file.IsDir() {
-				contentFiles = append(contentFiles, prefix+"_"+file.Name())
-			}
-		}
-	}
-
-	var playables []types.SourcePlayable
-
-	tracks, err := db.DB.GetAllTracks()
-	if err != nil {
-		logging.Error().Err(err).Msg("Error getting all tracks from database")
-	}
-	for _, track := range tracks {
-		if slices.Contains(contentFiles, "track_"+track.GetID()) {
-			difference := time.Since(time.Unix(track.GetAdditionDate(), 0))
-			if difference >= config.Conf.Storage.MinimumAgeThreshold {
-				playables = append(playables, track)
-			}
-		}
-	}
-
-	videos, err := db.DB.GetAllVideos()
-	if err != nil {
-		logging.Error().Err(err).Msg("Error getting all videos from database")
-	}
-	for _, video := range videos {
-		if slices.Contains(contentFiles, "video_"+video.GetID()) {
-			difference := time.Since(time.Unix(video.GetAdditionDate(), 0))
-			if difference >= config.Conf.Storage.MinimumAgeThreshold {
-				playables = append(playables, video)
-			}
-		}
-	}
+	dirs := getDirectories(files)
+	contentFiles := getContentFiles(path, dirs)
+	playables := getPlayables(contentFiles)
 
 	sort.Slice(playables, func(i, j int) bool {
 		return playables[i].GetViewCount() >= playables[j].GetViewCount()
@@ -128,42 +68,119 @@ func CleanOverfilledStorage() {
 
 		playable := playables[0]
 		playables = playables[1:]
-		playableType := playable.GetType()
-		playableID := playable.GetID()
+		removePlayableFiles(storagePath, playable)
+	}
+}
 
-		baseContentPath := filepath.Join(storagePath, ContentPath, playableType+"s")
-		files, err := os.ReadDir(baseContentPath)
+func getDirectories(files []os.DirEntry) []os.FileInfo {
+	var dirs []os.FileInfo
+	for _, file := range files {
+		if file.IsDir() {
+			name := file.Name()
+			if name != "tracks" && name != "videos" {
+				continue
+			}
+
+			info, err := file.Info()
+			if err != nil {
+				logging.Error().Err(err).Msg("")
+				continue
+			}
+			dirs = append(dirs, info)
+		}
+	}
+	return dirs
+}
+
+func getContentFiles(path string, dirs []os.FileInfo) []string {
+	var contentFiles []string
+	for _, dir := range dirs {
+		dirPath := filepath.Join(path, dir.Name())
+		files, err := os.ReadDir(dirPath)
 		if err != nil {
 			logging.Error().Err(err).Msg("")
-			break
+			continue
 		}
+
+		prefix := dir.Name()[:len(dir.Name())-1]
+
 		for _, file := range files {
 			if !file.IsDir() {
-				if strings.HasPrefix(file.Name(), playableID+".") {
-					err := os.Remove(filepath.Join(baseContentPath, file.Name()))
-					if err != nil {
-						logging.Error().Err(err).Msg("")
-					}
-					break
-				}
+				contentFiles = append(contentFiles, prefix+"_"+file.Name())
 			}
 		}
+	}
+	return contentFiles
+}
 
-		baseCoverPath := filepath.Join(storagePath, CoversPath, playableType+"s")
-		files, err = os.ReadDir(baseCoverPath)
-		if err != nil {
-			logging.Error().Err(err).Msg("")
-			break
+func getPlayables(contentFiles []string) []types.SourcePlayable {
+	var playables []types.SourcePlayable
+
+	tracks, err := db.DB.GetAllTracks()
+	if err != nil {
+		logging.Error().Err(err).Msg("Error getting all tracks from database")
+	}
+	for _, track := range tracks {
+		if slices.Contains(contentFiles, "track_"+track.GetID()) {
+			difference := time.Since(time.Unix(track.GetAdditionDate(), 0))
+			if difference >= config.Conf.Storage.MinimumAgeThreshold {
+				playables = append(playables, track)
+			}
 		}
-		for _, file := range files {
-			if !file.IsDir() {
-				if strings.HasPrefix(file.Name(), playableID+".") {
-					err := os.Remove(filepath.Join(baseCoverPath, file.Name()))
-					if err != nil {
-						logging.Error().Err(err).Msg("")
-					}
-					break
+	}
+
+	videos, err := db.DB.GetAllVideos()
+	if err != nil {
+		logging.Error().Err(err).Msg("Error getting all videos from database")
+	}
+	for _, video := range videos {
+		if slices.Contains(contentFiles, "video_"+video.GetID()) {
+			difference := time.Since(time.Unix(video.GetAdditionDate(), 0))
+			if difference >= config.Conf.Storage.MinimumAgeThreshold {
+				playables = append(playables, video)
+			}
+		}
+	}
+
+	return playables
+}
+
+func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
+	playableType := playable.GetType()
+	playableID := playable.GetID()
+
+	baseContentPath := filepath.Join(storagePath, ContentPath, playableType+"s")
+	files, err := os.ReadDir(baseContentPath)
+	if err != nil {
+		logging.Error().Err(err).Msg("")
+		return
+	}
+	for _, file := range files {
+		if !file.IsDir() {
+			if strings.HasPrefix(file.Name(), playableID+".") {
+				err := os.Remove(filepath.Join(baseContentPath, file.Name()))
+				if err != nil {
+					logging.Error().Err(err).Msg("")
 				}
+				break
+			}
+		}
+	}
+
+	baseCoverPath := filepath.Join(storagePath, CoversPath, playableType+"s")
+	files, err = os.ReadDir(baseCoverPath)
+	if err != nil {
+		logging.Error().Err(err).Msg("")
+		return
+	}
+	for _, file := range files {
+		if !file.IsDir() {
+			if strings.HasPrefix(file.Name(), playableID+".") {
+				err := os.Remove(filepath.Join(baseCoverPath, file.Name()))
+				if err != nil {
+					logging.Error().Err(err).Msg("")
+				}
+				break
 			}
 		}
 	}

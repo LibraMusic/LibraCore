@@ -35,178 +35,206 @@ func (db *PostgreSQLDatabase) Connect() (err error) {
 	if err != nil {
 		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM tracks;")
-	if err != nil {
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE tracks (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        isrc TEXT,
-        title TEXT,
-        artist_ids TEXT[],
-        album_ids TEXT[],
-        primary_album_id TEXT,
-        track_number INT,
-        duration INT,
-        description TEXT,
-        release_date TEXT,
-        lyrics hstore,
-        listen_count INT,
-        favorite_count INT,
-        addition_date BIGINT,
-        tags TEXT[],
-        additional_meta jsonb,
-        permissions hstore,
-        linked_item_ids TEXT[],
-        content_source TEXT,
-        metadata_source TEXT,
-        lyric_sources hstore
-      );
-    `)
-		if err != nil {
-			return
-		}
+
+	if err = db.createTracksTable(); err != nil {
+		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM albums;")
-	if err != nil {
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE albums (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        upc TEXT,
-        title TEXT,
-        artist_ids TEXT[],
-        track_ids TEXT[],
-        description TEXT,
-        release_date TEXT,
-        listen_count INT,
-        favorite_count INT,
-        addition_date BIGINT,
-        tags TEXT[],
-        additional_meta jsonb,
-        permissions hstore,
-        linked_item_ids TEXT[],
-        metadata_source TEXT
-      );
-    `)
-		if err != nil {
-			return
-		}
+	if err = db.createAlbumsTable(); err != nil {
+		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM videos;")
-	if err != nil {
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE videos (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        title TEXT,
-        artist_ids TEXT[],
-        duration INT,
-        description TEXT,
-        release_date TEXT,
-        subtitles hstore,
-        watch_count INT,
-        favorite_count INT,
-        addition_date BIGINT,
-        tags TEXT[],
-        additional_meta jsonb,
-        permissions hstore,
-        linked_item_ids TEXT[],
-        content_source TEXT,
-        metadata_source TEXT,
-        lyric_sources hstore
-      );
-    `)
-		if err != nil {
-			return
-		}
+	if err = db.createVideosTable(); err != nil {
+		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM artists;")
-	if err != nil {
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE artists (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        name TEXT,
-        album_ids TEXT[],
-        track_ids TEXT[],
-        description TEXT,
-        creation_date TEXT,
-        listen_count INT,
-        favorite_count INT,
-        addition_date BIGINT,
-        tags TEXT[],
-        additional_meta jsonb,
-        permissions hstore,
-        linked_item_ids TEXT[],
-        metadata_source TEXT
-      );
-    `)
-		if err != nil {
-			return
-		}
+	if err = db.createArtistsTable(); err != nil {
+		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM playlists;")
-	if err != nil {
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE playlists (
-        id TEXT PRIMARY KEY,
-        user_id TEXT,
-        title TEXT,
-        track_ids TEXT[],
-        listen_count INT,
-        favorite_count INT,
-        description TEXT,
-        creation_date TEXT,
-        addition_date BIGINT,
-        tags TEXT[],
-        additional_meta jsonb,
-        permissions hstore,
-        metadata_source TEXT
-      );
-    `)
-		if err != nil {
-			return
-		}
+	if err = db.createPlaylistsTable(); err != nil {
+		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM users;")
-	if err != nil {
-		// listened_to and favorites are array where the values are in the format "[item type]_[item id]" (e.g. "track_1234567890")
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE users (
-        id TEXT PRIMARY KEY,
-        username TEXT NOT NULL,
-        email TEXT NOT NULL,
-        password_hash TEXT NOT NULL,
-        display_name TEXT,
-        description TEXT,
-        listened_to jsonb,
-        favorites TEXT[],
-        public_view_count INT,
-        creation_date TEXT,
-        permissions hstore,
-        linked_artist_id TEXT,
-        linked_sources hstore
-      );
-    `)
-		if err != nil {
-			return
-		}
+	if err = db.createUsersTable(); err != nil {
+		return
 	}
-	_, err = db.sqlDB.Query("SELECT * FROM blacklisted_tokens;")
-	if err != nil {
-		_, err = db.sqlDB.Query(`
-      CREATE TABLE blacklisted_tokens (
-        token TEXT PRIMARY KEY,
-        expiration TIMESTAMP
-      );
-    `)
-		if err != nil {
-			return
-		}
+	if err = db.createBlacklistedTokensTable(); err != nil {
+		return
 	}
 
 	return
+}
+
+func (db *PostgreSQLDatabase) createTracksTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM tracks;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE tracks (
+		id TEXT PRIMARY KEY,
+		user_id TEXT,
+		isrc TEXT,
+		title TEXT,
+		artist_ids TEXT[],
+		album_ids TEXT[],
+		primary_album_id TEXT,
+		track_number INT,
+		duration INT,
+		description TEXT,
+		release_date TEXT,
+		lyrics hstore,
+		listen_count INT,
+		favorite_count INT,
+		addition_date BIGINT,
+		tags TEXT[],
+		additional_meta jsonb,
+		permissions hstore,
+		linked_item_ids TEXT[],
+		content_source TEXT,
+		metadata_source TEXT,
+		lyric_sources hstore
+	  );
+	`)
+	}
+	return err
+}
+
+func (db *PostgreSQLDatabase) createAlbumsTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM albums;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE albums (
+		id TEXT PRIMARY KEY,
+		user_id TEXT,
+		upc TEXT,
+		title TEXT,
+		artist_ids TEXT[],
+		track_ids TEXT[],
+		description TEXT,
+		release_date TEXT,
+		listen_count INT,
+		favorite_count INT,
+		addition_date BIGINT,
+		tags TEXT[],
+		additional_meta jsonb,
+		permissions hstore,
+		linked_item_ids TEXT[],
+		metadata_source TEXT
+	  );
+	`)
+	}
+	return err
+}
+
+func (db *PostgreSQLDatabase) createVideosTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM videos;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE videos (
+		id TEXT PRIMARY KEY,
+		user_id TEXT,
+		title TEXT,
+		artist_ids TEXT[],
+		duration INT,
+		description TEXT,
+		release_date TEXT,
+		subtitles hstore,
+		watch_count INT,
+		favorite_count INT,
+		addition_date BIGINT,
+		tags TEXT[],
+		additional_meta jsonb,
+		permissions hstore,
+		linked_item_ids TEXT[],
+		content_source TEXT,
+		metadata_source TEXT,
+		lyric_sources hstore
+	  );
+	`)
+	}
+	return err
+}
+
+func (db *PostgreSQLDatabase) createArtistsTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM artists;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE artists (
+		id TEXT PRIMARY KEY,
+		user_id TEXT,
+		name TEXT,
+		album_ids TEXT[],
+		track_ids TEXT[],
+		description TEXT,
+		creation_date TEXT,
+		listen_count INT,
+		favorite_count INT,
+		addition_date BIGINT,
+		tags TEXT[],
+		additional_meta jsonb,
+		permissions hstore,
+		linked_item_ids TEXT[],
+		metadata_source TEXT
+	  );
+	`)
+	}
+	return err
+}
+
+func (db *PostgreSQLDatabase) createPlaylistsTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM playlists;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE playlists (
+		id TEXT PRIMARY KEY,
+		user_id TEXT,
+		title TEXT,
+		track_ids TEXT[],
+		listen_count INT,
+		favorite_count INT,
+		description TEXT,
+		creation_date TEXT,
+		addition_date BIGINT,
+		tags TEXT[],
+		additional_meta jsonb,
+		permissions hstore,
+		metadata_source TEXT
+	  );
+	`)
+	}
+	return err
+}
+
+func (db *PostgreSQLDatabase) createUsersTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM users;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE users (
+		id TEXT PRIMARY KEY,
+		username TEXT NOT NULL,
+		email TEXT NOT NULL,
+		password_hash TEXT NOT NULL,
+		display_name TEXT,
+		description TEXT,
+		listened_to jsonb,
+		favorites TEXT[],
+		public_view_count INT,
+		creation_date TEXT,
+		permissions hstore,
+		linked_artist_id TEXT,
+		linked_sources hstore
+	  );
+	`)
+	}
+	return err
+}
+
+func (db *PostgreSQLDatabase) createBlacklistedTokensTable() error {
+	_, err := db.sqlDB.Query("SELECT * FROM blacklisted_tokens;")
+	if err != nil {
+		_, err = db.sqlDB.Query(`
+	  CREATE TABLE blacklisted_tokens (
+		token TEXT PRIMARY KEY,
+		expiration TIMESTAMP
+	  );
+	`)
+	}
+	return err
 }
 
 func (db *PostgreSQLDatabase) Close() error {

@@ -62,11 +62,6 @@ const (
 	colorMagenta
 	colorCyan
 	colorWhite
-
-	colorBold     = 1
-	colorDarkGray = 90
-
-	unknownLevel = "???"
 )
 
 var levelColors = map[string]int{
