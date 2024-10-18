@@ -214,7 +214,7 @@ func (db *PostgreSQLDatabase) Close() error {
 	return db.sqlDB.Close()
 }
 
-func (db *PostgreSQLDatabase) EngineName() string {
+func (*PostgreSQLDatabase) EngineName() string {
 	return "PostgreSQL"
 }
 
