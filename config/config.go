@@ -156,42 +156,68 @@ func LoadConfig() (conf Config) {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 
-	err := viper.ReadConfig(strings.NewReader(defaultConfig))
-	if err != nil {
+	if err := readDefaultConfig(); err != nil {
 		log.Fatal().Msg("Failed to read default config")
 		return
 	}
 
-	err = viper.MergeInConfig()
+	if err := mergeConfig(); err != nil {
+		log.Warn().Err(err).Msg("Failed to read config")
+		log.Warn().Msg("Using default config")
+	}
+
+	if err := unmarshalConfig(&conf); err != nil {
+		log.Fatal().Err(err).Msg("Failed to unmarshal config")
+	}
+
+	if strings.TrimSpace(conf.Database.PostgreSQL.Params) != "" && !strings.HasPrefix(conf.Database.PostgreSQL.Params, "?") {
+		conf.Database.PostgreSQL.Params = "?" + conf.Database.PostgreSQL.Params
+	}
+	return
+}
+
+func readDefaultConfig() error {
+	return viper.ReadConfig(strings.NewReader(defaultConfig))
+}
+
+func mergeConfig() error {
+	err := viper.MergeInConfig()
 	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 		var configFilePath string
-		configFilePath, err = xdg.ConfigFile("libra/config.yaml")
+		configFilePath, err = getConfigFilePath()
 		if err != nil {
-			log.Warn().Err(err).Msg("Failed to get config file path")
-			configFilePath, err = filepath.Abs("config.yaml")
-			if err != nil {
-				log.Warn().Err(err).Msg("Failed to get config file path")
-				configFilePath = ""
-			}
+			return err
 		}
 
 		if configFilePath != "" {
 			viper.SetConfigFile(configFilePath)
 			err = viper.MergeInConfig()
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-				err = os.WriteFile(configFilePath, []byte(defaultConfig), 0644)
-				if err != nil {
+				if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0644); err != nil {
 					log.Warn().Err(err).Msg("Failed to write default config")
 				}
 			}
 			err = viper.MergeInConfig()
 		}
 	}
+	return err
+}
+
+func getConfigFilePath() (string, error) {
+	configFilePath, err := xdg.ConfigFile("libra/config.yaml")
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to read config")
-		log.Warn().Msg("Using default config")
+		log.Warn().Err(err).Msg("Failed to get config file path")
+		configFilePath, err = filepath.Abs("config.yaml")
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to get config file path")
+			return "", err
+		}
 	}
-	err = viper.Unmarshal(&conf, viper.DecodeHook(
+	return configFilePath, nil
+}
+
+func unmarshalConfig(conf *Config) error {
+	return viper.Unmarshal(conf, viper.DecodeHook(
 		mapstructure.ComposeDecodeHookFunc(
 			func(from reflect.Kind, to reflect.Kind, data interface{}) (interface{}, error) {
 				if from == reflect.String && to == reflect.TypeFor[time.Duration]().Kind() {
@@ -204,11 +230,4 @@ func LoadConfig() (conf Config) {
 			},
 		),
 	))
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to unmarshal config")
-	}
-	if strings.TrimSpace(conf.Database.PostgreSQL.Params) != "" && !strings.HasPrefix(conf.Database.PostgreSQL.Params, "?") {
-		conf.Database.PostgreSQL.Params = "?" + conf.Database.PostgreSQL.Params
-	}
-	return
 }

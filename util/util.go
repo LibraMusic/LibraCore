@@ -57,23 +57,31 @@ func DownloadFileTo(url string, path string) error {
 		out.Close()
 		return err
 	}
-	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		out.Close()
+		resp.Body.Close()
 		return fmt.Errorf("bad status: %s", resp.Status)
 	}
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		out.Close()
+		resp.Body.Close()
 		return err
 	}
 
 	err = out.Close()
 	if err != nil {
+		resp.Body.Close()
 		return err
 	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

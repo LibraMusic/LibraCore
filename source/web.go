@@ -1,6 +1,7 @@
 package source
 
 import (
+	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
 	"github.com/DevReaper0/libra/util"
 )
@@ -10,7 +11,7 @@ type WebSource struct {
 }
 
 func InitWebSource(url string) (*WebSource, error) {
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return &WebSource{
 		URL: url,
@@ -18,34 +19,34 @@ func InitWebSource(url string) (*WebSource, error) {
 }
 
 func (*WebSource) GetID() string {
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 	return "web"
 }
 
 func (*WebSource) GetName() string {
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 	return "Web"
 }
 
 func (*WebSource) GetVersion() string {
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 	return util.LibraVersion
 }
 
 func (*WebSource) GetSourceTypes() []string {
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 	return []string{"content", "metadata", "lyrics"}
 }
 
 func (*WebSource) GetMediaTypes() []string {
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 	return []string{"music", "video", "playlist"}
 }
 
-func (*WebSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (*WebSource) Search(_ string, _ int, _ int, _ map[string]interface{}) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return results, nil
 }
@@ -55,7 +56,8 @@ func (s *WebSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
+
 	return nil, nil
 }
 
@@ -66,7 +68,7 @@ func (s *WebSource) GetLyrics(playable types.LyricsPlayable) (map[string]string,
 		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return result, nil
 }
@@ -76,7 +78,7 @@ func (s *WebSource) CompleteMetadata(playable types.SourcePlayable) (types.Sourc
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return playable, nil
 }

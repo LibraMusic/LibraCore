@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
+	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
 	"github.com/DevReaper0/libra/util"
 )
@@ -29,19 +31,19 @@ func (s *LocalFileSource) GetName() string {
 	return "Local File (" + s.Path + ")"
 }
 
-func (s *LocalFileSource) GetVersion() string {
+func (*LocalFileSource) GetVersion() string {
 	return util.LibraVersion
 }
 
-func (s *LocalFileSource) GetSourceTypes() []string {
+func (*LocalFileSource) GetSourceTypes() []string {
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (s *LocalFileSource) GetMediaTypes() []string {
+func (*LocalFileSource) GetMediaTypes() []string {
 	return []string{"music", "video"}
 }
 
-func (s *LocalFileSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]interface{}) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	fileInfo, err := os.Stat(s.Path)
@@ -52,40 +54,56 @@ func (s *LocalFileSource) Search(query string, limit int, page int, filters map[
 		return nil, err
 	}
 
-	if fileInfo.IsDir() {
-		panic("unimplemented")
-	} else {
-		if filters["types"] == "tracks" {
-			out, err := ffmpeg.Probe(s.Path)
-			if err != nil {
-				return nil, err
-			}
-
-			var output map[string]interface{}
-			err = json.Unmarshal([]byte(out), &output)
-			if err != nil {
-				return nil, err
-			}
-
-			displayArtists := []string{
-				output["format"].(map[string]interface{})["tags"].(map[string]interface{})["artist"].(string),
-			}
-
-			// TODO
-
-			result := types.Track{
-				Title:       output["format"].(map[string]interface{})["tags"].(map[string]interface{})["title"].(string),
-				Duration:    int(output["format"].(map[string]interface{})["duration"].(float64)),
-				ReleaseDate: "",
-				AdditionalMeta: map[string]interface{}{
-					"display_artists": displayArtists,
-					"display_album":   output["format"].(map[string]interface{})["tags"].(map[string]interface{})["album"].(string),
-				},
-				MetadataSource: types.LinkedSource(s.GetID() + "::" + filepath.Base(s.Path)),
-			}
-
-			results = append(results, result)
+	allowVideos := false
+	if filters["allow_videos"] != nil {
+		if boolValue, ok := filters["allow_videos"].(bool); ok {
+			allowVideos = boolValue
 		}
+	}
+
+	searchedTypes := []string{"tracks"}
+	if filters["types"] != nil {
+		if arrayValue, ok := filters["types"].([]string); ok {
+			searchedTypes = arrayValue
+		}
+	}
+
+	if slices.Contains(searchedTypes, "tracks") && allowVideos && !slices.Contains(searchedTypes, "videos") {
+		searchedTypes = append(searchedTypes, "videos")
+	}
+
+	if fileInfo.IsDir() {
+		logging.Error().Msg("unimplemented")
+	} else if slices.Contains(searchedTypes, "tracks") || slices.Contains(searchedTypes, "videos") {
+		out, err := ffmpeg.Probe(s.Path)
+		if err != nil {
+			return nil, err
+		}
+
+		var output map[string]interface{}
+		err = json.Unmarshal([]byte(out), &output)
+		if err != nil {
+			return nil, err
+		}
+
+		displayArtists := []string{
+			output["format"].(map[string]interface{})["tags"].(map[string]interface{})["artist"].(string),
+		}
+
+		logging.Error().Msg("unimplemented")
+
+		result := types.Track{
+			Title:       output["format"].(map[string]interface{})["tags"].(map[string]interface{})["title"].(string),
+			Duration:    int(output["format"].(map[string]interface{})["duration"].(float64)),
+			ReleaseDate: "",
+			AdditionalMeta: map[string]interface{}{
+				"display_artists": displayArtists,
+				"display_album":   output["format"].(map[string]interface{})["tags"].(map[string]interface{})["album"].(string),
+			},
+			MetadataSource: types.LinkedSource(s.GetID() + "::" + filepath.Base(s.Path)),
+		}
+
+		results = append(results, result)
 	}
 
 	return results, nil
@@ -96,7 +114,7 @@ func (s *LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, err
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return nil, nil
 }
@@ -108,7 +126,7 @@ func (s *LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]s
 		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return result, nil
 }
@@ -129,11 +147,7 @@ func (s *LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types
 		return nil, err
 	}
 
-	panic("unimplemented")
-
-	/*result := types.Track{
-		Title: "Test",
-	}*/
+	logging.Error().Msg("unimplemented")
 
 	return playable, nil
 }

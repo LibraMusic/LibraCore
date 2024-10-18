@@ -69,7 +69,7 @@ func main() {
 	if err != nil {
 		logging.Fatal().Err(err).Msg("Error initializing YouTube source")
 	}
-	a, b := s.Search("Lord of Ashes", 5, 0, map[string]string{})
+	a, b := s.Search("Lord of Ashes", 5, 0, map[string]interface{}{})
 	fmt.Println(a)
 	fmt.Println(b)
 	//fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=orimodrogvd"))
