@@ -1,6 +1,7 @@
 package source
 
 import (
+	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
 	"github.com/DevReaper0/libra/util"
 )
@@ -32,15 +33,15 @@ func (*SpotifySource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (*SpotifySource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (*SpotifySource) Search(_ string, _ int, _ int, _ map[string]interface{}) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return results, nil
 }
 
-func (*SpotifySource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (*SpotifySource) GetContent(_ types.SourcePlayable) ([]byte, error) {
 	return nil, types.UnsupportedSourceTypeError{SourceType: "content"}
 }
 
@@ -51,7 +52,7 @@ func (s *SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return result, nil
 }
@@ -61,7 +62,7 @@ func (s *SpotifySource) CompleteMetadata(playable types.SourcePlayable) (types.S
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	panic("unimplemented")
+	logging.Error().Msg("unimplemented")
 
 	return playable, nil
 }
