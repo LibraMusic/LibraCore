@@ -16,38 +16,38 @@ import (
 type YouTubeSource struct {
 }
 
-func InitYouTubeSource() (YouTubeSource, error) {
+func InitYouTubeSource() (*YouTubeSource, error) {
 	if _, err := os.Stat(config.Conf.SourceScripts.YouTubeLocation); os.IsNotExist(err) {
 		err = util.DownloadFileTo(config.Conf.SourceScripts.YouTubeURL, config.Conf.SourceScripts.YouTubeLocation)
 		if err != nil {
-			return YouTubeSource{}, err
+			return &YouTubeSource{}, err
 		}
 	}
 
-	return YouTubeSource{}, nil
+	return &YouTubeSource{}, nil
 }
 
-func (YouTubeSource) GetID() string {
+func (*YouTubeSource) GetID() string {
 	return "youtube"
 }
 
-func (YouTubeSource) GetName() string {
+func (*YouTubeSource) GetName() string {
 	return "YouTube"
 }
 
-func (YouTubeSource) GetVersion() string {
+func (*YouTubeSource) GetVersion() string {
 	return util.LibraVersion
 }
 
-func (YouTubeSource) GetSourceTypes() []string {
+func (*YouTubeSource) GetSourceTypes() []string {
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (YouTubeSource) GetMediaTypes() []string {
+func (*YouTubeSource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (s YouTubeSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (s *YouTubeSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	filtersJSON, err := json.Marshal(filters)
@@ -259,7 +259,7 @@ func (s YouTubeSource) Search(query string, limit int, page int, filters map[str
 	return results, nil
 }
 
-func (s YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (s *YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
@@ -292,7 +292,7 @@ func (s YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error)
 	return out, nil
 }
 
-func (s YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
+func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -327,7 +327,7 @@ func (s YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]stri
 	return result, nil
 }
 
-func (s YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
+func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}

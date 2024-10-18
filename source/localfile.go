@@ -15,33 +15,33 @@ type LocalFileSource struct {
 	Path string
 }
 
-func InitLocalFileSource(filepath string) (LocalFileSource, error) {
-	return LocalFileSource{
+func InitLocalFileSource(filepath string) (*LocalFileSource, error) {
+	return &LocalFileSource{
 		Path: filepath,
 	}, nil
 }
 
-func (s LocalFileSource) GetID() string {
+func (s *LocalFileSource) GetID() string {
 	return "file:" + s.Path
 }
 
-func (s LocalFileSource) GetName() string {
+func (s *LocalFileSource) GetName() string {
 	return "Local File (" + s.Path + ")"
 }
 
-func (s LocalFileSource) GetVersion() string {
+func (s *LocalFileSource) GetVersion() string {
 	return util.LibraVersion
 }
 
-func (s LocalFileSource) GetSourceTypes() []string {
+func (s *LocalFileSource) GetSourceTypes() []string {
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (s LocalFileSource) GetMediaTypes() []string {
+func (s *LocalFileSource) GetMediaTypes() []string {
 	return []string{"music", "video"}
 }
 
-func (s LocalFileSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (s *LocalFileSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	fileInfo, err := os.Stat(s.Path)
@@ -91,7 +91,7 @@ func (s LocalFileSource) Search(query string, limit int, page int, filters map[s
 	return results, nil
 }
 
-func (s LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (s *LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
@@ -101,7 +101,7 @@ func (s LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, erro
 	return nil, nil
 }
 
-func (s LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
+func (s *LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -113,7 +113,7 @@ func (s LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]st
 	return result, nil
 }
 
-func (s LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
+func (s *LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}

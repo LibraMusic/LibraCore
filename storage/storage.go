@@ -75,7 +75,7 @@ func CleanOverfilledStorage() {
 	}
 	for _, track := range tracks {
 		if slices.Contains(contentFiles, "track_"+track.GetID()) {
-			difference := time.Now().Sub(time.Unix(track.GetAdditionDate(), 0))
+			difference := time.Since(time.Unix(track.GetAdditionDate(), 0))
 			if difference >= config.Conf.Storage.MinimumAgeThreshold {
 				playables = append(playables, track)
 			}
@@ -88,7 +88,7 @@ func CleanOverfilledStorage() {
 	}
 	for _, video := range videos {
 		if slices.Contains(contentFiles, "video_"+video.GetID()) {
-			difference := time.Now().Sub(time.Unix(video.GetAdditionDate(), 0))
+			difference := time.Since(time.Unix(video.GetAdditionDate(), 0))
 			if difference >= config.Conf.Storage.MinimumAgeThreshold {
 				playables = append(playables, video)
 			}
