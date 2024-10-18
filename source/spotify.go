@@ -8,31 +8,31 @@ import (
 type SpotifySource struct {
 }
 
-func InitSpotifySource() (SpotifySource, error) {
-	return SpotifySource{}, nil
+func InitSpotifySource() (*SpotifySource, error) {
+	return &SpotifySource{}, nil
 }
 
-func (SpotifySource) GetID() string {
+func (*SpotifySource) GetID() string {
 	return "spotify"
 }
 
-func (SpotifySource) GetName() string {
+func (*SpotifySource) GetName() string {
 	return "Spotify"
 }
 
-func (SpotifySource) GetVersion() string {
+func (*SpotifySource) GetVersion() string {
 	return util.LibraVersion
 }
 
-func (SpotifySource) GetSourceTypes() []string {
+func (*SpotifySource) GetSourceTypes() []string {
 	return []string{"metadata", "lyrics"}
 }
 
-func (SpotifySource) GetMediaTypes() []string {
+func (*SpotifySource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (SpotifySource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (*SpotifySource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	panic("unimplemented")
@@ -40,11 +40,11 @@ func (SpotifySource) Search(query string, limit int, page int, filters map[strin
 	return results, nil
 }
 
-func (SpotifySource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (*SpotifySource) GetContent(playable types.SourcePlayable) ([]byte, error) {
 	return nil, types.UnsupportedSourceTypeError{SourceType: "content"}
 }
 
-func (s SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
+func (s *SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -56,7 +56,7 @@ func (s SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]stri
 	return result, nil
 }
 
-func (s SpotifySource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
+func (s *SpotifySource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}

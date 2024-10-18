@@ -163,31 +163,28 @@ func LoadConfig() (conf Config) {
 	}
 
 	err = viper.MergeInConfig()
-	if err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			configFilePath, err := xdg.ConfigFile("libra/config.yaml")
+	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+		var configFilePath string
+		configFilePath, err = xdg.ConfigFile("libra/config.yaml")
+		if err != nil {
+			log.Warn().Err(err).Msg("Failed to get config file path")
+			configFilePath, err = filepath.Abs("config.yaml")
 			if err != nil {
 				log.Warn().Err(err).Msg("Failed to get config file path")
-				configFilePath, err = filepath.Abs("config.yaml")
-				if err != nil {
-					log.Warn().Err(err).Msg("Failed to get config file path")
-					configFilePath = ""
-				}
+				configFilePath = ""
 			}
+		}
 
-			if configFilePath != "" {
-				viper.SetConfigFile(configFilePath)
-				err = viper.MergeInConfig()
+		if configFilePath != "" {
+			viper.SetConfigFile(configFilePath)
+			err = viper.MergeInConfig()
+			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+				err = os.WriteFile(configFilePath, []byte(defaultConfig), 0644)
 				if err != nil {
-					if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-						err = os.WriteFile(configFilePath, []byte(defaultConfig), 0644)
-						if err != nil {
-							log.Warn().Err(err).Msg("Failed to write default config")
-						}
-					}
+					log.Warn().Err(err).Msg("Failed to write default config")
 				}
-				err = viper.MergeInConfig()
 			}
+			err = viper.MergeInConfig()
 		}
 	}
 	if err != nil {

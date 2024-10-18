@@ -28,7 +28,7 @@ func InitManager() {
 	}
 }
 
-func (sm Manager) IsHigherPriority(first string, second string) bool {
+func (*Manager) IsHigherPriority(first string, second string) bool {
 	firstPriority := slices.Index(config.Conf.General.EnabledSources, first)
 	secondPriority := slices.Index(config.Conf.General.EnabledSources, second)
 	return firstPriority < secondPriority || (firstPriority == -1 && secondPriority != -1) || second == ""
@@ -80,14 +80,14 @@ func (sm *Manager) EnableSource(sourceStr string) (err error) {
 
 // TODO: Implement CompleteMetadata
 
-/*func (sm Manager) GetImage(searchResult types.SearchResult) ([]byte, error) {
+/*func (sm *Manager) GetImage(searchResult types.SearchResult) ([]byte, error) {
 	if _, ok := sm.sources[searchResult.ServiceID]; ok {
 		return sm.sources[searchResult.ServiceID].GetImage(searchResult)
 	}
 	return []byte{}, nil
 }
 
-func (sm Manager) GetContent(searchResult types.SearchResult) ([]byte, error) {
+func (sm *Manager) GetContent(searchResult types.SearchResult) ([]byte, error) {
 	if _, ok := sm.sources[searchResult.ServiceID]; ok {
 		return sm.sources[searchResult.ServiceID].GetContent(searchResult)
 	}
