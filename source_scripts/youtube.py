@@ -32,7 +32,7 @@ if action == "search":
     else:
         limit = int(limit_str)
     filters = json.loads(args.get("filters", "{}"))
-    allow_videos = args.get("allow_videos", "false").lower() == "true"
+    allow_videos = filters.get("allow_videos", False)
 
     searched_types = filters.get("types", ["tracks", "albums", "artists"])
     if "tracks" in searched_types and allow_videos and "videos" not in searched_types:

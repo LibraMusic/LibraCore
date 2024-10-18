@@ -63,7 +63,7 @@ func ConnectDatabase() {
 
 	switch strings.ToLower(config.Conf.Database.Engine) {
 	case "sqlite", "sqlite3":
-		panic("unimplemented")
+		logging.Error().Msg("unimplemented")
 	case "postgresql", "postgres", "postgre", "pgsql", "psql", "pg":
 		DB, err = ConnectPostgreSQL()
 	default:
