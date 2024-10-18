@@ -1,0 +1,150 @@
+package routes
+
+import (
+	"slices"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/DevReaper0/libra/config"
+	"github.com/DevReaper0/libra/db"
+	"github.com/DevReaper0/libra/logging"
+	"github.com/DevReaper0/libra/types"
+	"github.com/DevReaper0/libra/util"
+)
+
+type registerRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type loginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func Register(c *fiber.Ctx) error {
+	var req registerRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if IsUsernameReserved(req.Username) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "username is reserved",
+		})
+	}
+
+	usernameExists, err := db.DB.UsernameExists(req.Username)
+	if err != nil {
+		logging.Error().Err(err).Msg("error checking if username exists")
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "internal server error",
+		})
+	}
+	if usernameExists {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "username already exists",
+		})
+	}
+
+	if req.Email != "" {
+		emailExists, err := db.DB.EmailExists(req.Email)
+		if err != nil {
+			logging.Error().Err(err).Msg("error checking if email exists")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"message": "internal server error",
+			})
+		}
+		if emailExists {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "email already exists",
+			})
+		}
+	}
+
+	user := types.User{
+		ID:           util.GenerateID(config.Conf.General.IDLength),
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: util.GeneratePassword(req.Password),
+	}
+	err = db.DB.CreateUser(user)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	token, err := util.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"token": token,
+	})
+}
+
+func Login(c *fiber.Ctx) error {
+	var req loginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+	user, err := db.DB.GetUserByUsername(req.Username)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "user not found",
+		})
+	}
+	if !util.ComparePassword(user.PasswordHash, req.Password) {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"message": "incorrect password",
+		})
+	}
+
+	token, err := util.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"token": token,
+	})
+}
+
+func Logout(c *fiber.Ctx) error {
+	user := c.Locals("user").(*jwt.Token)
+	claims := user.Claims.(jwt.MapClaims)
+	expiration, err := claims.GetExpirationTime()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+	db.DB.BlacklistToken(user.Raw, expiration.Time)
+	c.Locals("user", nil)
+	return c.SendStatus(fiber.StatusOK)
+}
+
+func GetReservedUsernames() []string {
+	return []string{
+		"default",
+	}
+}
+
+func IsUsernameReserved(username string) bool {
+	return slices.Contains(GetReservedUsernames(), username) || slices.ContainsFunc(config.Conf.General.ReservedUsernames, func(s string) bool {
+		return strings.EqualFold(s, username)
+	})
+}
