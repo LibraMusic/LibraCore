@@ -14,10 +14,9 @@ import (
 )
 
 type YouTubeSource struct {
-	manager Manager
 }
 
-func InitYouTubeSource(manager Manager) (YouTubeSource, error) {
+func InitYouTubeSource() (YouTubeSource, error) {
 	if _, err := os.Stat(config.Conf.SourceScripts.YouTubeLocation); os.IsNotExist(err) {
 		err = util.DownloadFileTo(config.Conf.SourceScripts.YouTubeURL, config.Conf.SourceScripts.YouTubeLocation)
 		if err != nil {
@@ -25,28 +24,26 @@ func InitYouTubeSource(manager Manager) (YouTubeSource, error) {
 		}
 	}
 
-	return YouTubeSource{
-		manager: manager,
-	}, nil
+	return YouTubeSource{}, nil
 }
 
-func (s YouTubeSource) GetID() string {
+func (YouTubeSource) GetID() string {
 	return "youtube"
 }
 
-func (s YouTubeSource) GetName() string {
+func (YouTubeSource) GetName() string {
 	return "YouTube"
 }
 
-func (s YouTubeSource) GetVersion() string {
+func (YouTubeSource) GetVersion() string {
 	return util.LibraVersion
 }
 
-func (s YouTubeSource) GetSourceTypes() []string {
+func (YouTubeSource) GetSourceTypes() []string {
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (s YouTubeSource) GetMediaTypes() []string {
+func (YouTubeSource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 

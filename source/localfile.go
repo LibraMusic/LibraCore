@@ -12,14 +12,12 @@ import (
 )
 
 type LocalFileSource struct {
-	manager Manager
-	Path    string
+	Path string
 }
 
-func InitLocalFileSource(manager Manager, filepath string) (LocalFileSource, error) {
+func InitLocalFileSource(filepath string) (LocalFileSource, error) {
 	return LocalFileSource{
-		manager: manager,
-		Path:    filepath,
+		Path: filepath,
 	}, nil
 }
 
@@ -55,7 +53,7 @@ func (s LocalFileSource) Search(query string, limit int, page int, filters map[s
 	}
 
 	if fileInfo.IsDir() {
-		// TODO: Implement
+		panic("unimplemented")
 	} else {
 		if filters["types"] == "tracks" {
 			out, err := ffmpeg.Probe(s.Path)
@@ -98,7 +96,8 @@ func (s LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, erro
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	// TODO: Implement
+	panic("unimplemented")
+
 	return nil, nil
 }
 
@@ -132,9 +131,9 @@ func (s LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types.
 
 	panic("unimplemented")
 
-	result := types.Track{
+	/*result := types.Track{
 		Title: "Test",
-	}
+	}*/
 
 	return playable, nil
 }

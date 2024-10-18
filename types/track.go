@@ -25,7 +25,7 @@ type Track struct {
 	LyricSources   map[string]LinkedSource `json:"lyric_sources"`
 }
 
-func (t Track) GetType() string {
+func (Track) GetType() string {
 	return "track"
 }
 

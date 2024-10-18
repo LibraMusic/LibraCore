@@ -21,7 +21,7 @@ type Video struct {
 	LyricSources   map[string]LinkedSource `json:"lyric_sources"`
 }
 
-func (v Video) GetType() string {
+func (Video) GetType() string {
 	return "video"
 }
 

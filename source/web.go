@@ -6,45 +6,43 @@ import (
 )
 
 type WebSource struct {
-	manager Manager
-	URL     string
+	URL string
 }
 
-func InitWebSource(manager Manager, url string) (WebSource, error) {
+func InitWebSource(url string) (WebSource, error) {
 	panic("unimplemented")
 
 	return WebSource{
-		manager: manager,
-		URL:     url,
+		URL: url,
 	}, nil
 }
 
-func (s WebSource) GetID() string {
+func (WebSource) GetID() string {
 	panic("unimplemented")
 	return "web"
 }
 
-func (s WebSource) GetName() string {
+func (WebSource) GetName() string {
 	panic("unimplemented")
 	return "Web"
 }
 
-func (s WebSource) GetVersion() string {
+func (WebSource) GetVersion() string {
 	panic("unimplemented")
 	return util.LibraVersion
 }
 
-func (s WebSource) GetSourceTypes() []string {
+func (WebSource) GetSourceTypes() []string {
 	panic("unimplemented")
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (s WebSource) GetMediaTypes() []string {
+func (WebSource) GetMediaTypes() []string {
 	panic("unimplemented")
 	return []string{"music", "video", "playlist"}
 }
 
-func (s WebSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (WebSource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	panic("unimplemented")

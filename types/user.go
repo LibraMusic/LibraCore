@@ -1,5 +1,7 @@
 package types
 
+import "strconv"
+
 type User struct {
 	ID              string            `json:"id"`
 	Username        string            `json:"username"`
@@ -16,7 +18,7 @@ type User struct {
 	LinkedSources   map[string]string `json:"linked_sources"`
 }
 
-func (u User) GetType() string {
+func (User) GetType() string {
 	return "user"
 }
 
@@ -37,19 +39,19 @@ func (u User) GetDescription() string {
 }
 
 func (u User) GetReleaseDate() string {
-	return string(u.CreationDate)
+	return strconv.FormatInt(u.CreationDate, 10)
 }
 
 func (u User) GetAdditionDate() int64 {
 	return u.CreationDate
 }
 
-func (u User) GetTags() []string {
+func (User) GetTags() []string {
 	// Returns an empty array because users do not have tags
 	return []string{}
 }
 
-func (u User) GetAdditionalMeta() map[string]interface{} {
+func (User) GetAdditionalMeta() map[string]interface{} {
 	return map[string]interface{}{}
 }
 
@@ -57,7 +59,7 @@ func (u User) GetPermissions() map[string]string {
 	return u.Permissions
 }
 
-func (u User) IsTemporary() bool {
+func (User) IsTemporary() bool {
 	// Returns false because the only way a playable can be temporary is if it is a search result from a source, which a user cannot be
 	return false
 }

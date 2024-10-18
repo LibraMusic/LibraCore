@@ -6,36 +6,33 @@ import (
 )
 
 type SpotifySource struct {
-	manager Manager
 }
 
-func InitSpotifySource(manager Manager) (SpotifySource, error) {
-	return SpotifySource{
-		manager: manager,
-	}, nil
+func InitSpotifySource() (SpotifySource, error) {
+	return SpotifySource{}, nil
 }
 
-func (s SpotifySource) GetID() string {
+func (SpotifySource) GetID() string {
 	return "spotify"
 }
 
-func (s SpotifySource) GetName() string {
+func (SpotifySource) GetName() string {
 	return "Spotify"
 }
 
-func (s SpotifySource) GetVersion() string {
+func (SpotifySource) GetVersion() string {
 	return util.LibraVersion
 }
 
-func (s SpotifySource) GetSourceTypes() []string {
+func (SpotifySource) GetSourceTypes() []string {
 	return []string{"metadata", "lyrics"}
 }
 
-func (s SpotifySource) GetMediaTypes() []string {
+func (SpotifySource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (s SpotifySource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
+func (SpotifySource) Search(query string, limit int, page int, filters map[string]string) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	panic("unimplemented")
@@ -43,7 +40,7 @@ func (s SpotifySource) Search(query string, limit int, page int, filters map[str
 	return results, nil
 }
 
-func (s SpotifySource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (SpotifySource) GetContent(playable types.SourcePlayable) ([]byte, error) {
 	return nil, types.UnsupportedSourceTypeError{SourceType: "content"}
 }
 
