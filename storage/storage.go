@@ -105,7 +105,7 @@ func CleanOverfilledStorage() {
 		logging.Error().Err(err).Msg("")
 		return
 	}
-	err = filepath.Walk(storagePath, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(storagePath, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
 			logging.Error().Err(err).Msg("")
 			return nil

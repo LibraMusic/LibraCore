@@ -16,13 +16,13 @@ type PostgreSQLDatabase struct {
 	sqlDB *sql.DB
 }
 
-func ConnectPostgreSQL() (PostgreSQLDatabase, error) {
-	result := PostgreSQLDatabase{}
+func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
+	result := &PostgreSQLDatabase{}
 	err := result.Connect()
 	return result, err
 }
 
-func (db PostgreSQLDatabase) Connect() (err error) {
+func (db *PostgreSQLDatabase) Connect() (err error) {
 	logging.Info().Msg("Connecting to PostgreSQL...")
 	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/" + config.Conf.Database.PostgreSQL.DBName + config.Conf.Database.PostgreSQL.Params
 	sqlDB, err := sql.Open("postgres", connStr)

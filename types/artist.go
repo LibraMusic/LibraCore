@@ -18,7 +18,7 @@ type Artist struct {
 	MetadataSource LinkedSource           `json:"metadata_source"`
 }
 
-func (a Artist) GetType() string {
+func (Artist) GetType() string {
 	return "artist"
 }
 

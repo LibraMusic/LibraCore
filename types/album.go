@@ -19,7 +19,7 @@ type Album struct {
 	MetadataSource LinkedSource           `json:"metadata_source"`
 }
 
-func (a Album) GetType() string {
+func (Album) GetType() string {
 	return "album"
 }
 

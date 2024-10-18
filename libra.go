@@ -53,30 +53,19 @@ func main() {
 		logging.Fatal().Err(err).Msg("Error loading private key")
 	}
 
-	var database db.Database
-	switch strings.ToLower(conf.Database.Engine) {
-	case "postgresql", "postgres", "postgre":
-		database, err = db.ConnectPostgreSQL()
-	default:
-		logging.Fatal().Msgf("Unsupported database engine: %s\n", conf.Database.Engine)
-	}
-	if err != nil {
-		logging.Fatal().Err(err).Msg("Error connecting to database")
-	}
-	defer database.Close()
-	db.DB = database
+	db.ConnectDatabase()
 
-	err = database.CleanExpiredTokens()
+	err = db.DB.CleanExpiredTokens()
 	if err != nil {
 		logging.Error().Err(err).Msg("Error cleaning expired tokens")
 	}
 
 	storage.CleanOverfilledStorage()
 
-	sourceManager := source.InitManager()
+	source.InitManager()
 
 	// Test code below (TODO: Remove)
-	s, err := source.InitYouTubeSource(sourceManager)
+	s, err := source.InitYouTubeSource()
 	if err != nil {
 		logging.Fatal().Err(err).Msg("Error initializing YouTube source")
 	}
@@ -97,12 +86,12 @@ func main() {
 
 	libraMeta := fiber.Map{
 		"version":  util.LibraVersion,
-		"database": database.EngineName(),
+		"database": db.DB.EngineName(),
 	}
 
 	fmt.Println()
 	fmt.Printf("Libra v%s\n", util.LibraVersion)
-	fmt.Printf("Database: %s\n", database.EngineName())
+	fmt.Printf("Database: %s\n", db.DB.EngineName())
 
 	app := fiber.New(fiber.Config{
 		JSONEncoder: json.Marshal,
