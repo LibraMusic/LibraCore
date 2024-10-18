@@ -49,7 +49,8 @@ func CleanOverfilledStorage() {
 		}
 	}
 
-	contentFiles := []string{}
+	var contentFiles []string
+
 	for _, dir := range dirs {
 		dirPath := filepath.Join(path, dir.Name())
 		files, err := os.ReadDir(dirPath)
@@ -67,7 +68,7 @@ func CleanOverfilledStorage() {
 		}
 	}
 
-	playables := []types.SourcePlayable{}
+	var playables []types.SourcePlayable
 
 	tracks, err := db.DB.GetAllTracks()
 	if err != nil {
