@@ -401,6 +401,11 @@ func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
 	return err
 }
 
+func (db *SQLiteDatabase) DeleteTrack(id string) error {
+	_, err := db.sqlDB.Exec("DELETE FROM tracks WHERE id = ?;", id)
+	return err
+}
+
 func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 	logging.Error().Msg("unimplemented")
 	return nil, nil
@@ -422,6 +427,11 @@ func (db *SQLiteDatabase) AddAlbum(album types.Album) error {
 }
 
 func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
+	logging.Error().Msg("unimplemented")
+	return nil
+}
+
+func (db *SQLiteDatabase) DeleteAlbum(id string) error {
 	logging.Error().Msg("unimplemented")
 	return nil
 }
@@ -451,6 +461,11 @@ func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
 	return nil
 }
 
+func (db *SQLiteDatabase) DeleteVideo(id string) error {
+	logging.Error().Msg("unimplemented")
+	return nil
+}
+
 func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 	logging.Error().Msg("unimplemented")
 	return nil, nil
@@ -472,6 +487,11 @@ func (db *SQLiteDatabase) AddArtist(artist types.Artist) error {
 }
 
 func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
+	logging.Error().Msg("unimplemented")
+	return nil
+}
+
+func (db *SQLiteDatabase) DeleteArtist(id string) error {
 	logging.Error().Msg("unimplemented")
 	return nil
 }
@@ -501,6 +521,11 @@ func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
 	return nil
 }
 
+func (db *SQLiteDatabase) DeletePlaylist(id string) error {
+	logging.Error().Msg("unimplemented")
+	return nil
+}
+
 func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
 	logging.Error().Msg("unimplemented")
 	return nil, nil
@@ -522,6 +547,11 @@ func (db *SQLiteDatabase) CreateUser(user types.User) error {
 }
 
 func (db *SQLiteDatabase) UpdateUser(user types.User) error {
+	logging.Error().Msg("unimplemented")
+	return nil
+}
+
+func (db *SQLiteDatabase) DeleteUser(id string) error {
 	logging.Error().Msg("unimplemented")
 	return nil
 }
