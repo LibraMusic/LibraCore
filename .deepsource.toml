@@ -1,10 +1,7 @@
 version = 1
 
 [[analyzers]]
-name = "go"
-
-  [analyzers.meta]
-  import_root = "github.com/LibraMusic/backend"
+name = "sql"
 
 [[analyzers]]
 name = "python"
@@ -13,4 +10,13 @@ name = "python"
   runtime_version = "3.x.x"
 
 [[analyzers]]
-name = "sql"
+name = "go"
+
+  [analyzers.meta]
+  import_root = "github.com/LibraMusic/backend"
+
+[[transformers]]
+name = "gofmt"
+
+[[transformers]]
+name = "ruff"
