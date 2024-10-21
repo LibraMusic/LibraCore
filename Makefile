@@ -10,11 +10,11 @@ run:
 
 .PHONY: test
 test:
-	go test
+	go test ./...
 
 .PHONY: test_coverage
 test_coverage:
-	go test -coverprofile=cover.out
+	go test ./... -coverprofile=cover.out
 
 .PHONY: dep
 dep:
