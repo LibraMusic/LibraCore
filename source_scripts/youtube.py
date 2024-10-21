@@ -41,8 +41,13 @@ if action == "search":
     search_result_lists = []
     for searched_type in searched_types:
         search_result_lists.append(
-            ytmusic.search(query, filter=searched_type if searched_type != "tracks" else "songs", limit=limit,
-                           ignore_spelling=True))
+            ytmusic.search(
+                query,
+                filter=searched_type if searched_type != "tracks" else "songs",
+                limit=limit,
+                ignore_spelling=True,
+            )
+        )
 
     # Merge the results evenly (e.g. 1st result from each type, then 2nd result from each type, etc.)
     search_results = []
@@ -67,7 +72,7 @@ elif action == "lyrics":
     lyrics = ytmusic.get_lyrics(lyrics_id)
 
     # YouTube doesn't specify the language of the lyrics, so we'll just say it's unknown.
-    print(json.dumps({"unknown": "txt\n" + lyrics["lyrics"].replace('\r\n', '\n')}))
+    print(json.dumps({"unknown": "txt\n" + lyrics["lyrics"].replace("\r\n", "\n")}))
 elif action == "subtitles":
     if "id" not in args:
         print("Error: Missing id argument")
@@ -80,20 +85,20 @@ elif action == "subtitles":
     os.makedirs(file_path, exist_ok=True)
 
     ydl_opts = {
-        'outtmpl_na_placeholder': '',
-        'outtmpl': {'subtitle': os.path.join(file_path, '%(ext)s')},
-        'postprocessors': [
+        "outtmpl_na_placeholder": "",
+        "outtmpl": {"subtitle": os.path.join(file_path, "%(ext)s")},
+        "postprocessors": [
             {
-                'key': 'FFmpegSubtitlesConvertor',
-                'format': 'vtt',
-                'when': 'before_dl',
+                "key": "FFmpegSubtitlesConvertor",
+                "format": "vtt",
+                "when": "before_dl",
             }
         ],
-        'skip_download': True,
-        'subtitleslangs': ['all', '-live_chat'],
-        'writesubtitles': True,
-        'quiet': True,
-        'noprogress': True
+        "skip_download": True,
+        "subtitleslangs": ["all", "-live_chat"],
+        "writesubtitles": True,
+        "quiet": True,
+        "noprogress": True,
     }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -121,20 +126,20 @@ elif action == "content":
 
     if content_type == "audio":
         ydl_opts = {
-            'format': 'bestaudio/best',
-            'multiple_audiostreams': True,
-            'outtmpl': '-',
-            'quiet': True,
-            'noprogress': True
+            "format": "bestaudio/best",
+            "multiple_audiostreams": True,
+            "outtmpl": "-",
+            "quiet": True,
+            "noprogress": True,
         }
     else:
         ydl_opts = {
-            'format': 'bestvideo+bestaudio/best',
-            'multiple_audiostreams': True,
-            'multiple_videostreams': True,
-            'outtmpl': '-',
-            'quiet': True,
-            'noprogress': True
+            "format": "bestvideo+bestaudio/best",
+            "multiple_audiostreams": True,
+            "multiple_videostreams": True,
+            "outtmpl": "-",
+            "quiet": True,
+            "noprogress": True,
         }
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
