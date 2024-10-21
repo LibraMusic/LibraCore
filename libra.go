@@ -9,14 +9,14 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/DevReaper0/libra/config"
-	"github.com/DevReaper0/libra/db"
-	"github.com/DevReaper0/libra/logging"
-	"github.com/DevReaper0/libra/middleware"
-	"github.com/DevReaper0/libra/routes"
-	"github.com/DevReaper0/libra/sources"
-	"github.com/DevReaper0/libra/storage"
-	"github.com/DevReaper0/libra/utils"
+	"github.com/LibraMusic/LibraCore/config"
+	"github.com/LibraMusic/LibraCore/db"
+	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/LibraMusic/LibraCore/middleware"
+	"github.com/LibraMusic/LibraCore/routes"
+	"github.com/LibraMusic/LibraCore/sources"
+	"github.com/LibraMusic/LibraCore/storage"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 // mimeType := mime.TypeByExtension(filepath.Ext(filePath))

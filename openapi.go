@@ -6,10 +6,10 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 
-	"github.com/DevReaper0/libra/config"
-	"github.com/DevReaper0/libra/logging"
-	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/utils"
+	"github.com/LibraMusic/LibraCore/config"
+	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 func V1OpenAPI3Spec() openapi3.T {

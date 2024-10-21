@@ -3,9 +3,9 @@ package routes
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"github.com/DevReaper0/libra/db"
-	"github.com/DevReaper0/libra/logging"
-	"github.com/DevReaper0/libra/storage"
+	"github.com/LibraMusic/LibraCore/db"
+	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/LibraMusic/LibraCore/storage"
 )
 
 func V1Playables(c *fiber.Ctx) error {
