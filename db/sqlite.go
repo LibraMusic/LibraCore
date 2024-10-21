@@ -8,9 +8,9 @@ import (
 	"github.com/goccy/go-json"
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/DevReaper0/libra/config"
-	"github.com/DevReaper0/libra/logging"
-	"github.com/DevReaper0/libra/types"
+	"github.com/LibraMusic/LibraCore/config"
+	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/LibraMusic/LibraCore/types"
 )
 
 type SQLiteDatabase struct {

@@ -9,9 +9,9 @@ import (
 
 	"github.com/goccy/go-json"
 
-	"github.com/DevReaper0/libra/config"
-	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/utils"
+	"github.com/LibraMusic/LibraCore/config"
+	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 type YouTubeSource struct {

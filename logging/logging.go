@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/DevReaper0/libra/config"
+	"github.com/LibraMusic/LibraCore/config"
 )
 
 func Init() {
