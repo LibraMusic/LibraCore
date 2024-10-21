@@ -1,4 +1,4 @@
-package source
+package sources
 
 import (
 	"slices"
@@ -7,7 +7,7 @@ import (
 	"github.com/DevReaper0/libra/config"
 	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 var SM Manager
@@ -54,7 +54,7 @@ func (sm *Manager) EnableSource(sourceStr string) (err error) {
 	default:
 		if strings.HasPrefix(sourceStr, "file:") {
 			source, err = InitLocalFileSource(strings.TrimPrefix(sourceStr, "file:"))
-		} else if util.IsValidSourceURL(sourceStr) {
+		} else if utils.IsValidSourceURL(sourceStr) {
 			source, err = InitWebSource(sourceStr)
 		} else {
 			err = types.InvalidSourceError{SourceID: sourceStr}

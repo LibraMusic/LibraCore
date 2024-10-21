@@ -1,4 +1,4 @@
-package source
+package sources
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 type LocalFileSource struct {
@@ -32,7 +32,7 @@ func (s *LocalFileSource) GetName() string {
 }
 
 func (*LocalFileSource) GetVersion() string {
-	return util.LibraVersion
+	return utils.LibraVersion
 }
 
 func (*LocalFileSource) GetSourceTypes() []string {
