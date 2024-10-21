@@ -5,9 +5,9 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/DevReaper0/libra/config"
-	"github.com/DevReaper0/libra/db"
-	"github.com/DevReaper0/libra/utils"
+	"github.com/LibraMusic/LibraCore/config"
+	"github.com/LibraMusic/LibraCore/db"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 func JWTProtected(c *fiber.Ctx) error {

@@ -1,9 +1,9 @@
 package sources
 
 import (
-	"github.com/DevReaper0/libra/logging"
-	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/utils"
+	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 type WebSource struct {

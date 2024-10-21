@@ -3,7 +3,7 @@ package sources
 import (
 	"slices"
 
-	"github.com/DevReaper0/libra/types"
+	"github.com/LibraMusic/LibraCore/types"
 )
 
 type Source interface {

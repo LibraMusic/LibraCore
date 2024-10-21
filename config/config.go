@@ -13,8 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
-	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/utils"
+	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 var Conf Config

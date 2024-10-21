@@ -1,4 +1,4 @@
-module github.com/DevReaper0/libra
+module github.com/LibraMusic/LibraCore
 
 go 1.22
 

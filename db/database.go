@@ -4,9 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DevReaper0/libra/config"
-	"github.com/DevReaper0/libra/logging"
-	"github.com/DevReaper0/libra/types"
+	"github.com/LibraMusic/LibraCore/config"
+	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/LibraMusic/LibraCore/types"
 )
 
 var DB Database
