@@ -71,6 +71,10 @@ type StorageConfig struct {
 	MinimumAgeThreshold time.Duration     `mapstructure:"minimum_age_threshold"`
 }
 
+type SQLiteDatabaseConfig struct {
+	Path string `mapstructure:"path"`
+}
+
 type PostgreSQLDatabaseConfig struct {
 	Host   string `mapstructure:"host"`
 	User   string `mapstructure:"user"`
@@ -81,6 +85,7 @@ type PostgreSQLDatabaseConfig struct {
 
 type DatabaseConfig struct {
 	Engine     string                   `mapstructure:"engine"`
+	SQLite     SQLiteDatabaseConfig     `mapstructure:"sqlite"`
 	PostgreSQL PostgreSQLDatabaseConfig `mapstructure:"postgresql"`
 }
 
@@ -143,6 +148,8 @@ storage:
     minimum_age_threshold: 1w # The minimum age of a file before it can be deleted when the storage size limit is reached. A value of 0 means no minimum age. Default is 1 week.
 database:
     engine: postgresql
+    sqlite:
+        path: libra.db
     postgresql:
         host: localhost
         user: libra

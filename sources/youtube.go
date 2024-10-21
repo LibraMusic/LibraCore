@@ -1,12 +1,13 @@
 package sources
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/DevReaper0/libra/config"
 	"github.com/DevReaper0/libra/types"

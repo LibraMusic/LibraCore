@@ -13,10 +13,9 @@ sudo -u postgres createdb -O libra -E UTF-8 libra
 
 Dependencies:
 
-- PostgreSQL
-- yt-dlp
-- ytmusicapi
-- FFmpeg
+- `SQLite` or `PostgreSQL`
+- `yt-dlp` and `ytmusicapi` for the YouTube source
+- `FFmpeg`
 
 ## Roadmap
 
