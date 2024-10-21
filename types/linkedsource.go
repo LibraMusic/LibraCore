@@ -5,7 +5,7 @@ import "strings"
 type LinkedSource string
 
 func (l LinkedSource) GetID() string {
-  split := strings.Split(string(l), "::")
+	split := strings.Split(string(l), "::")
 	if len(split) == 1 {
 		return ""
 	}
@@ -13,7 +13,7 @@ func (l LinkedSource) GetID() string {
 }
 
 func (l LinkedSource) GetURL() string {
-  split := strings.Split(string(l), "::")
+	split := strings.Split(string(l), "::")
 	if len(split) == 1 {
 		return split[0]
 	}
