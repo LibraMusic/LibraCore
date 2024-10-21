@@ -137,7 +137,7 @@ general:
 source_scripts:
     python_command: python3
     youtube_location: source_scripts/youtube.py
-    youtube_url: https://raw.githubusercontent.com/DevReaper0/libra/main/source_scripts/youtube.py
+    youtube_url: https://raw.githubusercontent.com/LibraMusic/LibraCore/main/source_scripts/youtube.py
 logs:
     debug: false
     error_warnings: false
