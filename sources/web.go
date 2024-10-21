@@ -1,9 +1,9 @@
-package source
+package sources
 
 import (
 	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 type WebSource struct {
@@ -30,7 +30,7 @@ func (*WebSource) GetName() string {
 
 func (*WebSource) GetVersion() string {
 	logging.Error().Msg("unimplemented")
-	return util.LibraVersion
+	return utils.LibraVersion
 }
 
 func (*WebSource) GetSourceTypes() []string {

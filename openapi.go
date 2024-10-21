@@ -9,7 +9,7 @@ import (
 	"github.com/DevReaper0/libra/config"
 	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 func V1OpenAPI3Spec() openapi3.T {
@@ -18,7 +18,7 @@ func V1OpenAPI3Spec() openapi3.T {
 		Info: &openapi3.Info{
 			Title:       config.Conf.Application.SourceName + " API",
 			Description: "REST APIs used for interacting with the ToDo Service",
-			Version:     util.LibraVersion,
+			Version:     utils.LibraVersion,
 			License: &openapi3.License{
 				Name: "MIT",
 				URL:  "https://opensource.org/licenses/MIT",

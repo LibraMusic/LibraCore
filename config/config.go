@@ -14,8 +14,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
-	// "github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 var Conf Config
@@ -221,7 +220,7 @@ func unmarshalConfig(conf *Config) error {
 		mapstructure.ComposeDecodeHookFunc(
 			func(from reflect.Kind, to reflect.Kind, data interface{}) (interface{}, error) {
 				if from == reflect.String && to == reflect.TypeFor[time.Duration]().Kind() {
-					return util.ParseHumanDuration(data.(string))
+					return utils.ParseHumanDuration(data.(string))
 				}
 				if from == reflect.String && to == reflect.TypeFor[datasize.ByteSize]().Kind() {
 					return datasize.ParseString(data.(string))

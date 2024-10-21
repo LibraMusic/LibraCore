@@ -11,7 +11,7 @@ import (
 	"github.com/DevReaper0/libra/db"
 	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 type registerRequest struct {
@@ -68,10 +68,10 @@ func Register(c *fiber.Ctx) error {
 	}
 
 	user := types.User{
-		ID:           util.GenerateID(config.Conf.General.IDLength),
+		ID:           utils.GenerateID(config.Conf.General.IDLength),
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: util.GeneratePassword(req.Password),
+		PasswordHash: utils.GeneratePassword(req.Password),
 	}
 	err = db.DB.CreateUser(user)
 	if err != nil {
@@ -80,7 +80,7 @@ func Register(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := util.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
@@ -105,13 +105,13 @@ func Login(c *fiber.Ctx) error {
 			"message": "user not found",
 		})
 	}
-	if !util.ComparePassword(user.PasswordHash, req.Password) {
+	if !utils.ComparePassword(user.PasswordHash, req.Password) {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "incorrect password",
 		})
 	}
 
-	token, err := util.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
