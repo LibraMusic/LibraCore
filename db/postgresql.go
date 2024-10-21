@@ -290,6 +290,11 @@ func (db *PostgreSQLDatabase) UpdateTrack(track types.Track) error {
 	return err
 }
 
+func (db *PostgreSQLDatabase) DeleteTrack(id string) error {
+	_, err := db.pool.Exec(context.Background(), "DELETE FROM tracks WHERE id=$1;", id)
+	return err
+}
+
 func (db *PostgreSQLDatabase) GetAllAlbums() ([]types.Album, error) {
 	var albums []types.Album
 	rows, err := db.pool.Query(context.Background(), "SELECT * FROM albums;")
@@ -350,6 +355,11 @@ func (db *PostgreSQLDatabase) UpdateAlbum(album types.Album) error {
 	  SET user_id=$2, upc=$3, title=$4, artist_ids=$5, track_ids=$6, description=$7, release_date=$8, listen_count=$9, favorite_count=$10, addition_date=$11, tags=$12, additional_meta=$13, permissions=$14, linked_item_ids=$15, metadata_source=$16
 	  WHERE id=$1;
   `, album.ID, album.UserID, album.UPC, album.Title, album.ArtistIDs, album.TrackIDs, album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount, album.AdditionDate, album.Tags, album.AdditionalMeta, album.Permissions, album.LinkedItemIDs, album.MetadataSource)
+	return err
+}
+
+func (db *PostgreSQLDatabase) DeleteAlbum(id string) error {
+	_, err := db.pool.Exec(context.Background(), "DELETE FROM albums WHERE id=$1;", id)
 	return err
 }
 
@@ -417,6 +427,11 @@ func (db *PostgreSQLDatabase) UpdateVideo(video types.Video) error {
 	return err
 }
 
+func (db *PostgreSQLDatabase) DeleteVideo(id string) error {
+	_, err := db.pool.Exec(context.Background(), "DELETE FROM videos WHERE id=$1;", id)
+	return err
+}
+
 func (db *PostgreSQLDatabase) GetAllArtists() ([]types.Artist, error) {
 	var artists []types.Artist
 	rows, err := db.pool.Query(context.Background(), "SELECT * FROM artists;")
@@ -477,6 +492,11 @@ func (db *PostgreSQLDatabase) UpdateArtist(artist types.Artist) error {
 	  SET user_id=$2, name=$3, album_ids=$4, track_ids=$5, description=$6, creation_date=$7, listen_count=$8, favorite_count=$9, addition_date=$10, tags=$11, additional_meta=$12, permissions=$13, linked_item_ids=$14, metadata_source=$15
 	  WHERE id=$1;
   `, artist.ID, artist.UserID, artist.Name, artist.AlbumIDs, artist.TrackIDs, artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount, artist.AdditionDate, artist.Tags, artist.AdditionalMeta, artist.Permissions, artist.LinkedItemIDs, artist.MetadataSource)
+	return err
+}
+
+func (db *PostgreSQLDatabase) DeleteArtist(id string) error {
+	_, err := db.pool.Exec(context.Background(), "DELETE FROM artists WHERE id=$1;", id)
 	return err
 }
 
@@ -543,6 +563,11 @@ func (db *PostgreSQLDatabase) UpdatePlaylist(playlist types.Playlist) error {
 	return err
 }
 
+func (db *PostgreSQLDatabase) DeletePlaylist(id string) error {
+	_, err := db.pool.Exec(context.Background(), "DELETE FROM playlists WHERE id=$1;", id)
+	return err
+}
+
 func (db *PostgreSQLDatabase) GetUsers() ([]types.User, error) {
 	var users []types.User
 	rows, err := db.pool.Query(context.Background(), "SELECT * FROM users;")
@@ -592,6 +617,11 @@ func (db *PostgreSQLDatabase) UpdateUser(user types.User) error {
 	  SET username=$2, email=$3, password_hash=$4, display_name=$5, description=$6, listened_to=$7, favorites=$8, public_view_count=$9, creation_date=$10, permissions=$11, linked_artist_id=$12, linked_sources=$13
 	  WHERE id=$1;
   `, user.ID, user.Username, user.Email, user.PasswordHash, user.DisplayName, user.Description, user.ListenedTo, user.Favorites, user.PublicViewCount, user.CreationDate, user.Permissions, user.LinkedArtistID, user.LinkedSources)
+	return err
+}
+
+func (db *PostgreSQLDatabase) DeleteUser(id string) error {
+	_, err := db.pool.Exec(context.Background(), "DELETE FROM users WHERE id=$1;", id)
 	return err
 }
 

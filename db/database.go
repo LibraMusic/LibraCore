@@ -21,30 +21,35 @@ type Database interface {
 	GetTrack(id string) (types.Track, error)
 	AddTrack(track types.Track) error
 	UpdateTrack(track types.Track) error
+	DeleteTrack(id string) error
 
 	GetAllAlbums() ([]types.Album, error)
 	GetAlbums(userID string) ([]types.Album, error)
 	GetAlbum(id string) (types.Album, error)
 	AddAlbum(album types.Album) error
 	UpdateAlbum(album types.Album) error
+	DeleteAlbum(id string) error
 
 	GetAllVideos() ([]types.Video, error)
 	GetVideos(userID string) ([]types.Video, error)
 	GetVideo(id string) (types.Video, error)
 	AddVideo(video types.Video) error
 	UpdateVideo(video types.Video) error
+	DeleteVideo(id string) error
 
 	GetAllArtists() ([]types.Artist, error)
 	GetArtists(userID string) ([]types.Artist, error)
 	GetArtist(id string) (types.Artist, error)
 	AddArtist(artist types.Artist) error
 	UpdateArtist(artist types.Artist) error
+	DeleteArtist(id string) error
 
 	GetAllPlaylists() ([]types.Playlist, error)
 	GetPlaylists(userID string) ([]types.Playlist, error)
 	GetPlaylist(id string) (types.Playlist, error)
 	AddPlaylist(playlist types.Playlist) error
 	UpdatePlaylist(playlist types.Playlist) error
+	DeletePlaylist(id string) error
 
 	GetUsers() ([]types.User, error)
 	GetUser(id string) (types.User, error)
@@ -53,6 +58,7 @@ type Database interface {
 	UpdateUser(user types.User) error
 	UsernameExists(username string) (bool, error)
 	EmailExists(email string) (bool, error)
+	DeleteUser(id string) error
 
 	BlacklistToken(token string, expiration time.Time) error
 	CleanExpiredTokens() error
