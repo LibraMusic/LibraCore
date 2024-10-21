@@ -1,11 +1,11 @@
 package sources
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
 
+	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
 	"github.com/DevReaper0/libra/logging"
