@@ -14,9 +14,9 @@ import (
 	"github.com/DevReaper0/libra/logging"
 	"github.com/DevReaper0/libra/middleware"
 	"github.com/DevReaper0/libra/routes"
-	"github.com/DevReaper0/libra/source"
+	"github.com/DevReaper0/libra/sources"
 	"github.com/DevReaper0/libra/storage"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 // mimeType := mime.TypeByExtension(filepath.Ext(filePath))
@@ -30,7 +30,7 @@ func main() {
 	config.Conf = conf
 	logging.Init()
 
-	signingMethod := util.GetCorrectSigningMethod(conf.Auth.JWTSigningMethod)
+	signingMethod := utils.GetCorrectSigningMethod(conf.Auth.JWTSigningMethod)
 	if signingMethod == "" {
 		logging.Fatal().Msgf("Invalid or unsupported JWT signing method: %s\n", conf.Auth.JWTSigningMethod)
 	}
@@ -48,7 +48,7 @@ func main() {
 		}
 		conf.Auth.JWTSigningKey = string(keyData)
 	}
-	err := util.LoadPrivateKey(signingMethod, conf.Auth.JWTSigningKey)
+	err := utils.LoadPrivateKey(signingMethod, conf.Auth.JWTSigningKey)
 	if err != nil {
 		logging.Fatal().Err(err).Msg("Error loading private key")
 	}
@@ -62,10 +62,10 @@ func main() {
 
 	storage.CleanOverfilledStorage()
 
-	source.InitManager()
+	sources.InitManager()
 
 	// Test code below (TODO: Remove)
-	s, err := source.InitYouTubeSource()
+	s, err := sources.InitYouTubeSource()
 	if err != nil {
 		logging.Fatal().Err(err).Msg("Error initializing YouTube source")
 	}
@@ -79,18 +79,18 @@ func main() {
 	libraService := fiber.Map{
 		"id":           conf.Application.SourceID,
 		"name":         conf.Application.SourceName,
-		"version":      util.LibraVersion,
+		"version":      utils.LibraVersion,
 		"source_types": []string{"content", "metadata", "lyrics"},
 		"media_types":  conf.Application.MediaTypes,
 	}
 
 	libraMeta := fiber.Map{
-		"version":  util.LibraVersion,
+		"version":  utils.LibraVersion,
 		"database": db.DB.EngineName(),
 	}
 
 	fmt.Println()
-	fmt.Printf("Libra v%s\n", util.LibraVersion)
+	fmt.Printf("Libra v%s\n", utils.LibraVersion)
 	fmt.Printf("Database: %s\n", db.DB.EngineName())
 
 	app := fiber.New(fiber.Config{

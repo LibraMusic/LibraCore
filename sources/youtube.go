@@ -1,4 +1,4 @@
-package source
+package sources
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/DevReaper0/libra/config"
 	"github.com/DevReaper0/libra/types"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 type YouTubeSource struct {
@@ -18,7 +18,7 @@ type YouTubeSource struct {
 
 func InitYouTubeSource() (*YouTubeSource, error) {
 	if _, err := os.Stat(config.Conf.SourceScripts.YouTubeLocation); os.IsNotExist(err) {
-		err = util.DownloadFileTo(config.Conf.SourceScripts.YouTubeURL, config.Conf.SourceScripts.YouTubeLocation)
+		err = utils.DownloadFileTo(config.Conf.SourceScripts.YouTubeURL, config.Conf.SourceScripts.YouTubeLocation)
 		if err != nil {
 			return &YouTubeSource{}, err
 		}
@@ -36,7 +36,7 @@ func (*YouTubeSource) GetName() string {
 }
 
 func (*YouTubeSource) GetVersion() string {
-	return util.LibraVersion
+	return utils.LibraVersion
 }
 
 func (*YouTubeSource) GetSourceTypes() []string {
@@ -64,7 +64,7 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 		fmt.Sprintf(`limit=%d`, limit),
 		fmt.Sprintf(`filters="%s"`, strings.ReplaceAll(string(filtersJSON), `"`, `\"`)),
 	}...)
-	out, err := util.ExecCommand(command)
+	out, err := utils.ExecCommand(command)
 	if err != nil {
 		return results, err
 	}
@@ -121,7 +121,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourceP
 
 	thumbnails := v["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]interface{}) (types.Source
 
 	thumbnails := v["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 
 		thumbnails := v["thumbnails"].([]map[string]interface{})
 		thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-		thumbnail, err := util.DownloadFile(thumbnailURL)
+		thumbnail, err := utils.DownloadFile(thumbnailURL)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +225,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 	} else {
 		thumbnails := v["thumbnails"].([]map[string]interface{})
 		thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-		thumbnail, err := util.DownloadFile(thumbnailURL)
+		thumbnail, err := utils.DownloadFile(thumbnailURL)
 		if err != nil {
 			return nil, err
 		}
@@ -248,7 +248,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 func (s *YouTubeSource) parseArtistResult(v map[string]interface{}) (types.SourcePlayable, error) {
 	thumbnails := v["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +271,7 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]interface{}) (types.Sou
 
 	thumbnails := v["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -313,7 +313,7 @@ func (s *YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	out, err := util.ExecCommand(command)
+	out, err := utils.ExecCommand(command)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 		}...)
 	}
 
-	out, err := util.ExecCommand(command)
+	out, err := utils.ExecCommand(command)
 	if err != nil {
 		return result, err
 	}
@@ -367,7 +367,7 @@ func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.S
 		`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 	}...)
 
-	out, err := util.ExecCommand(command)
+	out, err := utils.ExecCommand(command)
 	if err != nil {
 		return playable, err
 	}
@@ -432,7 +432,7 @@ func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, outpu
 
 	thumbnails := output["track"].(map[string]interface{})["thumbnail"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -448,7 +448,7 @@ func (*YouTubeSource) completeAlbumMetadata(playable types.SourcePlayable, outpu
 
 	thumbnails := output["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -490,7 +490,7 @@ func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, outpu
 
 	thumbnails := output["track"].(map[string]interface{})["thumbnail"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -521,7 +521,7 @@ func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, outp
 
 	thumbnails := output["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -568,7 +568,7 @@ func (*YouTubeSource) completePlaylistMetadata(playable types.SourcePlayable, ou
 
 	thumbnails := output["thumbnails"].([]map[string]interface{})
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := util.DownloadFile(thumbnailURL)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}

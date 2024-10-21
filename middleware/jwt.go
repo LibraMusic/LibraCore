@@ -7,7 +7,7 @@ import (
 
 	"github.com/DevReaper0/libra/config"
 	"github.com/DevReaper0/libra/db"
-	"github.com/DevReaper0/libra/util"
+	"github.com/DevReaper0/libra/utils"
 )
 
 func JWTProtected(c *fiber.Ctx) error {
@@ -16,11 +16,11 @@ func JWTProtected(c *fiber.Ctx) error {
 	case "HS256", "HS384", "HS512":
 		key = []byte(config.Conf.Auth.JWTSigningKey)
 	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
-		key = util.RSAPrivateKey.Public()
+		key = utils.RSAPrivateKey.Public()
 	case "ES256", "ES384", "ES512":
-		key = util.ECDSAPrivateKey.Public()
+		key = utils.ECDSAPrivateKey.Public()
 	case "EdDSA":
-		key = util.EdDSAPrivateKey.Public()
+		key = utils.EdDSAPrivateKey.Public()
 	}
 
 	return jwtware.New(jwtware.Config{
