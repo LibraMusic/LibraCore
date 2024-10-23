@@ -162,7 +162,7 @@ func LoadConfig() (conf Config) {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
 
-	if err := readDefaultConfig(); err != nil {
+	if err := LoadDefaultConfig(); err != nil {
 		log.Fatal().Msg("Failed to read default config")
 		return
 	}
@@ -182,7 +182,7 @@ func LoadConfig() (conf Config) {
 	return
 }
 
-func readDefaultConfig() error {
+func LoadDefaultConfig() error {
 	return viper.ReadConfig(strings.NewReader(defaultConfig))
 }
 
