@@ -16,6 +16,40 @@ type PostgreSQLDatabase struct {
 	pool *pgxpool.Pool
 }
 
+func createPostgreSQLDatabase() (*PostgreSQLDatabase, error) {
+	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/postgres" + config.Conf.Database.PostgreSQL.Params
+	pool, err := pgxpool.New(context.Background(), connStr)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = pool.Exec(context.Background(), "CREATE DATABASE "+config.Conf.Database.PostgreSQL.DBName+";")
+	if err != nil {
+		return nil, err
+	}
+
+	pool.Close()
+
+	return ConnectPostgreSQL()
+}
+
+func dropPostgreSQLDatabase() error {
+	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/postgres" + config.Conf.Database.PostgreSQL.Params
+	pool, err := pgxpool.New(context.Background(), connStr)
+	if err != nil {
+		return err
+	}
+
+	_, err = pool.Exec(context.Background(), "DROP DATABASE IF EXISTS "+config.Conf.Database.PostgreSQL.DBName+" WITH (FORCE);")
+	if err != nil {
+		return err
+	}
+
+	pool.Close()
+
+	return nil
+}
+
 func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
 	result := &PostgreSQLDatabase{}
 	err := result.Connect()
@@ -27,11 +61,6 @@ func (db *PostgreSQLDatabase) Connect() (err error) {
 	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/" + config.Conf.Database.PostgreSQL.DBName + config.Conf.Database.PostgreSQL.Params
 	pool, err := pgxpool.New(context.Background(), connStr)
 	db.pool = pool
-	if err != nil {
-		return
-	}
-
-	_, err = db.pool.Exec(context.Background(), "CREATE EXTENSION IF NOT EXISTS hstore;")
 	if err != nil {
 		return
 	}
@@ -75,17 +104,17 @@ func (db *PostgreSQLDatabase) createTracksTable() error {
 		  duration INT,
 		  description TEXT,
 		  release_date TEXT,
-		  lyrics hstore,
+		  lyrics jsonb,
 		  listen_count INT,
 		  favorite_count INT,
 		  addition_date BIGINT,
 		  tags TEXT[],
 		  additional_meta jsonb,
-		  permissions hstore,
+		  permissions jsonb,
 		  linked_item_ids TEXT[],
 		  content_source TEXT,
 		  metadata_source TEXT,
-		  lyric_sources hstore
+		  lyric_sources jsonb
 	  );
 	`)
 	return err
@@ -107,7 +136,7 @@ func (db *PostgreSQLDatabase) createAlbumsTable() error {
 		  addition_date BIGINT,
 		  tags TEXT[],
 		  additional_meta jsonb,
-		  permissions hstore,
+		  permissions jsonb,
 		  linked_item_ids TEXT[],
 		  metadata_source TEXT
 	  );
@@ -125,17 +154,17 @@ func (db *PostgreSQLDatabase) createVideosTable() error {
 		  duration INT,
 		  description TEXT,
 		  release_date TEXT,
-		  subtitles hstore,
+		  subtitles jsonb,
 		  watch_count INT,
 		  favorite_count INT,
 		  addition_date BIGINT,
 		  tags TEXT[],
 		  additional_meta jsonb,
-		  permissions hstore,
+		  permissions jsonb,
 		  linked_item_ids TEXT[],
 		  content_source TEXT,
 		  metadata_source TEXT,
-		  lyric_sources hstore
+		  lyric_sources jsonb
 	  );
 	`)
 	return err
@@ -156,7 +185,7 @@ func (db *PostgreSQLDatabase) createArtistsTable() error {
 		  addition_date BIGINT,
 		  tags TEXT[],
 		  additional_meta jsonb,
-		  permissions hstore,
+		  permissions jsonb,
 		  linked_item_ids TEXT[],
 		  metadata_source TEXT
 	  );
@@ -178,7 +207,7 @@ func (db *PostgreSQLDatabase) createPlaylistsTable() error {
 		  addition_date BIGINT,
 		  tags TEXT[],
 		  additional_meta jsonb,
-		  permissions hstore,
+		  permissions jsonb,
 		  metadata_source TEXT
 	  );
 	`)
@@ -197,10 +226,10 @@ func (db *PostgreSQLDatabase) createUsersTable() error {
 		  listened_to jsonb,
 		  favorites TEXT[],
 		  public_view_count INT,
-		  creation_date TEXT,
-		  permissions hstore,
+		  creation_date BIGINT,
+		  permissions jsonb,
 		  linked_artist_id TEXT,
-		  linked_sources hstore
+		  linked_sources jsonb
 	  );
 	`)
 	return err
