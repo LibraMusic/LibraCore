@@ -76,11 +76,11 @@ func (db *SQLiteDatabase) createTracksTable() error {
       addition_date INTEGER,
       tags TEXT, -- JSON (json array)
       additional_meta BLOB, -- JSONB (json object)
-      permissions TEXT, -- JSON (json object)
+      permissions BLOB, -- JSONB (json object)
       linked_item_ids TEXT, -- JSON (json array)
       content_source TEXT,
       metadata_source TEXT,
-      lyric_sources TEXT -- JSON (json object)
+      lyric_sources BLOB -- JSONB (json object)
     );
   `)
 	return err
@@ -102,7 +102,7 @@ func (db *SQLiteDatabase) createAlbumsTable() error {
 		  addition_date INTEGER,
 		  tags TEXT, -- JSON (json array)
 		  additional_meta BLOB, -- JSONB (json object)
-		  permissions TEXT, -- JSON (json object)
+		  permissions BLOB, -- JSONB (json object)
 		  linked_item_ids TEXT, -- JSON (json array)
 		  metadata_source TEXT
 	  );
@@ -120,17 +120,17 @@ func (db *SQLiteDatabase) createVideosTable() error {
 		  duration INTEGER,
 		  description TEXT,
 		  release_date TEXT,
-		  subtitles TEXT, -- JSON (json object)
+		  subtitles BLOB, -- JSONB (json object)
 		  watch_count INTEGER,
 		  favorite_count INTEGER,
 		  addition_date INTEGER,
 		  tags TEXT, -- JSON (json array)
 		  additional_meta BLOB, -- JSONB (json object)
-		  permissions TEXT, -- JSON (json object)
+		  permissions BLOB, -- JSONB (json object)
 		  linked_item_ids TEXT, -- JSON (json array)
 		  content_source TEXT,
 		  metadata_source TEXT,
-		  lyric_sources TEXT -- JSON (json object)
+		  lyric_sources BLOB -- JSONB (json object)
 	  );
 	`)
 	return err
@@ -151,7 +151,7 @@ func (db *SQLiteDatabase) createArtistsTable() error {
 		  addition_date INTEGER,
 		  tags TEXT, -- JSON (json array)
 		  additional_meta BLOB, -- JSONB (json object)
-		  permissions TEXT, -- JSON (json object)
+		  permissions BLOB, -- JSONB (json object)
 		  linked_item_ids TEXT, -- JSON (json array)
 		  metadata_source TEXT
 	  );
@@ -173,7 +173,7 @@ func (db *SQLiteDatabase) createPlaylistsTable() error {
 		  addition_date INTEGER,
 		  tags TEXT, -- JSON (json array)
 		  additional_meta BLOB, -- JSONB (json object)
-		  permissions TEXT, -- JSON (json object)
+		  permissions BLOB, -- JSONB (json object)
 		  metadata_source TEXT
 	  );
 	`)
@@ -192,10 +192,10 @@ func (db *SQLiteDatabase) createUsersTable() error {
 		  listened_to BLOB, -- JSONB (json object)
 		  favorites TEXT, -- JSON (json array)
 		  public_view_count INTEGER,
-		  creation_date TEXT,
-		  permissions TEXT, -- JSON (json object)
+		  creation_date INTEGER,
+		  permissions BLOB, -- JSONB (json object)
 		  linked_artist_id TEXT,
-		  linked_sources TEXT -- JSON (json object)
+		  linked_sources BLOB -- JSONB (json object)
 	  );
 	`)
 	return err
@@ -995,26 +995,6 @@ func (db *SQLiteDatabase) DeleteVideo(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM videos WHERE id = ?;", id)
 	return err
 }
-
-/*
-CREATE TABLE IF NOT EXISTS artists (
-	id TEXT PRIMARY KEY,
-	user_id TEXT,
-	name TEXT,
-	album_ids TEXT, -- JSON (json array)
-	track_ids TEXT, -- JSON (json array)
-	description TEXT,
-	creation_date TEXT,
-	listen_count INTEGER,
-	favorite_count INTEGER,
-	addition_date INTEGER,
-	tags TEXT, -- JSON (json array)
-	additional_meta BLOB, -- JSONB (json object)
-	permissions TEXT, -- JSON (json object)
-	linked_item_ids TEXT, -- JSON (json array)
-	metadata_source TEXT
-);
-*/
 
 func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 	var artists []types.Artist
