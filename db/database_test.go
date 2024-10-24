@@ -2,6 +2,7 @@ package db
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -9,17 +10,23 @@ import (
 
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 var testCases = []struct {
-	name   string
-	dbFunc func(t *testing.T) Database
+	name         string
+	setupFunc    func(t *testing.T) Database
+	shutdownFunc func(t *testing.T, db Database) error
 }{
-	{"SQLite", setupSQLiteTestDB},
-	{"PostgreSQL", setupPostgresTestDB},
+	{"SQLite", setupSQLiteTestDB, shutdownSQLiteTestDB},
+	{"PostgreSQL", setupPostgreSQLTestDB, shutdownPostgreSQLTestDB},
 }
 
 func setupSQLiteTestDB(t *testing.T) Database {
+	if testing.Short() {
+		t.Skip("Skipping SQLite tests in short mode")
+	}
+
 	if os.Getenv("SKIP_SQLITE_TESTS") != "" {
 		t.Skip("Skipping SQLite tests")
 	}
@@ -33,30 +40,56 @@ func setupSQLiteTestDB(t *testing.T) Database {
 	return db
 }
 
-func setupPostgresTestDB(t *testing.T) Database {
-	if os.Getenv("SKIP_POSTGRES_TESTS") != "" {
+func shutdownSQLiteTestDB(t *testing.T, db Database) error {
+	err := db.Close()
+	if err != nil {
+		t.Fatalf("Failed to close SQLite connection: %v", err)
+	}
+	return err
+}
+
+func setupPostgreSQLTestDB(t *testing.T) Database {
+	if testing.Short() {
+		t.Skip("Skipping PostgreSQL tests in short mode")
+	}
+
+	if os.Getenv("SKIP_POSTGRESQL_TESTS") != "" {
 		t.Skip("Skipping PostgreSQL tests")
 	}
 
 	config.Conf.Database.PostgreSQL.Host = "localhost"
-	config.Conf.Database.PostgreSQL.User = "libra"
+	config.Conf.Database.PostgreSQL.User = "postgres"
 	config.Conf.Database.PostgreSQL.Pass = "password"
-	config.Conf.Database.PostgreSQL.DBName = "libra"
+	config.Conf.Database.PostgreSQL.DBName = "libra_test_" + strings.ToLower(utils.GenerateID(6))
 	config.Conf.Database.PostgreSQL.Params = "?sslmode=disable"
 
-	db, err := ConnectPostgreSQL()
+	db, err := createPostgreSQLDatabase()
 	if err != nil {
 		t.Fatalf("Failed to connect to PostgreSQL: %v", err)
 	}
 	return db
 }
 
+func shutdownPostgreSQLTestDB(t *testing.T, db Database) error {
+	err := db.Close()
+	if err != nil {
+		t.Fatalf("Failed to close PostgreSQL connection: %v", err)
+	}
+
+	err = dropPostgreSQLDatabase()
+	if err != nil {
+		t.Fatalf("Failed to drop PostgreSQL database: %v", err)
+	}
+
+	return err
+}
+
 func TestDatabaseAddTrack(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			track := types.Track{
 				ID:             "1",
@@ -96,9 +129,9 @@ func TestDatabaseAddTrack(t *testing.T) {
 func TestDatabaseGetTracks(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			track1 := types.Track{
 				ID:             "1",
@@ -206,9 +239,9 @@ func TestDatabaseGetTracks(t *testing.T) {
 func TestDatabaseUpdateTrack(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			track := types.Track{
 				ID:             "1",
@@ -252,9 +285,9 @@ func TestDatabaseUpdateTrack(t *testing.T) {
 func TestDatabaseDeleteTrack(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			track := types.Track{
 				ID:             "1",
@@ -296,9 +329,9 @@ func TestDatabaseDeleteTrack(t *testing.T) {
 func TestDatabaseAddAlbum(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			album := types.Album{
 				ID:             "1",
@@ -332,9 +365,9 @@ func TestDatabaseAddAlbum(t *testing.T) {
 func TestDatabaseGetAlbums(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			album1 := types.Album{
 				ID:             "1",
@@ -424,9 +457,9 @@ func TestDatabaseGetAlbums(t *testing.T) {
 func TestDatabaseUpdateAlbum(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			album := types.Album{
 				ID:             "1",
@@ -464,9 +497,9 @@ func TestDatabaseUpdateAlbum(t *testing.T) {
 func TestDatabaseDeleteAlbum(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			album := types.Album{
 				ID:             "1",
@@ -502,9 +535,9 @@ func TestDatabaseDeleteAlbum(t *testing.T) {
 func TestDatabaseAddVideo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			video := types.Video{
 				ID:             "1",
@@ -540,9 +573,9 @@ func TestDatabaseAddVideo(t *testing.T) {
 func TestDatabaseGetVideos(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			video1 := types.Video{
 				ID:             "1",
@@ -638,9 +671,9 @@ func TestDatabaseGetVideos(t *testing.T) {
 func TestDatabaseUpdateVideo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			video := types.Video{
 				ID:             "1",
@@ -680,9 +713,9 @@ func TestDatabaseUpdateVideo(t *testing.T) {
 func TestDatabaseDeleteVideo(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			video := types.Video{
 				ID:             "1",
@@ -720,9 +753,9 @@ func TestDatabaseDeleteVideo(t *testing.T) {
 func TestDatabaseAddArtist(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			artist := types.Artist{
 				ID:             "1",
@@ -755,9 +788,9 @@ func TestDatabaseAddArtist(t *testing.T) {
 func TestDatabaseGetArtists(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			artist1 := types.Artist{
 				ID:             "1",
@@ -844,9 +877,9 @@ func TestDatabaseGetArtists(t *testing.T) {
 func TestDatabaseUpdateArtist(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			artist := types.Artist{
 				ID:             "1",
@@ -883,9 +916,9 @@ func TestDatabaseUpdateArtist(t *testing.T) {
 func TestDatabaseDeleteArtist(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			artist := types.Artist{
 				ID:             "1",
@@ -920,9 +953,9 @@ func TestDatabaseDeleteArtist(t *testing.T) {
 func TestDatabaseAddPlaylist(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			playlist := types.Playlist{
 				ID:             "1",
@@ -953,9 +986,9 @@ func TestDatabaseAddPlaylist(t *testing.T) {
 func TestDatabaseGetPlaylists(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			playlist1 := types.Playlist{
 				ID:             "1",
@@ -1036,9 +1069,9 @@ func TestDatabaseGetPlaylists(t *testing.T) {
 func TestDatabaseUpdatePlaylist(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			playlist := types.Playlist{
 				ID:             "1",
@@ -1073,9 +1106,9 @@ func TestDatabaseUpdatePlaylist(t *testing.T) {
 func TestDatabaseDeletePlaylist(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			playlist := types.Playlist{
 				ID:             "1",
@@ -1108,9 +1141,9 @@ func TestDatabaseDeletePlaylist(t *testing.T) {
 func TestDatabaseAddUser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			user := types.User{
 				ID:              "1",
@@ -1141,9 +1174,9 @@ func TestDatabaseAddUser(t *testing.T) {
 func TestDatabaseGetUsers(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			user1 := types.User{
 				ID:              "1",
@@ -1194,9 +1227,9 @@ func TestDatabaseGetUsers(t *testing.T) {
 func TestDatabaseUpdateUser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			user := types.User{
 				ID:              "1",
@@ -1231,9 +1264,9 @@ func TestDatabaseUpdateUser(t *testing.T) {
 func TestDatabaseDeleteUser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			user := types.User{
 				ID:              "1",
@@ -1266,9 +1299,9 @@ func TestDatabaseDeleteUser(t *testing.T) {
 func TestDatabaseUsernameExists(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			user := types.User{
 				ID:              "1",
@@ -1303,9 +1336,9 @@ func TestDatabaseUsernameExists(t *testing.T) {
 func TestDatabaseEmailExists(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			user := types.User{
 				ID:              "1",
@@ -1340,9 +1373,9 @@ func TestDatabaseEmailExists(t *testing.T) {
 func TestDatabaseBlacklistToken(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			token := "testtoken"
 			expiration := time.Now().Add(1 * time.Hour)
@@ -1360,9 +1393,9 @@ func TestDatabaseBlacklistToken(t *testing.T) {
 func TestDatabaseCleanExpiredTokens(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			token := "expiredtoken"
 			expiration := time.Now().Add(-1 * time.Hour)
@@ -1383,9 +1416,9 @@ func TestDatabaseCleanExpiredTokens(t *testing.T) {
 func TestDatabaseIsTokenBlacklisted(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			db := tc.dbFunc(t)
+			db := tc.setupFunc(t)
 			assert.NotNil(t, db)
-			defer db.Close()
+			defer tc.shutdownFunc(t, db)
 
 			token := "testtoken"
 			expiration := time.Now().Add(1 * time.Hour)
