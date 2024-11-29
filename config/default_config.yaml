@@ -16,7 +16,7 @@ auth:
   user_api_routes_require_auth: true # Determines if "user" API routes (e.g., /api/v1/tracks/:id) require authentication.
   user_api_require_same_user: false # Determines if "user" API routes require that the authenticated user is the same as the user in the route. Disabled by default because enabling it disables song sharing and other interactions between users.
 general:
-  id_length: 7 # Adjust this value if there (somehow) aren't enough unique IDs. The calculation is 62^id_length, so a value of 7 gives 3.5 trillion unique IDs.
+  id_length: 11 # Adjust this value if there (somehow) aren't enough unique IDs. The calculation is 62^id_length, so a value of 11 gives about 52 quintillion unique IDs. See https://zelark.github.io/nano-id-cc/ for ID collision probability.
   include_video_results: true # Determines whether video results are included in search results from sources that support video.
   video_audio_only: true # If true, only the audio of videos is downloaded and they are treated as tracks.
   inherit_listen_counts: false # If true, the listen count for newly added content is initially set to the listen count from the source. If false, the listen count is initially set to 0.
