@@ -12,13 +12,22 @@ import (
 	"github.com/LibraMusic/LibraCore/db"
 	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 const ContentPath = "content"
 const CoversPath = "covers"
 
+func getStoragePath() (string, error) {
+	path := config.Conf.Storage.Location
+	if !filepath.IsAbs(path) && utils.DataDir != "" {
+		path = filepath.Join(utils.DataDir, path)
+	}
+	return filepath.Abs(path)
+}
+
 func CleanOverfilledStorage() {
-	path, err := filepath.Abs(config.Conf.Storage.Location)
+	path, err := getStoragePath()
 	if err != nil {
 		logging.Error().Err(err).Msg("")
 		return
@@ -41,7 +50,7 @@ func CleanOverfilledStorage() {
 	})
 
 	var sum uint64
-	storagePath, err := filepath.Abs(config.Conf.Storage.Location)
+	storagePath, err := getStoragePath()
 	if err != nil {
 		logging.Error().Err(err).Msg("")
 		return
@@ -187,7 +196,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 }
 
 func IsContentStored(contentType string, playableID string) bool {
-	path, err := filepath.Abs(config.Conf.Storage.Location)
+	path, err := getStoragePath()
 	if err != nil {
 		logging.Error().Err(err).Msg("")
 		return false
@@ -214,7 +223,7 @@ func IsContentStored(contentType string, playableID string) bool {
 }
 
 func StoreContent(contentType string, playableID string, data []byte, fileExtension string) {
-	path, err := filepath.Abs(config.Conf.Storage.Location)
+	path, err := getStoragePath()
 	if err != nil {
 		logging.Error().Err(err).Msg("")
 		return
@@ -228,7 +237,7 @@ func StoreContent(contentType string, playableID string, data []byte, fileExtens
 }
 
 func StoreCover(contentType string, playableID string, data []byte, fileExtension string) {
-	path, err := filepath.Abs(config.Conf.Storage.Location)
+	path, err := getStoragePath()
 	if err != nil {
 		logging.Error().Err(err).Msg("")
 		return

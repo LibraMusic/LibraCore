@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,7 +18,7 @@ type PostgreSQLDatabase struct {
 }
 
 func createPostgreSQLDatabase() (*PostgreSQLDatabase, error) {
-	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/postgres" + config.Conf.Database.PostgreSQL.Params
+	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=postgres " + config.Conf.Database.PostgreSQL.Params
 	pool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func createPostgreSQLDatabase() (*PostgreSQLDatabase, error) {
 }
 
 func dropPostgreSQLDatabase() error {
-	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/postgres" + config.Conf.Database.PostgreSQL.Params
+	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=postgres " + config.Conf.Database.PostgreSQL.Params
 	pool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
 		return err
@@ -56,38 +57,38 @@ func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
 	return result, err
 }
 
-func (db *PostgreSQLDatabase) Connect() (err error) {
+func (db *PostgreSQLDatabase) Connect() error {
 	logging.Info().Msg("Connecting to PostgreSQL...")
-	connStr := "postgresql://" + config.Conf.Database.PostgreSQL.User + ":" + config.Conf.Database.PostgreSQL.Pass + "@" + config.Conf.Database.PostgreSQL.Host + "/" + config.Conf.Database.PostgreSQL.DBName + config.Conf.Database.PostgreSQL.Params
+	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=" + config.Conf.Database.PostgreSQL.DBName + " " + config.Conf.Database.PostgreSQL.Params
 	pool, err := pgxpool.New(context.Background(), connStr)
 	db.pool = pool
 	if err != nil {
-		return
+		return err
 	}
 
 	if err = db.createTracksTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createAlbumsTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createVideosTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createArtistsTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createPlaylistsTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createUsersTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createBlacklistedTokensTable(); err != nil {
-		return
+		return err
 	}
 
-	return
+	return nil
 }
 
 func (db *PostgreSQLDatabase) createTracksTable() error {

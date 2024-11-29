@@ -28,7 +28,7 @@ func (*WebSource) GetName() string {
 	return "Web"
 }
 
-func (*WebSource) GetVersion() string {
+func (*WebSource) GetVersion() types.Version {
 	logging.Error().Msg("unimplemented")
 	return utils.LibraVersion
 }

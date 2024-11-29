@@ -1,16 +1,25 @@
+# IDE files
+.idea/
+.vscode/
+
+# Data directory for containers
+data/
+
 # Binaries for programs and plugins
+dist/
+completions/
+libra
+libra-*
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
-libra-*
-libra
 
 # Test binary, built with `go test -c`
 *.test
 
-# Output of the go coverage tool, specifically when used with LiteIDE
+# Output of the go coverage tool
 *.out
 
 # Go workspace file
@@ -19,7 +28,3 @@ go.work
 # Python files
 **/**/__pycache__/
 **/**/.pyc
-
-# IDE files
-.idea/
-.vscode/

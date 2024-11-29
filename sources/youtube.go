@@ -1,8 +1,10 @@
 package sources
 
 import (
+	_ "embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -14,18 +16,40 @@ import (
 	"github.com/LibraMusic/LibraCore/utils"
 )
 
+//go:embed scripts/youtube.py
+var youtubeScript string
+
 type YouTubeSource struct {
 }
 
 func InitYouTubeSource() (*YouTubeSource, error) {
-	if _, err := os.Stat(config.Conf.SourceScripts.YouTubeLocation); os.IsNotExist(err) {
-		err = utils.DownloadFileTo(config.Conf.SourceScripts.YouTubeURL, config.Conf.SourceScripts.YouTubeLocation)
+	youtubeLocation := getYouTubeScriptPath()
+
+	if _, err := os.Stat(youtubeLocation); os.IsNotExist(err) {
+		err = os.MkdirAll(filepath.Dir(youtubeLocation), os.ModePerm)
+		if err != nil {
+			return &YouTubeSource{}, err
+		}
+
+		err = os.WriteFile(youtubeLocation, []byte(youtubeScript), 0644)
 		if err != nil {
 			return &YouTubeSource{}, err
 		}
 	}
 
 	return &YouTubeSource{}, nil
+}
+
+func getYouTubeScriptPath() string {
+	path := config.Conf.SourceScripts.YouTubeLocation
+	if !filepath.IsAbs(path) && utils.DataDir != "" {
+		absDataDir, err := filepath.Abs(utils.DataDir)
+		if err != nil {
+			return filepath.Join(utils.DataDir, path)
+		}
+		return filepath.Join(absDataDir, path)
+	}
+	return path
 }
 
 func (*YouTubeSource) GetID() string {
@@ -36,7 +60,7 @@ func (*YouTubeSource) GetName() string {
 	return "YouTube"
 }
 
-func (*YouTubeSource) GetVersion() string {
+func (*YouTubeSource) GetVersion() types.Version {
 	return utils.LibraVersion
 }
 
@@ -58,8 +82,10 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 		return results, err
 	}
 
+	youtubeLocation := getYouTubeScriptPath()
+
 	command := append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
-		config.Conf.SourceScripts.YouTubeLocation,
+		youtubeLocation,
 		`search`,
 		fmt.Sprintf(`query="%s"`, strings.ReplaceAll(query, `"`, `\"`)),
 		fmt.Sprintf(`limit=%d`, limit),
@@ -79,7 +105,7 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 	for _, v := range output {
 		result, err := s.parseSearchResult(v)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println(err) // TODO: Remove debug print
 			continue
 		}
 		results = append(results, result)
@@ -88,7 +114,10 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 	return results, nil
 }
 
-func (s *YouTubeSource) parseSearchResult(v map[string]interface{}) (result types.SourcePlayable, err error) {
+func (s *YouTubeSource) parseSearchResult(v map[string]interface{}) (types.SourcePlayable, error) {
+	var result types.SourcePlayable
+	var err error
+
 	switch v["resultType"] {
 	case "song":
 		result, err = s.parseSongResult(v)
@@ -104,7 +133,7 @@ func (s *YouTubeSource) parseSearchResult(v map[string]interface{}) (result type
 		err = types.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
 	}
 
-	return
+	return result, err
 }
 
 func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourcePlayable, error) {
@@ -295,17 +324,19 @@ func (s *YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error
 	}
 
 	var command []string
+	youtubeLocation := getYouTubeScriptPath()
+
 	switch playable.GetType() {
 	case "track":
 		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
-			config.Conf.SourceScripts.YouTubeLocation,
+			youtubeLocation,
 			`content`,
 			`type=audio`,
 			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 		}...)
 	case "video":
 		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
-			config.Conf.SourceScripts.YouTubeLocation,
+			youtubeLocation,
 			`content`,
 			`type=video`,
 			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
@@ -330,15 +361,17 @@ func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 	}
 
 	var command []string
+	youtubeLocation := getYouTubeScriptPath()
+
 	if playable.GetType() == "video" || playable.GetAdditionalMeta()["is_video"] == true {
 		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
-			config.Conf.SourceScripts.YouTubeLocation,
+			youtubeLocation,
 			`subtitles`,
 			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 		}...)
 	} else {
 		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
-			config.Conf.SourceScripts.YouTubeLocation,
+			youtubeLocation,
 			`lyrics`,
 			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 		}...)
@@ -362,8 +395,10 @@ func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.S
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
+	youtubeLocation := getYouTubeScriptPath()
+
 	command := append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
-		config.Conf.SourceScripts.YouTubeLocation,
+		youtubeLocation,
 		playable.GetType(),
 		`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 	}...)

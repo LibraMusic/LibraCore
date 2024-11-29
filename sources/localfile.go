@@ -31,7 +31,7 @@ func (s *LocalFileSource) GetName() string {
 	return "Local File (" + s.Path + ")"
 }
 
-func (*LocalFileSource) GetVersion() string {
+func (*LocalFileSource) GetVersion() types.Version {
 	return utils.LibraVersion
 }
 

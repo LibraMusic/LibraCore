@@ -18,7 +18,7 @@ func V1OpenAPI3Spec() openapi3.T {
 		Info: &openapi3.Info{
 			Title:       config.Conf.Application.SourceName + " API",
 			Description: "REST APIs used for interacting with the ToDo Service",
-			Version:     utils.LibraVersion,
+			Version:     utils.LibraVersion.String(),
 			License: &openapi3.License{
 				Name: "MIT",
 				URL:  "https://opensource.org/licenses/MIT",

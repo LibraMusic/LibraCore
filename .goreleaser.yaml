@@ -1,0 +1,355 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+version: 2
+
+env:
+  - '{{ if not (isEnvSet "NIGHTLY_TAG") }}NIGHTLY_TAG=v0.1.0-nightly{{ end }}'
+
+before:
+  hooks:
+    - go mod tidy
+    - ./scripts/completions.sh
+
+report_sizes: true
+
+git:
+  ignore_tags:
+    - '{{ if not (isEnvSet "IS_NIGHTLY_BUILD") }}{{ .Env.NIGHTLY_TAG }}{{ end }}'
+
+metadata:
+  mod_timestamp: "{{ .CommitTimestamp }}"
+
+builds:
+  # - id: macos
+  #   binary: libra
+  #   goos:
+  #     - darwin
+  #   goarch:
+  #     - amd64
+  #     - arm64
+  #   ldflags:
+  #     - -s -w
+  #     - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-dev{{ else }}{{ .Version }}{{ end }}
+  #   flags:
+  #     - -trimpath
+  #     - -buildmode=pie
+  #   env:
+  #     - CGO_ENABLED=1
+  #     - >-
+  #       {{- if eq .Os "darwin" }}
+  #         {{- if eq .Arch "amd64"}}CC=zig cc -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #         {{- if eq .Arch "arm64"}}CC=zig cc -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #       {{- end }}
+  #     - >-
+  #       {{- if eq .Os "darwin" }}
+  #         {{- if eq .Arch "amd64"}}CXX=zig c++ -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #         {{- if eq .Arch "arm64"}}CXX=zig c++ -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
+  #       {{- end }}
+
+  - id: linux
+    binary: libra
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+      - arm
+      - "386"
+    goarm:
+      - "6"
+      - "7"
+    ldflags:
+      - -s -w
+      - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-dev{{ else }}{{ .Version }}{{ end }}
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=1
+      - >-
+        {{- if eq .Os "linux" }}
+          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-linux-musl{{- end }}
+          {{- if eq .Arch "arm64" }}CC=zig cc -target aarch64-linux-musl{{- end }}
+          {{- if eq .Arch "arm" }}CC=zig cc -target arm-linux-musleabihf{{- end }}
+          {{- if eq .Arch "386" }}CC=zig cc -target x86-linux-musl{{- end }}
+        {{- end }}
+      - >-
+        {{- if eq .Os "linux" }}
+          {{- if eq .Arch "amd64" }}CXX=zig c++ -target x86_64-linux-musl{{- end }}
+          {{- if eq .Arch "arm64" }}CXX=zig c++ -target aarch64-linux-musl{{- end }}
+          {{- if eq .Arch "arm" }}CXX=zig c++ -target arm-linux-musleabihf{{- end }}
+          {{- if eq .Arch "386" }}CXX=zig c++ -target x86-linux-musl{{- end }}
+        {{- end }}
+
+  - id: windows
+    binary: libra
+    goos:
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+    ldflags:
+      - -s -w
+      - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-dev{{ else }}{{ .Version }}{{ end }}
+    flags:
+      - -trimpath
+    env:
+      - CGO_ENABLED=1
+      - >-
+        {{- if eq .Os "windows" }}
+          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-windows-gnu{{- end }}
+          {{- if eq .Arch "arm64" }}CC=zig cc -target aarch64-windows-gnu{{- end }}
+          {{- if eq .Arch "386" }}CC=zig cc -target x86-windows-gnu{{- end }}
+        {{- end }}
+      - >-
+        {{- if eq .Os "windows" }}
+          {{- if eq .Arch "amd64" }}CXX=zig c++ -target x86_64-windows-gnu{{- end }}
+          {{- if eq .Arch "arm64" }}CXX=zig c++ -target aarch64-windows-gnu{{- end }}
+          {{- if eq .Arch "386" }}CXX=zig c++ -target x86-windows-gnu{{- end }}
+        {{- end }}
+
+dockers:
+  - image_templates:
+      - "devreaper0/libracore:v{{ .Version }}-amd64"
+      - "devreaper0/libracore:v{{ .Major }}-amd64"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-amd64"
+      - 'devreaper0/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-amd64'
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-amd64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-amd64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-amd64"
+      - 'ghcr.io/libramusic/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-amd64'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=A new, open, and extensible music service"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+    goos: linux
+    goarch: amd64
+  - image_templates:
+      - "devreaper0/libracore:v{{ .Version }}-arm64"
+      - "devreaper0/libracore:v{{ .Major }}-arm64"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-arm64"
+      - 'devreaper0/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-arm64'
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-arm64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-arm64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-arm64"
+      - 'ghcr.io/libramusic/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-arm64'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=A new, open, and extensible music service"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+    goos: linux
+    goarch: arm64
+  - image_templates:
+      - "devreaper0/libracore:v{{ .Version }}-armv6"
+      - "devreaper0/libracore:v{{ .Major }}-armv6"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-armv6"
+      - 'devreaper0/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-armv6'
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-armv6"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-armv6"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-armv6"
+      - 'ghcr.io/libramusic/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-armv6'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm/v6"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=A new, open, and extensible music service"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+    goos: linux
+    goarch: arm
+    goarm: 6
+  - image_templates:
+      - "devreaper0/libracore:v{{ .Version }}-armv7"
+      - "devreaper0/libracore:v{{ .Major }}-armv7"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-armv7"
+      - 'devreaper0/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-armv7'
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-armv7"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-armv7"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-armv7"
+      - 'ghcr.io/libramusic/libracore:{{ if isEnvSet "IS_NIGHTLY_BUILD" }}nightly{{ else }}latest{{ end }}-armv7'
+    dockerfile: Dockerfile
+    use: buildx
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm/v7"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=A new, open, and extensible music service"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+    goos: linux
+    goarch: arm
+    goarm: 7
+
+docker_manifests:
+  - name_template: "devreaper0/libracore:v{{ .Version }}"
+    image_templates:
+      - "devreaper0/libracore:v{{ .Version }}-amd64"
+      - "devreaper0/libracore:v{{ .Version }}-arm64"
+      - "devreaper0/libracore:v{{ .Version }}-armv6"
+      - "devreaper0/libracore:v{{ .Version }}-armv7"
+  - name_template: "ghcr.io/libramusic/libracore:v{{ .Version }}"
+    image_templates:
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-amd64"
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-arm64"
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-armv6"
+      - "ghcr.io/libramusic/libracore:v{{ .Version }}-armv7"
+  - name_template: "devreaper0/libracore:v{{ .Major }}"
+    image_templates:
+      - "devreaper0/libracore:v{{ .Major }}-amd64"
+      - "devreaper0/libracore:v{{ .Major }}-arm64"
+      - "devreaper0/libracore:v{{ .Major }}-armv6"
+      - "devreaper0/libracore:v{{ .Major }}-armv7"
+  - name_template: "ghcr.io/libramusic/libracore:v{{ .Major }}"
+    image_templates:
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-amd64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-arm64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-armv6"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}-armv7"
+  - name_template: "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-armv6"
+      - "devreaper0/libracore:v{{ .Major }}.{{ .Minor }}-armv7"
+  - name_template: "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}"
+    image_templates:
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-amd64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-arm64"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-armv6"
+      - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-armv7"
+  - name_template: '{{ if not isEnvSet "IS_NIGHTLY_BUILD" }}devreaper0/libracore:latest{{ end }}'
+    image_templates:
+      - "devreaper0/libracore:latest-amd64"
+      - "devreaper0/libracore:latest-arm64"
+      - "devreaper0/libracore:latest-armv6"
+      - "devreaper0/libracore:latest-armv7"
+  - name_template: '{{ if not isEnvSet "IS_NIGHTLY_BUILD" }}ghcr.io/libramusic/libracore:latest{{ end }}'
+    image_templates:
+      - "ghcr.io/libramusic/libracore:latest-amd64"
+      - "ghcr.io/libramusic/libracore:latest-arm64"
+      - "ghcr.io/libramusic/libracore:latest-armv6"
+      - "ghcr.io/libramusic/libracore:latest-armv7"
+  - name_template: '{{ if isEnvSet "IS_NIGHTLY_BUILD" }}devreaper0/libracore:nightly{{ end }}'
+    image_templates:
+      - "devreaper0/libracore:nightly-amd64"
+      - "devreaper0/libracore:nightly-arm64"
+      - "devreaper0/libracore:nightly-armv6"
+      - "devreaper0/libracore:nightly-armv7"
+  - name_template: '{{ if isEnvSet "IS_NIGHTLY_BUILD" }}ghcr.io/libramusic/libracore:nightly{{ end }}'
+    image_templates:
+      - "ghcr.io/libramusic/libracore:nightly-amd64"
+      - "ghcr.io/libramusic/libracore:nightly-arm64"
+      - "ghcr.io/libramusic/libracore:nightly-armv6"
+      - "ghcr.io/libramusic/libracore:nightly-armv7"
+
+archives:
+  - format: tar.gz
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    # use zip for windows archives
+    format_overrides:
+      - goos: windows
+        format: zip
+    builds_info:
+      group: root
+      owner: root
+      mtime: "{{ .CommitDate }}"
+    files:
+      - src: README.md
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+      - src: LICENSE
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+      - src: completions/*
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
+
+nfpms:
+  - package_name: libra
+    builds:
+      - linux
+    vendor: LibraMusic
+    maintainer: DevReaper0 <devreaper0@gmail.com>
+    description: A new, open, and extensible music service
+    license: MIT
+    formats:
+      - apk
+      - deb
+      - rpm
+      - archlinux
+    bindir: /usr/bin
+    contents:
+      - dst: /some/dir
+        type: dir
+        file_info:
+          mode: 0700
+      - src: ./completions/libra.bash
+        dst: /usr/share/bash-completion/completions/libra
+        file_info:
+          mode: 0644
+      - src: ./completions/libra.fish
+        dst: /usr/share/fish/vendor_completions.d/libra.fish
+        file_info:
+          mode: 0644
+      - src: ./completions/libra.zsh
+        dst: /usr/share/zsh/vendor-completions/_libra
+        file_info:
+          mode: 0644
+      - src: ./LICENSE
+        dst: /usr/share/doc/libra/copyright
+        file_info:
+          mode: 0644
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+release:
+  github:
+    owner: LibraMusic
+    name: LibraCore
+  prerelease: auto

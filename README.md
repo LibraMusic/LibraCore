@@ -34,10 +34,9 @@ Dependencies:
 
 ## Development
 
-To run all tests, run `make test`.
-If you don't have every supported database type installed, you can skip database tests by setting the following environment variables:
-- `SKIP_SQLITE_TESTS`
-- `SKIP_POSTGRESQL_TESTS`
+To run all unit tests, run `make test`.
+To run the integration tests, run `make run -tags=integration`
+
 
 ## Roadmap
 

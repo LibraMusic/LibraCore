@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"path/filepath"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -11,6 +12,7 @@ import (
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
+	"github.com/LibraMusic/LibraCore/utils"
 )
 
 type SQLiteDatabase struct {
@@ -23,37 +25,41 @@ func ConnectSQLite() (*SQLiteDatabase, error) {
 	return result, err
 }
 
-func (db *SQLiteDatabase) Connect() (err error) {
+func (db *SQLiteDatabase) Connect() error {
 	logging.Info().Msg("Connecting to SQLite...")
-	sqlDB, err := sql.Open("sqlite3", config.Conf.Database.SQLite.Path)
+	dbPath := config.Conf.Database.SQLite.Path
+	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
+		dbPath = filepath.Join(utils.DataDir, dbPath)
+	}
+	sqlDB, err := sql.Open("sqlite3", dbPath)
 	db.sqlDB = sqlDB
 	if err != nil {
-		return
+		return err
 	}
 
 	if err = db.createTracksTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createAlbumsTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createVideosTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createArtistsTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createPlaylistsTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createUsersTable(); err != nil {
-		return
+		return err
 	}
 	if err = db.createBlacklistedTokensTable(); err != nil {
-		return
+		return err
 	}
 
-	return
+	return nil
 }
 
 func (db *SQLiteDatabase) createTracksTable() error {
