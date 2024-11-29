@@ -3,6 +3,7 @@ package logging
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,18 +14,20 @@ import (
 )
 
 func Init() {
-	if config.Conf.Logs.Debug {
+	if config.Conf.Logs.PrettyLogs {
 		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
 		output.FormatLevel = func(i interface{}) string {
 			return "| " + colorize(strings.ToUpper(fmt.Sprintf("%-5s", i)), levelColors[fmt.Sprintf("%s", i)]) + " |"
 		}
 		log.Logger = log.Output(output)
-
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	} else {
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	}
+
+	if slices.Contains([]zerolog.Level{zerolog.TraceLevel, zerolog.FatalLevel, zerolog.PanicLevel, zerolog.Disabled, zerolog.NoLevel}, config.Conf.Logs.LogLevel) {
+		Warn().Msgf("Invalid log level '%s'. Defaulting to 'info'", config.Conf.Logs.LogLevel)
+	}
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 }
 
 func Debug() *zerolog.Event {

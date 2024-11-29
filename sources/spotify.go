@@ -21,7 +21,7 @@ func (*SpotifySource) GetName() string {
 	return "Spotify"
 }
 
-func (*SpotifySource) GetVersion() string {
+func (*SpotifySource) GetVersion() types.Version {
 	return utils.LibraVersion
 }
 

@@ -1,0 +1,31 @@
+services:
+  libra:
+    image: ghcr.io/libramusic/libracore:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      LIBRA_DATA_DIR: ./data
+    volumes:
+      - ./data:/app/data
+    networks:
+      - libra
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: libra
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: libra
+    volumes:
+      - libra-db:/var/lib/postgresql/data
+    networks:
+      - libra
+
+volumes:
+  libra-db:
+networks:
+  libra:

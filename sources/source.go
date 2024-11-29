@@ -9,7 +9,7 @@ import (
 type Source interface {
 	GetID() string
 	GetName() string
-	GetVersion() string
+	GetVersion() types.Version
 	GetSourceTypes() []string
 	GetMediaTypes() []string
 	Search(query string, limit int, page int, filters map[string]interface{}) ([]types.SourcePlayable, error)
