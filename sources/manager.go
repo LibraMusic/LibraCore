@@ -43,8 +43,9 @@ func (sm *Manager) EnableSources() {
 	}
 }
 
-func (sm *Manager) EnableSource(sourceStr string) (err error) {
+func (sm *Manager) EnableSource(sourceStr string) error {
 	var source Source
+	var err error
 
 	switch strings.ToLower(sourceStr) {
 	case "youtube", "yt":
@@ -58,7 +59,7 @@ func (sm *Manager) EnableSource(sourceStr string) (err error) {
 			source, err = InitWebSource(sourceStr)
 		} else {
 			err = types.InvalidSourceError{SourceID: sourceStr}
-			return
+			return err
 		}
 	}
 	if err != nil {

@@ -39,7 +39,9 @@ func GenerateToken(id string, expiration time.Duration, signingMethod string, si
 	return t, nil
 }
 
-func LoadPrivateKey(signingMethod string, signingKey string) (err error) {
+func LoadPrivateKey(signingMethod string, signingKey string) error {
+	var err error
+
 	switch signingMethod {
 	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
 		RSAPrivateKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(signingKey))
@@ -50,5 +52,5 @@ func LoadPrivateKey(signingMethod string, signingKey string) (err error) {
 		key, err = jwt.ParseEdPrivateKeyFromPEM([]byte(signingKey))
 		EdDSAPrivateKey = key.(ed25519.PrivateKey)
 	}
-	return
+	return err
 }

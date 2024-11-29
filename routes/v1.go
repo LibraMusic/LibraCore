@@ -8,6 +8,8 @@ import (
 	"github.com/LibraMusic/LibraCore/storage"
 )
 
+// mimeType := mime.TypeByExtension(filepath.Ext(filePath))
+
 func V1Playables(c *fiber.Ctx) error {
 	playables, err := db.GetAllPlayables()
 	if err != nil {
