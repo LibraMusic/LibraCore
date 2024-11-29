@@ -17,40 +17,6 @@ type PostgreSQLDatabase struct {
 	pool *pgxpool.Pool
 }
 
-func createPostgreSQLDatabase() (*PostgreSQLDatabase, error) {
-	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=postgres " + config.Conf.Database.PostgreSQL.Params
-	pool, err := pgxpool.New(context.Background(), connStr)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = pool.Exec(context.Background(), "CREATE DATABASE "+config.Conf.Database.PostgreSQL.DBName+";")
-	if err != nil {
-		return nil, err
-	}
-
-	pool.Close()
-
-	return ConnectPostgreSQL()
-}
-
-func dropPostgreSQLDatabase() error {
-	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=postgres " + config.Conf.Database.PostgreSQL.Params
-	pool, err := pgxpool.New(context.Background(), connStr)
-	if err != nil {
-		return err
-	}
-
-	_, err = pool.Exec(context.Background(), "DROP DATABASE IF EXISTS "+config.Conf.Database.PostgreSQL.DBName+" WITH (FORCE);")
-	if err != nil {
-		return err
-	}
-
-	pool.Close()
-
-	return nil
-}
-
 func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
 	result := &PostgreSQLDatabase{}
 	err := result.Connect()
