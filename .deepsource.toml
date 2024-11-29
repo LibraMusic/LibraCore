@@ -15,9 +15,6 @@ name = "python"
 [[analyzers]]
 name = "sql"
 
-[[analyzers]]
-name = "secrets"
-
 [[transformers]]
 name = "gofmt"
 
