@@ -143,7 +143,7 @@ jobs:
         with:
           distribution: goreleaser
           version: ~> v2
-          args: release --clean
+          args: release --clean --timeout 60m --verbose
         env:
           SDK_PATH: ${{ steps.macos_sdk.outputs.path }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
