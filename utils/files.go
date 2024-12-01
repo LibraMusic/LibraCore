@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+var DataDir string
+
 func DownloadFile(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
