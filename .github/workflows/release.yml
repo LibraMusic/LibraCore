@@ -2,7 +2,7 @@ name: Release
 
 on:
   workflow_run:
-    workflows: ["Test"]
+    workflows: [Test]
     types: [completed]
     branches: [main]
 
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   goreleaser:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,7 +29,9 @@ jobs:
 
       - name: Setup Docker on macOS
         if: runner.os == 'macos'
-        run: brew install docker
+        run: |
+          brew install docker colima
+          colima start
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -150,3 +152,6 @@ jobs:
         with:
           name: libra
           path: dist/*
+
+      - name: Clean up
+        run: colima stop
