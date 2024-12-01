@@ -6,8 +6,6 @@ import (
 	"os/exec"
 )
 
-var DataDir string
-
 func GenerateID(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	charsetLength := len(charset)
