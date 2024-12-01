@@ -245,13 +245,13 @@ docker_manifests:
       - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-arm64"
       - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-armv6"
       - "ghcr.io/libramusic/libracore:v{{ .Major }}.{{ .Minor }}-armv7"
-  - name_template: '{{ if not isEnvSet "IS_NIGHTLY_BUILD" }}devreaper0/libracore:latest{{ end }}'
+  - name_template: '{{ if not (isEnvSet "IS_NIGHTLY_BUILD") }}devreaper0/libracore:latest{{ end }}'
     image_templates:
       - "devreaper0/libracore:latest-amd64"
       - "devreaper0/libracore:latest-arm64"
       - "devreaper0/libracore:latest-armv6"
       - "devreaper0/libracore:latest-armv7"
-  - name_template: '{{ if not isEnvSet "IS_NIGHTLY_BUILD" }}ghcr.io/libramusic/libracore:latest{{ end }}'
+  - name_template: '{{ if not (isEnvSet "IS_NIGHTLY_BUILD") }}ghcr.io/libramusic/libracore:latest{{ end }}'
     image_templates:
       - "ghcr.io/libramusic/libracore:latest-amd64"
       - "ghcr.io/libramusic/libracore:latest-arm64"
