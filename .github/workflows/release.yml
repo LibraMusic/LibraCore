@@ -27,6 +27,12 @@ jobs:
 
       - uses: goto-bus-stop/setup-zig@v2
 
+      - name: Setup Docker on macOS
+        if: runner.os == 'macos'
+        run: |
+          brew install docker
+          colima start
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
