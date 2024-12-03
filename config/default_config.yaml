@@ -39,8 +39,6 @@ source_scripts:
 logs:
   log_level: info # Supported levels: debug, info, warn, error, fatal. Default is info.
   log_format: text # Possible values, text, json, or logfmt. Default is text.
-  error_warnings: false
-  all_errors_fatal: false
 storage:
   location: ./storage
   size_limit: 0B # A value of 0 means no limit.

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 )
 
@@ -24,7 +24,7 @@ func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
 }
 
 func (db *PostgreSQLDatabase) Connect() error {
-	logging.Info("Connecting to PostgreSQL...")
+	log.Info("Connecting to PostgreSQL...")
 	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=" + config.Conf.Database.PostgreSQL.DBName + " " + config.Conf.Database.PostgreSQL.Params
 	pool, err := pgxpool.New(context.Background(), connStr)
 	db.pool = pool
@@ -213,7 +213,7 @@ func (db *PostgreSQLDatabase) createBlacklistedTokensTable() error {
 }
 
 func (db *PostgreSQLDatabase) Close() error {
-	logging.Info("Closing PostgreSQL connection...")
+	log.Info("Closing PostgreSQL connection...")
 	db.pool.Close()
 	return nil
 }

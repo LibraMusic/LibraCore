@@ -4,12 +4,12 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -41,7 +41,7 @@ func Register(c *fiber.Ctx) error {
 
 	usernameExists, err := db.DB.UsernameExists(req.Username)
 	if err != nil {
-		logging.Error("error checking if username exists", "err", err)
+		log.Error("error checking if username exists", "err", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "internal server error",
 		})
@@ -55,7 +55,7 @@ func Register(c *fiber.Ctx) error {
 	if req.Email != "" {
 		emailExists, err := db.DB.EmailExists(req.Email)
 		if err != nil {
-			logging.Error("error checking if email exists", "err", err)
+			log.Error("error checking if email exists", "err", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"message": "internal server error",
 			})

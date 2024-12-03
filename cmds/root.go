@@ -3,6 +3,7 @@ package cmds
 import (
 	"os"
 
+	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -35,5 +36,9 @@ func init() {
 }
 
 func initConfig() {
-	config.Conf = config.LoadConfig()
+	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal("Failed to load config", "err", err)
+	}
+	config.Conf = conf
 }

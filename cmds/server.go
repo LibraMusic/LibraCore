@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/cobra"
 
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/middleware"
 	"github.com/LibraMusic/LibraCore/routes"
 	"github.com/LibraMusic/LibraCore/sources"
@@ -26,11 +26,11 @@ var serverCmd = &cobra.Command{
 	Short:   "Start the server",
 	Long:    `Start the server`,
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Init()
+		utils.SetupLogger(config.Conf.Logs.LogFormat, config.Conf.Logs.LogLevel)
 
 		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWTSigningMethod)
 		if signingMethod == "" {
-			logging.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWTSigningMethod)
+			log.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWTSigningMethod)
 		}
 		config.Conf.Auth.JWTSigningMethod = signingMethod
 
@@ -38,25 +38,25 @@ var serverCmd = &cobra.Command{
 			keyPath := strings.TrimPrefix(config.Conf.Auth.JWTSigningKey, "file:")
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
-				logging.Fatal("Error getting absolute path of JWT signing key file", "err", err)
+				log.Fatal("Error getting absolute path of JWT signing key file", "err", err)
 			}
 			keyData, err := os.ReadFile(keyPath)
 			if err != nil {
-				logging.Fatal("Error reading JWT signing key file", "err", err)
+				log.Fatal("Error reading JWT signing key file", "err", err)
 			}
 			config.Conf.Auth.JWTSigningKey = string(keyData)
 		}
 
 		err := utils.LoadPrivateKey(config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
 		if err != nil {
-			logging.Fatal("Error loading private key", "err", err)
+			log.Fatal("Error loading private key", "err", err)
 		}
 
 		db.ConnectDatabase()
 
 		err = db.DB.CleanExpiredTokens()
 		if err != nil {
-			logging.Error("Error cleaning expired tokens", "err", err)
+			log.Error("Error cleaning expired tokens", "err", err)
 		}
 
 		storage.CleanOverfilledStorage()
@@ -66,7 +66,7 @@ var serverCmd = &cobra.Command{
 		// Test code below (TODO: Remove)
 		s, err := sources.InitYouTubeSource()
 		if err != nil {
-			logging.Fatal("Error initializing YouTube source", "err", err)
+			log.Fatal("Error initializing YouTube source", "err", err)
 		}
 		a, b := s.Search("Lord of Ashes", 5, 0, map[string]interface{}{})
 		fmt.Println(a)
@@ -165,7 +165,7 @@ var serverCmd = &cobra.Command{
 		// END TO REFRACTOR
 
 		if err = app.Listen(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil {
-			logging.Fatal("Error starting server", "err", err)
+			log.Fatal("Error starting server", "err", err)
 		}
 	},
 }

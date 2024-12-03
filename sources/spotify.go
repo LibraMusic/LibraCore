@@ -1,7 +1,8 @@
 package sources
 
 import (
-	"github.com/LibraMusic/LibraCore/logging"
+	"github.com/charmbracelet/log"
+
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -36,7 +37,7 @@ func (*SpotifySource) GetMediaTypes() []string {
 func (*SpotifySource) Search(_ string, _ int, _ int, _ map[string]interface{}) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
-	logging.Error("unimplemented")
+	log.Error("unimplemented")
 
 	return results, nil
 }
@@ -52,7 +53,7 @@ func (s *SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error("unimplemented")
+	log.Error("unimplemented")
 
 	return result, nil
 }
@@ -62,7 +63,7 @@ func (s *SpotifySource) CompleteMetadata(playable types.SourcePlayable) (types.S
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error("unimplemented")
+	log.Error("unimplemented")
 
 	return playable, nil
 }

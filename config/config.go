@@ -2,6 +2,7 @@ package config
 
 import (
 	_ "embed"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -63,10 +64,8 @@ type SourceScriptsConfig struct {
 }
 
 type LogsConfig struct {
-	LogLevel       log.Level `mapstructure:"log_level"`
-	LogFormat      string    `mapstructure:"log_format"`
-	ErrorWarnings  bool      `mapstructure:"error_warnings"`
-	AllErrorsFatal bool      `mapstructure:"all_errors_fatal"`
+	LogLevel  log.Level `mapstructure:"log_level"`
+	LogFormat string    `mapstructure:"log_format"`
 }
 
 type StorageConfig struct {
@@ -104,7 +103,7 @@ type Config struct {
 	Database      DatabaseConfig      `mapstructure:"database"`
 }
 
-func LoadConfig() Config {
+func LoadConfig() (Config, error) {
 	var conf Config
 
 	viper.SetConfigName("config")
@@ -115,8 +114,7 @@ func LoadConfig() Config {
 	viper.AutomaticEnv()
 
 	if err := loadDefaultConfig(); err != nil {
-		log.Fatal("Failed to read default config", "err", err)
-		return conf
+		return conf, fmt.Errorf("failed to read default config: %w", err)
 	}
 
 	if err := mergeConfig(); err != nil {
@@ -125,10 +123,10 @@ func LoadConfig() Config {
 	}
 
 	if err := unmarshalConfig(&conf); err != nil {
-		log.Fatal("Failed to unmarshal config", "err", err)
+		return conf, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
-	return conf
+	return conf, nil
 }
 
 func loadDefaultConfig() error {
