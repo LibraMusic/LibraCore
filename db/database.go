@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -66,10 +67,10 @@ type Database interface {
 	IsTokenBlacklisted(token string) (bool, error)
 }
 
-func ConnectDatabase() {
+func ConnectDatabase() error {
 	if DB != nil {
 		log.Warn("Database already connected")
-		return
+		return nil
 	}
 
 	var err error
@@ -80,11 +81,12 @@ func ConnectDatabase() {
 	case "postgresql", "postgres", "postgre", "pgsql", "psql", "pg":
 		DB, err = ConnectPostgreSQL()
 	default:
-		log.Fatal("Unsupported database engine", "engine", config.Conf.Database.Engine)
+		return fmt.Errorf("unsupported database engine: %s", config.Conf.Database.Engine)
 	}
 	if err != nil {
-		log.Fatal("Error connecting to database", "err", err)
+		return fmt.Errorf("error connecting to database: %w", err)
 	}
+	return nil
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries
