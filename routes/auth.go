@@ -41,7 +41,7 @@ func Register(c *fiber.Ctx) error {
 
 	usernameExists, err := db.DB.UsernameExists(req.Username)
 	if err != nil {
-		logging.Error().Err(err).Msg("error checking if username exists")
+		logging.Error("error checking if username exists", "err", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "internal server error",
 		})
@@ -55,7 +55,7 @@ func Register(c *fiber.Ctx) error {
 	if req.Email != "" {
 		emailExists, err := db.DB.EmailExists(req.Email)
 		if err != nil {
-			logging.Error().Err(err).Msg("error checking if email exists")
+			logging.Error("error checking if email exists", "err", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"message": "internal server error",
 			})
