@@ -37,8 +37,8 @@ source_scripts:
   python_command: python3
   youtube_location: source_scripts/youtube.py # Where youtube.py will be downladed to as well as what will be run.
 logs:
-  log_level: info # Supported levels: debug, info, warn, error. Default is info.
-  pretty_logs: false # If true, logs are output in a human-readable format instead of JSON.
+  log_level: info # Supported levels: debug, info, warn, error, fatal. Default is info.
+  log_format: text # Possible values, text, json, or logfmt. Default is text.
   error_warnings: false
   all_errors_fatal: false
 storage:

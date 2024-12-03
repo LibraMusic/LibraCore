@@ -1,94 +1,79 @@
 package logging
 
 import (
-	"fmt"
-	"os"
-	"slices"
-	"strings"
-	"time"
-
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
+	"github.com/charmbracelet/log"
 
 	"github.com/LibraMusic/LibraCore/config"
 )
 
 func Init() {
-	if config.Conf.Logs.PrettyLogs {
-		output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
-		output.FormatLevel = func(i interface{}) string {
-			return "| " + colorize(strings.ToUpper(fmt.Sprintf("%-5s", i)), levelColors[fmt.Sprintf("%s", i)]) + " |"
-		}
-		log.Logger = log.Output(output)
-	} else {
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	if config.Conf.Logs.LogFormat == "json" {
+		log.SetFormatter(log.JSONFormatter)
+	} else if config.Conf.Logs.LogFormat == "logfmt" {
+		log.SetFormatter(log.LogfmtFormatter)
+	} else if config.Conf.Logs.LogFormat != "text" {
+		log.Warn("Unknown log format, defaulting to text")
 	}
 
-	if slices.Contains([]zerolog.Level{zerolog.TraceLevel, zerolog.FatalLevel, zerolog.PanicLevel, zerolog.Disabled, zerolog.NoLevel}, config.Conf.Logs.LogLevel) {
-		Warn().Msgf("Invalid log level '%s'. Defaulting to 'info'", config.Conf.Logs.LogLevel)
-	}
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	log.SetLevel(config.Conf.Logs.LogLevel)
 }
 
-func Debug() *zerolog.Event {
-	return log.Debug()
+func Debug(msg interface{}, keyvals ...interface{}) {
+	log.Debug(msg, keyvals)
 }
 
-func Info() *zerolog.Event {
-	return log.Info()
+func Debugf(format string, args ...interface{}) {
+	log.Debugf(format, args...)
 }
 
-func Warn() *zerolog.Event {
+func Info(msg interface{}, keyvals ...interface{}) {
+	log.Info(msg, keyvals)
+}
+
+func Infof(format string, args ...interface{}) {
+	log.Infof(format, args...)
+}
+
+func Warn(msg interface{}, keyvals ...interface{}) {
 	if config.Conf.Logs.ErrorWarnings {
-		return Error()
+		Error(msg, keyvals)
 	}
-	return log.Warn()
+	log.Warn(msg, keyvals)
 }
 
-func Error() *zerolog.Event {
+func Warnf(format string, args ...interface{}) {
+	if config.Conf.Logs.ErrorWarnings {
+		Errorf(format, args...)
+	}
+	log.Warnf(format, args...)
+}
+
+func Error(msg interface{}, keyvals ...interface{}) {
 	if config.Conf.Logs.AllErrorsFatal {
-		return Fatal()
+		Fatal(msg, keyvals)
 	}
-	return log.Error()
+	log.Error(msg, keyvals)
 }
 
-func Fatal() *zerolog.Event {
-	return log.Fatal()
+func Errorf(format string, args ...interface{}) {
+	if config.Conf.Logs.AllErrorsFatal {
+		Fatalf(format, args...)
+	}
+	log.Errorf(format, args...)
 }
 
-const (
-	colorBlack = iota + 30
-	colorRed
-	colorGreen
-	colorYellow
-	colorBlue
-	colorMagenta
-	colorCyan
-	colorWhite
-)
-
-var levelColors = map[string]int{
-	"trace": colorBlue,
-	"debug": 0,
-	"info":  colorGreen,
-	"warn":  colorYellow,
-	"error": colorRed,
-	"fatal": colorRed,
-	"panic": colorRed,
+func Fatal(msg interface{}, keyvals ...interface{}) {
+	log.Fatal(msg, keyvals)
 }
 
-// colorize is based on colorize from zerolog (https://github.com/rs/zerolog/blob/6abadab4881e4af6d122332f6aef0365507c248a/console.go#L374)
-// colorize returns the string s wrapped in ANSI code c, unless disabled is true or c is 0.
-func colorize(s interface{}, c int) string {
-	disabled := false
+func Fatalf(format string, args ...interface{}) {
+	log.Fatalf(format, args...)
+}
 
-	e := os.Getenv("NO_COLOR")
-	if e != "" || c == 0 {
-		disabled = true
-	}
+func Print(msg interface{}, keyvals ...interface{}) {
+	log.Print(msg, keyvals)
+}
 
-	if disabled {
-		return fmt.Sprintf("%s", s)
-	}
-	return fmt.Sprintf("\x1b[%dm%v\x1b[0m", c, s)
+func Printf(format string, args ...interface{}) {
+	log.Printf(format, args...)
 }
