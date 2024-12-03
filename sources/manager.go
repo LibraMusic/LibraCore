@@ -4,8 +4,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -19,7 +20,7 @@ type Manager struct {
 
 func InitManager() {
 	if SM.sources != nil {
-		logging.Warn("Source manager already initialized")
+		log.Warn("Source manager already initialized")
 		return
 	}
 	SM = Manager{
@@ -38,7 +39,7 @@ func (sm *Manager) EnableSources() {
 	for _, source := range config.Conf.General.EnabledSources {
 		err := sm.EnableSource(source)
 		if err != nil {
-			logging.Warn("Error enabling source", "source", source, "err", err)
+			log.Warn("Error enabling source", "source", source, "err", err)
 		}
 	}
 }

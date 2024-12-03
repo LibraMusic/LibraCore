@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -29,14 +30,14 @@ func getStoragePath() (string, error) {
 func CleanOverfilledStorage() {
 	path, err := getStoragePath()
 	if err != nil {
-		logging.Error("Error getting storage path", "err", err)
+		log.Error("Error getting storage path", "err", err)
 		return
 	}
 	path = filepath.Join(path, ContentPath)
 	files, err := os.ReadDir(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logging.Error("Error reading storage directory", "err", err)
+			log.Error("Error reading storage directory", "err", err)
 		}
 		return
 	}
@@ -52,12 +53,12 @@ func CleanOverfilledStorage() {
 	var sum uint64
 	storagePath, err := getStoragePath()
 	if err != nil {
-		logging.Error("Error getting storage path", "err", err)
+		log.Error("Error getting storage path", "err", err)
 		return
 	}
 	err = filepath.Walk(storagePath, func(_ string, info os.FileInfo, err error) error {
 		if err != nil {
-			logging.Error("Error walking storage path", "err", err)
+			log.Error("Error walking storage path", "err", err)
 			return nil
 		}
 		if !info.IsDir() {
@@ -66,12 +67,12 @@ func CleanOverfilledStorage() {
 		return nil
 	})
 	if err != nil {
-		logging.Error("Error walking storage path", "err", err)
+		log.Error("Error walking storage path", "err", err)
 	}
 
 	for sum > config.Conf.Storage.SizeLimit.Bytes() {
 		if len(playables) == 0 {
-			logging.Warn("Storage is overfilled, but no playables are old enough to delete. Consider increasing the storage limit or decreasing the minimum age threshold")
+			log.Warn("Storage is overfilled, but no playables are old enough to delete. Consider increasing the storage limit or decreasing the minimum age threshold")
 			break
 		}
 
@@ -92,7 +93,7 @@ func getDirectories(files []os.DirEntry) []os.FileInfo {
 
 			info, err := file.Info()
 			if err != nil {
-				logging.Error("Error getting file info", "err", err)
+				log.Error("Error getting file info", "err", err)
 				continue
 			}
 			dirs = append(dirs, info)
@@ -107,7 +108,7 @@ func getContentFiles(path string, dirs []os.FileInfo) []string {
 		dirPath := filepath.Join(path, dir.Name())
 		files, err := os.ReadDir(dirPath)
 		if err != nil {
-			logging.Error("Error reading directory", "err", err)
+			log.Error("Error reading directory", "err", err)
 			continue
 		}
 
@@ -127,7 +128,7 @@ func getPlayables(contentFiles []string) []types.SourcePlayable {
 
 	tracks, err := db.DB.GetAllTracks()
 	if err != nil {
-		logging.Error("Error getting all tracks from database", "err", err)
+		log.Error("Error getting all tracks from database", "err", err)
 	}
 	for _, track := range tracks {
 		if slices.Contains(contentFiles, "track_"+track.GetID()) {
@@ -140,7 +141,7 @@ func getPlayables(contentFiles []string) []types.SourcePlayable {
 
 	videos, err := db.DB.GetAllVideos()
 	if err != nil {
-		logging.Error("Error getting all videos from database", "err", err)
+		log.Error("Error getting all videos from database", "err", err)
 
 	}
 	for _, video := range videos {
@@ -162,7 +163,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 	baseContentPath := filepath.Join(storagePath, ContentPath, playableType+"s")
 	files, err := os.ReadDir(baseContentPath)
 	if err != nil {
-		logging.Error("Error reading directory", "err", err)
+		log.Error("Error reading directory", "err", err)
 		return
 	}
 	for _, file := range files {
@@ -170,7 +171,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 			if strings.HasPrefix(file.Name(), playableID+".") {
 				err := os.Remove(filepath.Join(baseContentPath, file.Name()))
 				if err != nil {
-					logging.Error("Error removing file", "err", err)
+					log.Error("Error removing file", "err", err)
 				}
 				break
 			}
@@ -180,7 +181,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 	baseCoverPath := filepath.Join(storagePath, CoversPath, playableType+"s")
 	files, err = os.ReadDir(baseCoverPath)
 	if err != nil {
-		logging.Error("Error reading directory", "err", err)
+		log.Error("Error reading directory", "err", err)
 		return
 	}
 	for _, file := range files {
@@ -188,7 +189,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 			if strings.HasPrefix(file.Name(), playableID+".") {
 				err := os.Remove(filepath.Join(baseCoverPath, file.Name()))
 				if err != nil {
-					logging.Error("Error removing file", "err", err)
+					log.Error("Error removing file", "err", err)
 				}
 				break
 			}
@@ -199,7 +200,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 func IsContentStored(contentType string, playableID string) bool {
 	path, err := getStoragePath()
 	if err != nil {
-		logging.Error("Error getting storage path", "err", err)
+		log.Error("Error getting storage path", "err", err)
 		return false
 	}
 	path = filepath.Join(path, ContentPath, contentType+"s")
@@ -207,7 +208,7 @@ func IsContentStored(contentType string, playableID string) bool {
 	files, err := os.ReadDir(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			logging.Error("Error reading directory", "err", err)
+			log.Error("Error reading directory", "err", err)
 		}
 		return false
 	}
@@ -226,27 +227,27 @@ func IsContentStored(contentType string, playableID string) bool {
 func StoreContent(contentType string, playableID string, data []byte, fileExtension string) {
 	path, err := getStoragePath()
 	if err != nil {
-		logging.Error("Error getting storage path", "err", err)
+		log.Error("Error getting storage path", "err", err)
 		return
 	}
 	path = filepath.Join(path, ContentPath, contentType+"s")
 	os.MkdirAll(path, os.ModePerm)
 	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0644)
 	if err != nil {
-		logging.Error("Error writing file", "err", err)
+		log.Error("Error writing file", "err", err)
 	}
 }
 
 func StoreCover(contentType string, playableID string, data []byte, fileExtension string) {
 	path, err := getStoragePath()
 	if err != nil {
-		logging.Error("Error getting storage path", "err", err)
+		log.Error("Error getting storage path", "err", err)
 		return
 	}
 	path = filepath.Join(path, CoversPath, contentType+"s")
 	os.MkdirAll(path, os.ModePerm)
 	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0644)
 	if err != nil {
-		logging.Error("Error writing file", "err", err)
+		log.Error("Error writing file", "err", err)
 	}
 }

@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -26,7 +26,7 @@ func ConnectSQLite() (*SQLiteDatabase, error) {
 }
 
 func (db *SQLiteDatabase) Connect() error {
-	logging.Info("Connecting to SQLite...")
+	log.Info("Connecting to SQLite...")
 	dbPath := config.Conf.Database.SQLite.Path
 	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
 		dbPath = filepath.Join(utils.DataDir, dbPath)
@@ -218,7 +218,7 @@ func (db *SQLiteDatabase) createBlacklistedTokensTable() error {
 }
 
 func (db *SQLiteDatabase) Close() error {
-	logging.Info("Closing SQLite connection...")
+	log.Info("Closing SQLite connection...")
 	return db.sqlDB.Close()
 }
 

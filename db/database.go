@@ -4,8 +4,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 )
 
@@ -67,7 +68,7 @@ type Database interface {
 
 func ConnectDatabase() {
 	if DB != nil {
-		logging.Warn("Database already connected")
+		log.Warn("Database already connected")
 		return
 	}
 
@@ -79,10 +80,10 @@ func ConnectDatabase() {
 	case "postgresql", "postgres", "postgre", "pgsql", "psql", "pg":
 		DB, err = ConnectPostgreSQL()
 	default:
-		logging.Fatal("Unsupported database engine", "engine", config.Conf.Database.Engine)
+		log.Fatal("Unsupported database engine", "engine", config.Conf.Database.Engine)
 	}
 	if err != nil {
-		logging.Fatal("Error connecting to database", "err", err)
+		log.Fatal("Error connecting to database", "err", err)
 	}
 }
 

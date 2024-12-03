@@ -3,11 +3,11 @@ package main
 import (
 	"strconv"
 
+	"github.com/charmbracelet/log"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 
 	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -38,32 +38,32 @@ func V1OpenAPI3Spec() openapi3.T {
 
 	trackSchema, err := openapi3gen.NewSchemaRefForValue(&types.Track{}, nil)
 	if err != nil {
-		logging.Error("Failed to generate OpenAPI schema for Track", "err", err)
+		log.Error("Failed to generate OpenAPI schema for Track", "err", err)
 	}
 
 	albumSchema, err := openapi3gen.NewSchemaRefForValue(&types.Album{}, nil)
 	if err != nil {
-		logging.Error("Failed to generate OpenAPI schema for Album", "err", err)
+		log.Error("Failed to generate OpenAPI schema for Album", "err", err)
 	}
 
 	videoSchema, err := openapi3gen.NewSchemaRefForValue(&types.Video{}, nil)
 	if err != nil {
-		logging.Error("Failed to generate OpenAPI schema for Video", "err", err)
+		log.Error("Failed to generate OpenAPI schema for Video", "err", err)
 	}
 
 	artistSchema, err := openapi3gen.NewSchemaRefForValue(&types.Artist{}, nil)
 	if err != nil {
-		logging.Error("Failed to generate OpenAPI schema for Artist", "err", err)
+		log.Error("Failed to generate OpenAPI schema for Artist", "err", err)
 	}
 
 	playlistSchema, err := openapi3gen.NewSchemaRefForValue(&types.Playlist{}, nil)
 	if err != nil {
-		logging.Error("Failed to generate OpenAPI schema for Playlist", "err", err)
+		log.Error("Failed to generate OpenAPI schema for Playlist", "err", err)
 	}
 
 	userSchema, err := openapi3gen.NewSchemaRefForValue(&types.User{}, nil)
 	if err != nil {
-		logging.Error("Failed to generate OpenAPI schema for User", "err", err)
+		log.Error("Failed to generate OpenAPI schema for User", "err", err)
 	}
 
 	playableSchema := openapi3.NewOneOfSchema(

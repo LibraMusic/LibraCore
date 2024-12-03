@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
-	"github.com/LibraMusic/LibraCore/logging"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -73,7 +73,7 @@ func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]inte
 	}
 
 	if fileInfo.IsDir() {
-		logging.Error("unimplemented")
+		log.Error("unimplemented")
 	} else if slices.Contains(searchedTypes, "tracks") || slices.Contains(searchedTypes, "videos") {
 		out, err := ffmpeg.Probe(s.Path)
 		if err != nil {
@@ -90,7 +90,7 @@ func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]inte
 			output["format"].(map[string]interface{})["tags"].(map[string]interface{})["artist"].(string),
 		}
 
-		logging.Error("unimplemented")
+		log.Error("unimplemented")
 
 		result := types.Track{
 			Title:       output["format"].(map[string]interface{})["tags"].(map[string]interface{})["title"].(string),
@@ -114,7 +114,7 @@ func (s *LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, err
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error("unimplemented")
+	log.Error("unimplemented")
 
 	return nil, nil
 }
@@ -126,7 +126,7 @@ func (s *LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]s
 		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error("unimplemented")
+	log.Error("unimplemented")
 
 	return result, nil
 }
@@ -147,7 +147,7 @@ func (s *LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types
 		return nil, err
 	}
 
-	logging.Error("unimplemented")
+	log.Error("unimplemented")
 
 	return playable, nil
 }
