@@ -30,7 +30,7 @@ var serverCmd = &cobra.Command{
 
 		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWTSigningMethod)
 		if signingMethod == "" {
-			logging.Fatal().Msgf("Invalid or unsupported JWT signing method: %s\n", config.Conf.Auth.JWTSigningMethod)
+			logging.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWTSigningMethod)
 		}
 		config.Conf.Auth.JWTSigningMethod = signingMethod
 
@@ -38,25 +38,25 @@ var serverCmd = &cobra.Command{
 			keyPath := strings.TrimPrefix(config.Conf.Auth.JWTSigningKey, "file:")
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
-				logging.Fatal().Err(err).Msg("Error getting absolute path of JWT signing key file")
+				logging.Fatal("Error getting absolute path of JWT signing key file", "err", err)
 			}
 			keyData, err := os.ReadFile(keyPath)
 			if err != nil {
-				logging.Fatal().Err(err).Msg("Error reading JWT signing key file")
+				logging.Fatal("Error reading JWT signing key file", "err", err)
 			}
 			config.Conf.Auth.JWTSigningKey = string(keyData)
 		}
 
 		err := utils.LoadPrivateKey(config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
 		if err != nil {
-			logging.Fatal().Err(err).Msg("Error loading private key")
+			logging.Fatal("Error loading private key", "err", err)
 		}
 
 		db.ConnectDatabase()
 
 		err = db.DB.CleanExpiredTokens()
 		if err != nil {
-			logging.Error().Err(err).Msg("Error cleaning expired tokens")
+			logging.Error("Error cleaning expired tokens", "err", err)
 		}
 
 		storage.CleanOverfilledStorage()
@@ -66,7 +66,7 @@ var serverCmd = &cobra.Command{
 		// Test code below (TODO: Remove)
 		s, err := sources.InitYouTubeSource()
 		if err != nil {
-			logging.Fatal().Err(err).Msg("Error initializing YouTube source")
+			logging.Fatal("Error initializing YouTube source", "err", err)
 		}
 		a, b := s.Search("Lord of Ashes", 5, 0, map[string]interface{}{})
 		fmt.Println(a)
@@ -165,7 +165,7 @@ var serverCmd = &cobra.Command{
 		// END TO REFRACTOR
 
 		if err = app.Listen(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil {
-			logging.Fatal().Err(err).Msg("Error starting server")
+			logging.Fatal("Error starting server", "err", err)
 		}
 	},
 }

@@ -19,7 +19,7 @@ type Manager struct {
 
 func InitManager() {
 	if SM.sources != nil {
-		logging.Warn().Msg("Source manager already initialized")
+		logging.Warn("Source manager already initialized")
 		return
 	}
 	SM = Manager{
@@ -38,7 +38,7 @@ func (sm *Manager) EnableSources() {
 	for _, source := range config.Conf.General.EnabledSources {
 		err := sm.EnableSource(source)
 		if err != nil {
-			logging.Warn().Err(err).Msgf("Error enabling source %s", source)
+			logging.Warn("Error enabling source", "source", source, "err", err)
 		}
 	}
 }

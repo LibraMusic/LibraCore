@@ -11,7 +11,7 @@ type WebSource struct {
 }
 
 func InitWebSource(url string) (*WebSource, error) {
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 
 	return &WebSource{
 		URL: url,
@@ -19,34 +19,34 @@ func InitWebSource(url string) (*WebSource, error) {
 }
 
 func (*WebSource) GetID() string {
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 	return "web"
 }
 
 func (*WebSource) GetName() string {
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 	return "Web"
 }
 
 func (*WebSource) GetVersion() types.Version {
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 	return utils.LibraVersion
 }
 
 func (*WebSource) GetSourceTypes() []string {
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 	return []string{"content", "metadata", "lyrics"}
 }
 
 func (*WebSource) GetMediaTypes() []string {
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 	return []string{"music", "video", "playlist"}
 }
 
 func (*WebSource) Search(_ string, _ int, _ int, _ map[string]interface{}) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 
 	return results, nil
 }
@@ -56,7 +56,7 @@ func (s *WebSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
 		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 
 	return nil, nil
 }
@@ -68,7 +68,7 @@ func (s *WebSource) GetLyrics(playable types.LyricsPlayable) (map[string]string,
 		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 
 	return result, nil
 }
@@ -78,7 +78,7 @@ func (s *WebSource) CompleteMetadata(playable types.SourcePlayable) (types.Sourc
 		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	logging.Error().Msg("unimplemented")
+	logging.Error("unimplemented")
 
 	return playable, nil
 }
