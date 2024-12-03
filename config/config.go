@@ -10,9 +10,8 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/c2h5oh/datasize"
+	"github.com/charmbracelet/log"
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
 	"github.com/LibraMusic/LibraCore/types"
@@ -64,10 +63,10 @@ type SourceScriptsConfig struct {
 }
 
 type LogsConfig struct {
-	LogLevel       zerolog.Level `mapstructure:"log_level"`
-	PrettyLogs     bool          `mapstructure:"pretty_logs"`
-	ErrorWarnings  bool          `mapstructure:"error_warnings"`
-	AllErrorsFatal bool          `mapstructure:"all_errors_fatal"`
+	LogLevel       log.Level `mapstructure:"log_level"`
+	LogFormat      string    `mapstructure:"log_format"`
+	ErrorWarnings  bool      `mapstructure:"error_warnings"`
+	AllErrorsFatal bool      `mapstructure:"all_errors_fatal"`
 }
 
 type StorageConfig struct {
@@ -203,8 +202,8 @@ func unmarshalConfig(conf *Config) error {
 				if from == reflect.String && to == reflect.TypeFor[datasize.ByteSize]().Kind() {
 					return datasize.ParseString(data.(string))
 				}
-				if from == reflect.String && to == reflect.TypeFor[zerolog.Level]().Kind() {
-					return zerolog.ParseLevel(data.(string))
+				if from == reflect.String && to == reflect.TypeFor[log.Level]().Kind() {
+					return log.ParseLevel(data.(string))
 				}
 				return data, nil
 			},
