@@ -52,7 +52,10 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Error loading private key", "err", err)
 		}
 
-		db.ConnectDatabase()
+		err = db.ConnectDatabase()
+		if err != nil {
+			log.Fatal("Error connecting to database", "err", err)
+		}
 
 		err = db.DB.CleanExpiredTokens()
 		if err != nil {
