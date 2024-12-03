@@ -38,32 +38,32 @@ func V1OpenAPI3Spec() openapi3.T {
 
 	trackSchema, err := openapi3gen.NewSchemaRefForValue(&types.Track{}, nil)
 	if err != nil {
-		logging.Error().Err(err).Msg("Failed to generate OpenAPI schema for Track")
+		logging.Error("Failed to generate OpenAPI schema for Track", "err", err)
 	}
 
 	albumSchema, err := openapi3gen.NewSchemaRefForValue(&types.Album{}, nil)
 	if err != nil {
-		logging.Error().Err(err).Msg("Failed to generate OpenAPI schema for Album")
+		logging.Error("Failed to generate OpenAPI schema for Album", "err", err)
 	}
 
 	videoSchema, err := openapi3gen.NewSchemaRefForValue(&types.Video{}, nil)
 	if err != nil {
-		logging.Error().Err(err).Msg("Failed to generate OpenAPI schema for Video")
+		logging.Error("Failed to generate OpenAPI schema for Video", "err", err)
 	}
 
 	artistSchema, err := openapi3gen.NewSchemaRefForValue(&types.Artist{}, nil)
 	if err != nil {
-		logging.Error().Err(err).Msg("Failed to generate OpenAPI schema for Artist")
+		logging.Error("Failed to generate OpenAPI schema for Artist", "err", err)
 	}
 
 	playlistSchema, err := openapi3gen.NewSchemaRefForValue(&types.Playlist{}, nil)
 	if err != nil {
-		logging.Error().Err(err).Msg("Failed to generate OpenAPI schema for Playlist")
+		logging.Error("Failed to generate OpenAPI schema for Playlist", "err", err)
 	}
 
 	userSchema, err := openapi3gen.NewSchemaRefForValue(&types.User{}, nil)
 	if err != nil {
-		logging.Error().Err(err).Msg("Failed to generate OpenAPI schema for User")
+		logging.Error("Failed to generate OpenAPI schema for User", "err", err)
 	}
 
 	playableSchema := openapi3.NewOneOfSchema(

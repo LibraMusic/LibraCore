@@ -26,7 +26,7 @@ func ConnectSQLite() (*SQLiteDatabase, error) {
 }
 
 func (db *SQLiteDatabase) Connect() error {
-	logging.Info().Msg("Connecting to SQLite...")
+	logging.Info("Connecting to SQLite...")
 	dbPath := config.Conf.Database.SQLite.Path
 	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
 		dbPath = filepath.Join(utils.DataDir, dbPath)
@@ -218,7 +218,7 @@ func (db *SQLiteDatabase) createBlacklistedTokensTable() error {
 }
 
 func (db *SQLiteDatabase) Close() error {
-	logging.Info().Msg("Closing SQLite connection...")
+	logging.Info("Closing SQLite connection...")
 	return db.sqlDB.Close()
 }
 

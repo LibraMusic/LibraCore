@@ -67,7 +67,7 @@ type Database interface {
 
 func ConnectDatabase() {
 	if DB != nil {
-		logging.Warn().Msg("Database already connected")
+		logging.Warn("Database already connected")
 		return
 	}
 
@@ -79,10 +79,10 @@ func ConnectDatabase() {
 	case "postgresql", "postgres", "postgre", "pgsql", "psql", "pg":
 		DB, err = ConnectPostgreSQL()
 	default:
-		logging.Fatal().Msgf("Unsupported database engine: %s\n", config.Conf.Database.Engine)
+		logging.Fatal("Unsupported database engine", "engine", config.Conf.Database.Engine)
 	}
 	if err != nil {
-		logging.Fatal().Err(err).Msg("Error connecting to database")
+		logging.Fatal("Error connecting to database", "err", err)
 	}
 }
 
