@@ -115,17 +115,17 @@ func LoadConfig() Config {
 	viper.AutomaticEnv()
 
 	if err := loadDefaultConfig(); err != nil {
-		log.Fatal().Err(err).Msg("Failed to read default config")
+		log.Fatal("Failed to read default config", "err", err)
 		return conf
 	}
 
 	if err := mergeConfig(); err != nil {
-		log.Warn().Err(err).Msg("Failed to read config")
-		log.Warn().Msg("Using default config")
+		log.Warn("Failed to read config", "err", err)
+		log.Warn("Using default config")
 	}
 
 	if err := unmarshalConfig(&conf); err != nil {
-		log.Fatal().Err(err).Msg("Failed to unmarshal config")
+		log.Fatal("Failed to unmarshal config", "err", err)
 	}
 
 	return conf
@@ -150,7 +150,7 @@ func mergeConfig() error {
 			err = viper.MergeInConfig()
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok || os.IsNotExist(err) {
 				if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0644); err != nil {
-					log.Warn().Err(err).Msg("Failed to write default config")
+					log.Warn("Failed to write default config", "err", err)
 				}
 			}
 			if err != nil {
@@ -165,11 +165,11 @@ func getConfigFilePath() (string, error) {
 	if utils.DataDir != "" {
 		configFilePath, err := filepath.Abs(filepath.Join(utils.DataDir, "config.yaml"))
 		if err != nil {
-			log.Warn().Err(err).Msg("Failed to get absolute path for config.yaml in DataDir")
+			log.Warn("Failed to get absolute path for config.yaml in DataDir", "err", err)
 		} else {
 			err := os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
 			if err != nil {
-				log.Warn().Err(err).Msg("Failed to create directories for config.yaml in DataDir")
+				log.Warn("Failed to create directories for config.yaml in DataDir", "err", err)
 				return "", err
 			}
 			return configFilePath, nil
@@ -178,14 +178,14 @@ func getConfigFilePath() (string, error) {
 
 	configFilePath, err := filepath.Abs("config.yaml")
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to get absolute path for config.yaml")
+		log.Warn("Failed to get absolute path for config.yaml", "err", err)
 	} else if _, err := os.Stat(configFilePath); err == nil {
 		return configFilePath, nil
 	}
 
 	configFilePath, err = xdg.ConfigFile("libra/config.yaml")
 	if err != nil {
-		log.Warn().Err(err).Msg("Failed to get config file path from XDG config directory")
+		log.Warn("Failed to get config file path from XDG config directory", "err", err)
 		return "", err
 	}
 
