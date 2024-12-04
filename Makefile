@@ -6,7 +6,7 @@ build:
 
 .PHONY: run
 run:
-	go run -v . server
+	go run -v .
 
 .PHONY: test
 test:
