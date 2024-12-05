@@ -8,6 +8,9 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/LibraMusic/LibraCore/config"
@@ -28,10 +31,12 @@ func ConnectSQLite() (*SQLiteDatabase, error) {
 func (db *SQLiteDatabase) Connect() error {
 	log.Info("Connecting to SQLite...")
 	dbPath := config.Conf.Database.SQLite.Path
+	log.Info("Database path: " + dbPath)
 	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
 		dbPath = filepath.Join(utils.DataDir, dbPath)
 	}
-	sqlDB, err := sql.Open("sqlite3", dbPath)
+	log.Info("Database path (resolved): " + dbPath)
+	sqlDB, err := sql.Open("sqlite3", "libra.db")
 	db.sqlDB = sqlDB
 	if err != nil {
 		return err
@@ -224,6 +229,50 @@ func (db *SQLiteDatabase) Close() error {
 
 func (*SQLiteDatabase) EngineName() string {
 	return "SQLite"
+}
+
+func (db *SQLiteDatabase) MigrateUp(steps int) error {
+	d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	if err != nil {
+		return err
+	}
+
+	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
+	if err != nil {
+		return err
+	}
+
+	if steps <= 0 {
+		return m.Up()
+	} else {
+		return m.Steps(steps)
+	}
+}
+
+func (db *SQLiteDatabase) MigrateDown(steps int) error {
+	d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	if err != nil {
+		return err
+	}
+
+	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
+	if err != nil {
+		return err
+	}
+
+	if steps <= 0 {
+		return m.Down()
+	} else {
+		return m.Steps(-steps)
+	}
 }
 
 func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {

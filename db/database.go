@@ -1,6 +1,7 @@
 package db
 
 import (
+	"embed"
 	"fmt"
 	"strings"
 	"time"
@@ -13,10 +14,16 @@ import (
 
 var DB Database
 
+//go:embed migrations
+var migrationsFS embed.FS
+
 type Database interface {
 	Connect() error
 	Close() error
 	EngineName() string
+
+	MigrateUp(steps int) error
+	MigrateDown(steps int) error
 
 	GetAllTracks() ([]types.Track, error)
 	GetTracks(userID string) ([]types.Track, error)

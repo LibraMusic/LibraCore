@@ -12,6 +12,11 @@ test:
 test_integration:
 	go test -tags=integration ./...
 
+# Available engines: sqlite, postgresql
+.PHONY: create_migration
+create_migration:
+	migrate create -ext sql -dir db/migrations/$(engine) -seq $(name)
+
 .PHONY: clean
 clean:
 	go clean
