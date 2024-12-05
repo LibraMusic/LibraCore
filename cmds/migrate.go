@@ -43,9 +43,9 @@ var upCmd = &cobra.Command{
 		}
 		err := db.DB.MigrateUp(steps)
 		if err != nil {
-			log.Fatal("Error migrating database up", "err", err)
+			log.Fatal("Error migrating database", "err", err)
 		}
-		log.Info("Database migration complete")
+		fmt.Println("Database migration complete")
 	},
 }
 
@@ -66,8 +66,9 @@ var downCmd = &cobra.Command{
 		}
 		err := db.DB.MigrateDown(steps)
 		if err != nil {
-			log.Fatal("Error migrating database down", "err", err)
+			log.Fatal("Error migrating database", "err", err)
 		}
+		fmt.Println("Database migration complete")
 	},
 }
 
