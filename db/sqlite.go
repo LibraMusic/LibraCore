@@ -31,12 +31,10 @@ func ConnectSQLite() (*SQLiteDatabase, error) {
 func (db *SQLiteDatabase) Connect() error {
 	log.Info("Connecting to SQLite...")
 	dbPath := config.Conf.Database.SQLite.Path
-	log.Info("Database path: " + dbPath)
 	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
 		dbPath = filepath.Join(utils.DataDir, dbPath)
 	}
-	log.Info("Database path (resolved): " + dbPath)
-	sqlDB, err := sql.Open("sqlite3", "libra.db")
+	sqlDB, err := sql.Open("sqlite3", dbPath)
 	db.sqlDB = sqlDB
 	if err != nil {
 		return err
