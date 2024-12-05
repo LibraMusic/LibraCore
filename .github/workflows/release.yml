@@ -140,12 +140,13 @@ jobs:
         if: ${{ github.ref_type == 'tag' && !endsWith(github.ref, '-nightly') }}
 
       - name: Run GoReleaser
-        timeout-minutes: 120
+        # timeout-minutes: 120
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: ~> v2
-          args: release --clean --timeout 120m --verbose
+          # args: release --clean --timeout 120m --verbose
+          args: release --clean
         env:
           # SDK_PATH: ${{ steps.macos_sdk.outputs.path }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
