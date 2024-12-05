@@ -35,7 +35,7 @@ Dependencies:
 ## Development
 
 To run all unit tests, run `make test`.
-To run the integration tests, run `make run -tags=integration`
+To run the integration tests, run `make test_integration`
 
 
 ## Roadmap
