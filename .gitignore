@@ -8,6 +8,7 @@ data/
 # Binaries for programs and plugins
 dist/
 completions/
+libra.db
 libra
 libra-*
 *.exe
