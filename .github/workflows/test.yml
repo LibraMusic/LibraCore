@@ -20,7 +20,7 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: make deps
+        run: go mod download
 
       - name: Build
         run: make build
