@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -243,10 +244,14 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 	}
 
 	if steps <= 0 {
-		return m.Up()
+		err = m.Up()
 	} else {
-		return m.Steps(steps)
+		err = m.Steps(steps)
 	}
+	if errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
+	return err
 }
 
 func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
@@ -266,10 +271,14 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 	}
 
 	if steps <= 0 {
-		return m.Down()
+		err = m.Down()
 	} else {
-		return m.Steps(-steps)
+		err = m.Steps(-steps)
 	}
+	if errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
+	return err
 }
 
 func (db *PostgreSQLDatabase) GetAllTracks() ([]types.Track, error) {

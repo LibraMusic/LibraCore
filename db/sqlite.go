@@ -245,10 +245,14 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 	}
 
 	if steps <= 0 {
-		return m.Up()
+		err = m.Up()
 	} else {
-		return m.Steps(steps)
+		err = m.Steps(steps)
 	}
+	if errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
+	return err
 }
 
 func (db *SQLiteDatabase) MigrateDown(steps int) error {
@@ -267,10 +271,14 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	}
 
 	if steps <= 0 {
-		return m.Down()
+		err = m.Down()
 	} else {
-		return m.Steps(-steps)
+		err = m.Steps(-steps)
 	}
+	if errors.Is(err, migrate.ErrNoChange) {
+		return nil
+	}
+	return err
 }
 
 func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
