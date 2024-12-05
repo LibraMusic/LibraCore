@@ -7,7 +7,11 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/pgx/v5"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/types"
@@ -220,6 +224,52 @@ func (db *PostgreSQLDatabase) Close() error {
 
 func (*PostgreSQLDatabase) EngineName() string {
 	return "PostgreSQL"
+}
+
+func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
+	d, err := iofs.New(migrationsFS, "migrations/postgresql")
+	if err != nil {
+		return err
+	}
+
+	stddb := stdlib.OpenDBFromPool(db.pool)
+	driver, err := pgx.WithInstance(stddb, &pgx.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("iofs", d, "postgresql", driver)
+	if err != nil {
+		return err
+	}
+
+	if steps <= 0 {
+		return m.Up()
+	} else {
+		return m.Steps(steps)
+	}
+}
+
+func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
+	d, err := iofs.New(migrationsFS, "migrations/postgresql")
+	if err != nil {
+		return err
+	}
+
+	stddb := stdlib.OpenDBFromPool(db.pool)
+	driver, err := pgx.WithInstance(stddb, &pgx.Config{})
+	if err != nil {
+		return err
+	}
+	m, err := migrate.NewWithInstance("iofs", d, "postgresql", driver)
+	if err != nil {
+		return err
+	}
+
+	if steps <= 0 {
+		return m.Down()
+	} else {
+		return m.Steps(-steps)
+	}
 }
 
 func (db *PostgreSQLDatabase) GetAllTracks() ([]types.Track, error) {
