@@ -17,14 +17,14 @@ func V1OpenAPI3Spec() openapi3.T {
 		OpenAPI: "3.0.0",
 		Info: &openapi3.Info{
 			Title:       config.Conf.Application.SourceName + " API",
-			Description: "REST APIs used for interacting with the ToDo Service",
+			Description: "Libra Core API providing music streaming and management capabilities",
 			Version:     utils.LibraVersion.String(),
 			License: &openapi3.License{
 				Name: "MIT",
 				URL:  "https://opensource.org/licenses/MIT",
 			},
 			Contact: &openapi3.Contact{
-				URL: "https://github.com/LibraMusic/backend",
+				URL: "https://github.com/LibraMusic/LibraCore",
 			},
 		},
 		Servers: openapi3.Servers{
