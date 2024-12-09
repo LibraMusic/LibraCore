@@ -8,13 +8,16 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
+	"github.com/goccy/go-yaml"
+	"github.com/gofiber/contrib/swagger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/cobra"
 
+	"github.com/LibraMusic/LibraCore/api"
+	"github.com/LibraMusic/LibraCore/api/middleware"
+	"github.com/LibraMusic/LibraCore/api/routes"
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/middleware"
-	"github.com/LibraMusic/LibraCore/routes"
 	"github.com/LibraMusic/LibraCore/sources"
 	"github.com/LibraMusic/LibraCore/storage"
 	"github.com/LibraMusic/LibraCore/utils"
@@ -95,6 +98,16 @@ var serverCmd = &cobra.Command{
 		fmt.Printf("Libra v%s\n", utils.LibraVersion.String())
 		fmt.Printf("Database: %s\n", db.DB.EngineName())
 
+		v1Spec := api.V1OpenAPI3Spec()
+		v1SpecJSON, err := json.Marshal(v1Spec)
+		if err != nil {
+			log.Fatal("Error marshalling OpenAPI spec to JSON", "err", err)
+		}
+		v1SpecYAML, err := yaml.Marshal(v1Spec)
+		if err != nil {
+			log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
+		}
+
 		app := fiber.New(fiber.Config{
 			JSONEncoder: json.Marshal,
 			JSONDecoder: json.Unmarshal,
@@ -133,6 +146,15 @@ var serverCmd = &cobra.Command{
 		auth.Post("/logout", middleware.JWTProtected, routes.Logout)
 
 		v1 := api.Group("/v1")
+
+		v1.Use(swagger.New(swagger.Config{
+			BasePath:    "/api/v1/",
+			FilePath:    "/openapi.json",
+			FileContent: v1SpecJSON,
+			Path:        "docs",
+			Title:       "Libra API",
+		}))
+
 		v1.Get("/playables", middleware.GlobalJWTProtected, routes.V1Playables)
 		v1.Get("/search", middleware.GlobalJWTProtected, routes.V1Search)
 
@@ -166,6 +188,14 @@ var serverCmd = &cobra.Command{
 		v1.Get("/artist/:id/albums", middleware.GlobalJWTProtected, routes.V1ArtistAlbums)
 		v1.Get("/artist/:id/tracks", middleware.GlobalJWTProtected, routes.V1ArtistTracks)
 		// END TO REFRACTOR
+
+		v1.Get("/openapi.json", func(c *fiber.Ctx) error {
+			return c.JSON(v1SpecJSON)
+		})
+
+		v1.Get("/openapi.yaml", func(c *fiber.Ctx) error {
+			return c.Send(v1SpecYAML)
+		})
 
 		if err = app.Listen(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil {
 			log.Fatal("Error starting server", "err", err)
