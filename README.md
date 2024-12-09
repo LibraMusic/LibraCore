@@ -36,15 +36,3 @@ Dependencies:
 
 To run all unit tests, run `make test`.
 To run the integration tests, run `make test_integration`
-
-
-## Roadmap
-
-In the future, the project aims for the following:
-
-- [ ] A simple but powerful backend & API
-- [ ] A beautiful and accessible frontend for all platforms, both web and native
-- [ ] An opt-in playback syncing mechanism to share what is currently playing between applications on either one or every device
-- [ ] A plugins system, so you can extend Libra even more than normal
-- [ ] An Amazon Alexa skill
-- [ ] An [Obsidian](https://obsidian.md/) plugin to control your music while taking notes
