@@ -1,13 +1,10 @@
-package main
+package api
 
 import (
-	"strconv"
-
 	"github.com/charmbracelet/log"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 
-	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
 )
@@ -16,7 +13,7 @@ func V1OpenAPI3Spec() openapi3.T {
 	spec := openapi3.T{
 		OpenAPI: "3.0.0",
 		Info: &openapi3.Info{
-			Title:       config.Conf.Application.SourceName + " API",
+			Title:       "Libra API",
 			Description: "Libra Core API providing music streaming and management capabilities",
 			Version:     utils.LibraVersion.String(),
 			License: &openapi3.License{
@@ -29,7 +26,7 @@ func V1OpenAPI3Spec() openapi3.T {
 		},
 		Servers: openapi3.Servers{
 			&openapi3.Server{
-				URL: config.Conf.Application.PublicURL + ":" + strconv.Itoa(config.Conf.Application.Port) + "/api/v1",
+				URL: "/api/v1",
 			},
 		},
 	}
