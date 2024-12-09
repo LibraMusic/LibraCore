@@ -8,6 +8,8 @@ data/
 # Binaries for programs and plugins
 dist/
 completions/
+source_scripts/
+data/
 libra.db
 libra
 libra-*
