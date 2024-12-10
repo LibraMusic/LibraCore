@@ -27,7 +27,6 @@ var serverCmd = &cobra.Command{
 	Use:     "server",
 	Aliases: []string{"start"},
 	Short:   "Start the server",
-	Long:    `Start the server`,
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.SetupLogger(config.Conf.Logs.LogFormat, config.Conf.Logs.LogLevel)
 
