@@ -154,7 +154,8 @@ var serverCmd = &cobra.Command{
 			Title:       "Libra API",
 		}))
 
-		v1.Get("/playables", middleware.GlobalJWTProtected, routes.V1Playables)
+		v1.Get("/playables", routes.V1Playables)
+		routes.CreateFeedRoutes(v1, "/playables")
 		v1.Get("/search", middleware.GlobalJWTProtected, routes.V1Search)
 
 		// START TO REFRACTOR
