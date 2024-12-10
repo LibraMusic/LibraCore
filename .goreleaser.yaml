@@ -9,6 +9,7 @@ before:
   hooks:
     - go mod tidy
     - ./scripts/completions.sh
+    - ./scripts/manpages.sh
 
 report_sizes: true
 
@@ -304,6 +305,11 @@ archives:
           owner: root
           group: root
           mtime: "{{ .CommitDate }}"
+      - src: manpages/*
+        info:
+          owner: root
+          group: root
+          mtime: "{{ .CommitDate }}"
 
 nfpms:
   - package_name: libra
@@ -334,6 +340,10 @@ nfpms:
           mode: 0644
       - src: ./completions/libra.zsh
         dst: /usr/share/zsh/vendor-completions/_libra
+        file_info:
+          mode: 0644
+      - src: ./manpages/libra.1.gz
+        dst: /usr/share/man/man1/libra.1.gz
         file_info:
           mode: 0644
       - src: ./LICENSE

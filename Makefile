@@ -24,3 +24,4 @@ clean:
 	rm -f ${BINARY_NAME}-*
 	rm -rf dist/
 	rm -rf completions/
+	rm -rf manpages/
