@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/go-viper/mapstructure/v2 v2.2.1
-	github.com/goccy/go-json v0.10.3
+	github.com/goccy/go-json v0.10.4
 	github.com/goccy/go-yaml v1.15.8
 	github.com/gofiber/contrib/jwt v1.0.10
 	github.com/gofiber/contrib/swagger v1.2.0
@@ -25,7 +25,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
 	github.com/u2takey/ffmpeg-go v0.5.0
-	golang.org/x/crypto v0.30.0
+	golang.org/x/crypto v0.31.0
 )
 
 require (
