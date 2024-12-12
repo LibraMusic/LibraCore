@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/go-viper/mapstructure/v2 v2.2.1
-	github.com/goccy/go-json v0.10.3
+	github.com/goccy/go-json v0.10.4
 	github.com/goccy/go-yaml v1.15.8
 	github.com/gofiber/contrib/jwt v1.0.10
 	github.com/gofiber/contrib/swagger v1.2.0
