@@ -1,7 +1,6 @@
 name: Bug Report
 description: Report a bug
 labels: ["bug"]
-title: "bug: "
 body:
   - type: markdown
     attributes:
@@ -21,12 +20,11 @@ body:
       description: Please provide a minimal example to reproduce the issue
     validations:
       required: true
-  - type: textarea
+  - type: input
     id: libra-version
     attributes:
       label: LibraCore version
       description: "`libra --version` output"
-      render: bash
     validations:
       required: true
   - type: checkboxes
