@@ -10,6 +10,11 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    groups:
+      prod-deps:
+        dependency-type: "production"
+      dev-deps:
+        dependency-type: "development"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -20,6 +25,10 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    groups:
+      actions-deps:
+        patterns:
+          - "*"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -30,4 +39,7 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-
+    groups:
+      docker-deps:
+        patterns:
+          - "*"
