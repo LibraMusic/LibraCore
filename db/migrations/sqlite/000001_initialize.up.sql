@@ -1,3 +1,5 @@
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS tracks (
   id TEXT PRIMARY KEY,
   user_id TEXT,
@@ -117,3 +119,5 @@ CREATE TABLE IF NOT EXISTS blacklisted_tokens (
   token TEXT PRIMARY KEY,
   expiration TEXT
 );
+
+COMMIT;
