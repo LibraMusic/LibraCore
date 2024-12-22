@@ -11,14 +11,14 @@ require (
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/goccy/go-json v0.10.4
-	github.com/goccy/go-yaml v1.15.11
+	github.com/goccy/go-yaml v1.15.13
 	github.com/gofiber/contrib/jwt v1.0.10
 	github.com/gofiber/contrib/swagger v1.2.0
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/gorilla/feeds v1.2.0
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.7.2
 	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
