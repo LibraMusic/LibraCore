@@ -4,7 +4,11 @@ on: # yamllint disable-line rule:truthy
   push: null
   pull_request: null
 
-permissions: {}
+permissions:
+  # To write linting fixes
+  contents: write
+  # To write Super-linter status checks
+  statuses: write
 
 jobs:
   build:
@@ -36,3 +40,10 @@ jobs:
           FIX_PYTHON_RUFF: true
           FIX_SHELL_SHFMT: true
           FIX_SQLFLUFF: true
+
+      - name: Commit and push linting fixes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: fix linting issues"
+          commit_user_name: super-linter
+          commit_user_email: super-linter@super-linter.dev
