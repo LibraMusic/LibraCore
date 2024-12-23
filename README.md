@@ -2,7 +2,7 @@
 
 Libra is a new, open, and extensible music service. Libra does what you want, how you want.
 
-The current goal is to have LibraCore at a releasable state by the end of 2024.
+The current goal is to have LibraCore at a pre-releasable state by the end of 2024.
 
 ## Setup Steps
 
