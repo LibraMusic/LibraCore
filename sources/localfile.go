@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
@@ -31,7 +32,7 @@ func (s *LocalFileSource) GetName() string {
 	return "Local File (" + s.Path + ")"
 }
 
-func (*LocalFileSource) GetVersion() types.Version {
+func (*LocalFileSource) GetVersion() *semver.Version {
 	return utils.LibraVersion
 }
 

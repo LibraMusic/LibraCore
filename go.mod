@@ -5,6 +5,7 @@ go 1.22.0
 toolchain go1.23.2
 
 require (
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/adrg/xdg v0.5.3
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/charmbracelet/log v0.4.0

@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
 	"github.com/LibraMusic/LibraCore/types"
@@ -22,7 +23,7 @@ func (*SpotifySource) GetName() string {
 	return "Spotify"
 }
 
-func (*SpotifySource) GetVersion() types.Version {
+func (*SpotifySource) GetVersion() *semver.Version {
 	return utils.LibraVersion
 }
 
