@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/goccy/go-json"
 
 	"github.com/LibraMusic/LibraCore/config"
@@ -60,7 +61,7 @@ func (*YouTubeSource) GetName() string {
 	return "YouTube"
 }
 
-func (*YouTubeSource) GetVersion() types.Version {
+func (*YouTubeSource) GetVersion() *semver.Version {
 	return utils.LibraVersion
 }
 

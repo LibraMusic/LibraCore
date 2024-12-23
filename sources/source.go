@@ -3,13 +3,15 @@ package sources
 import (
 	"slices"
 
+	"github.com/Masterminds/semver/v3"
+
 	"github.com/LibraMusic/LibraCore/types"
 )
 
 type Source interface {
 	GetID() string
 	GetName() string
-	GetVersion() types.Version
+	GetVersion() *semver.Version
 	GetSourceTypes() []string
 	GetMediaTypes() []string
 	Search(query string, limit int, page int, filters map[string]interface{}) ([]types.SourcePlayable, error)

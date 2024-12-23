@@ -1,6 +1,7 @@
 package sources
 
 import (
+	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
 	"github.com/LibraMusic/LibraCore/types"
@@ -29,7 +30,7 @@ func (*WebSource) GetName() string {
 	return "Web"
 }
 
-func (*WebSource) GetVersion() types.Version {
+func (*WebSource) GetVersion() *semver.Version {
 	log.Error("unimplemented")
 	return utils.LibraVersion
 }

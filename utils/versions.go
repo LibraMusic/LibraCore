@@ -5,12 +5,12 @@ import (
 	"runtime/debug"
 	"sync"
 
-	"github.com/LibraMusic/LibraCore/types"
+	"github.com/Masterminds/semver/v3"
 )
 
 var (
 	rawVersion      = "0.1.0-DEV"
-	LibraVersion, _ = types.ParseVersion(rawVersion)
+	LibraVersion, _ = semver.NewVersion(rawVersion)
 )
 
 func GetVersionInfo() string {
