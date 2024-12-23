@@ -14,9 +14,3 @@ name = "python"
 
 [[analyzers]]
 name = "sql"
-
-[[transformers]]
-name = "gofmt"
-
-[[transformers]]
-name = "ruff"
