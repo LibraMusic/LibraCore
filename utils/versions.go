@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	rawVersion      = "0.1.0-dev"
+	rawVersion      = "0.1.0-DEV"
 	LibraVersion, _ = types.ParseVersion(rawVersion)
 )
 

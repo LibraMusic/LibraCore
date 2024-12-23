@@ -30,7 +30,7 @@ builds:
   #     - arm64
   #   ldflags:
   #     - -s -w
-  #     - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-dev{{ else }}{{ .Version }}{{ end }}
+  #     - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
   #   flags:
   #     - -trimpath
   #     - -buildmode=pie
@@ -61,7 +61,7 @@ builds:
       - "7"
     ldflags:
       - -s -w
-      - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-dev{{ else }}{{ .Version }}{{ end }}
+      - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
     flags:
       - -trimpath
     env:
@@ -91,7 +91,7 @@ builds:
       - "386"
     ldflags:
       - -s -w
-      - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-dev{{ else }}{{ .Version }}{{ end }}
+      - -X github.com/LibraMusic/LibraCore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
     flags:
       - -trimpath
     env:

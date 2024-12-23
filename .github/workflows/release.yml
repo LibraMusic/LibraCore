@@ -94,7 +94,7 @@ jobs:
           # Find the latest version tag
           LATEST_TAG=$(git tag | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z]+[0-9]*)?$' | sort -V | tail -n 1)
           if [ -z "$LATEST_TAG" ]; then
-            LATEST_TAG="v0.1.0-dev"
+            LATEST_TAG="v0.1.0-DEV"
           fi
           echo "Latest version tag is $LATEST_TAG"
 
