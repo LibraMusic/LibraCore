@@ -12,6 +12,7 @@ Before anything else, you need to set up the database. Install one of the follow
 <summary>SQLite</summary>
 
 No additional steps are needed to use SQLite.
+
 </details>
 
 <details>
@@ -24,13 +25,14 @@ To create the PostgreSQL database, run the following commands:
 sudo -u postgres createuser -P libra
 sudo -u postgres createdb -O libra -E UTF-8 libra
 ```
+
 </details>
 
 Dependencies:
 
-- `SQLite` or `PostgreSQL`
-- `yt-dlp` and `ytmusicapi` for the YouTube source
-- `FFmpeg`
+-   `SQLite` or `PostgreSQL`
+-   `yt-dlp` and `ytmusicapi` for the YouTube source
+-   `FFmpeg`
 
 ## Development
 
