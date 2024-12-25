@@ -132,7 +132,12 @@ func Logout(c *fiber.Ctx) error {
 			"message": err.Error(),
 		})
 	}
-	db.DB.BlacklistToken(user.Raw, expiration.Time)
+	err = db.DB.BlacklistToken(user.Raw, expiration.Time)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
 	c.Locals("user", nil)
 	return c.SendStatus(fiber.StatusOK)
 }
