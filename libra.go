@@ -4,13 +4,18 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/charmbracelet/log"
+
 	"github.com/LibraMusic/LibraCore/cmds"
 )
 
 func main() {
 	executablePath, _ := os.Executable()
 	executablePath, _ = filepath.EvalSymlinks(executablePath)
-	os.Chdir(filepath.Dir(executablePath))
+	_ = os.Chdir(filepath.Dir(executablePath))
 
-	cmds.Execute()
+	err := cmds.Execute()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

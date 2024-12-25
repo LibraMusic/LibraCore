@@ -231,7 +231,7 @@ func StoreContent(contentType string, playableID string, data []byte, fileExtens
 		return
 	}
 	path = filepath.Join(path, ContentPath, contentType+"s")
-	os.MkdirAll(path, os.ModePerm)
+	_ = os.MkdirAll(path, os.ModePerm)
 	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0644)
 	if err != nil {
 		log.Error("Error writing file", "err", err)
@@ -245,7 +245,7 @@ func StoreCover(contentType string, playableID string, data []byte, fileExtensio
 		return
 	}
 	path = filepath.Join(path, CoversPath, contentType+"s")
-	os.MkdirAll(path, os.ModePerm)
+	_ = os.MkdirAll(path, os.ModePerm)
 	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0644)
 	if err != nil {
 		log.Error("Error writing file", "err", err)

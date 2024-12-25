@@ -17,22 +17,22 @@ var rootCmd = &cobra.Command{
 	Long:  `Libra is a new, open, and extensible music service. Libra does what you want, how you want.`,
 }
 
-func Execute() {
-	rootCmd.Execute()
+func Execute() error {
+	return rootCmd.Execute()
 }
 
 func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&utils.DataDir, "dataDir", "", "persistent data directory (usually for containers)")
-	rootCmd.MarkFlagDirname("dataDir")
+	_ = rootCmd.MarkFlagDirname("dataDir")
 	if utils.DataDir == "" {
 		utils.DataDir = os.Getenv("LIBRA_DATA_DIR")
 	}
 
 	rootCmd.PersistentFlags().String("logLevel", "", "log level (debug|info|warn|error)")
-	rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
-	viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
+	_ = rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
+	_ = viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
 }
 
 func initConfig() {
