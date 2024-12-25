@@ -76,8 +76,8 @@ var serverCmd = &cobra.Command{
 		a, b := s.Search("Lord of Ashes", 5, 0, map[string]interface{}{})
 		fmt.Println(a)
 		fmt.Println(b)
-		//fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=orimodrogvd"))
-		//fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=uGxcco8Uq6A"))
+		// fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=orimodrogvd"))
+		// fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=uGxcco8Uq6A"))
 		// Test code above (TODO: Remove)
 
 		libraService := fiber.Map{

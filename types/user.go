@@ -64,5 +64,4 @@ func (User) IsTemporary() bool {
 	return false
 }
 
-type AdminPermissions struct {
-}
+type AdminPermissions struct{}

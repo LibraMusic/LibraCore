@@ -8,8 +8,7 @@ import (
 	"github.com/LibraMusic/LibraCore/utils"
 )
 
-type SpotifySource struct {
-}
+type SpotifySource struct{}
 
 func InitSpotifySource() (*SpotifySource, error) {
 	return &SpotifySource{}, nil

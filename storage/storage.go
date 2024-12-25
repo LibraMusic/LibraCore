@@ -16,8 +16,10 @@ import (
 	"github.com/LibraMusic/LibraCore/utils"
 )
 
-const ContentPath = "content"
-const CoversPath = "covers"
+const (
+	ContentPath = "content"
+	CoversPath  = "covers"
+)
 
 func getStoragePath() (string, error) {
 	path := config.Conf.Storage.Location
@@ -142,7 +144,6 @@ func getPlayables(contentFiles []string) []types.SourcePlayable {
 	videos, err := db.DB.GetAllVideos()
 	if err != nil {
 		log.Error("Error getting all videos from database", "err", err)
-
 	}
 	for _, video := range videos {
 		if slices.Contains(contentFiles, "video_"+video.GetID()) {
@@ -232,7 +233,7 @@ func StoreContent(contentType string, playableID string, data []byte, fileExtens
 	}
 	path = filepath.Join(path, ContentPath, contentType+"s")
 	_ = os.MkdirAll(path, os.ModePerm)
-	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0644)
+	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0o644)
 	if err != nil {
 		log.Error("Error writing file", "err", err)
 	}
@@ -246,7 +247,7 @@ func StoreCover(contentType string, playableID string, data []byte, fileExtensio
 	}
 	path = filepath.Join(path, CoversPath, contentType+"s")
 	_ = os.MkdirAll(path, os.ModePerm)
-	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0644)
+	err = os.WriteFile(filepath.Join(path, playableID+fileExtension), data, 0o644)
 	if err != nil {
 		log.Error("Error writing file", "err", err)
 	}
