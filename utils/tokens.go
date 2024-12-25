@@ -11,9 +11,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var RSAPrivateKey *rsa.PrivateKey
-var ECDSAPrivateKey *ecdsa.PrivateKey
-var EdDSAPrivateKey ed25519.PrivateKey
+var (
+	RSAPrivateKey   *rsa.PrivateKey
+	ECDSAPrivateKey *ecdsa.PrivateKey
+	EdDSAPrivateKey ed25519.PrivateKey
+)
 
 func GetCorrectSigningMethod(signingMethod string) string {
 	signingMethods := []string{"HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512", "EdDSA"}

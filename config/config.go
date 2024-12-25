@@ -147,7 +147,7 @@ func mergeConfig() error {
 			viper.SetConfigFile(configFilePath)
 			err = viper.MergeInConfig()
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok || os.IsNotExist(err) {
-				if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0644); err != nil {
+				if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0o644); err != nil {
 					log.Warn("Failed to write default config", "err", err)
 				}
 			}

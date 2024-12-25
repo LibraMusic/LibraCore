@@ -20,8 +20,7 @@ import (
 //go:embed scripts/youtube.py
 var youtubeScript string
 
-type YouTubeSource struct {
-}
+type YouTubeSource struct{}
 
 func InitYouTubeSource() (*YouTubeSource, error) {
 	youtubeLocation := getYouTubeScriptPath()
@@ -32,7 +31,7 @@ func InitYouTubeSource() (*YouTubeSource, error) {
 			return &YouTubeSource{}, err
 		}
 
-		err = os.WriteFile(youtubeLocation, []byte(youtubeScript), 0644)
+		err = os.WriteFile(youtubeLocation, []byte(youtubeScript), 0o644)
 		if err != nil {
 			return &YouTubeSource{}, err
 		}
