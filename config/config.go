@@ -143,7 +143,7 @@ func mergeConfig() error {
 		}
 
 		if configFilePath != "" {
-			os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
+			_ = os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
 			viper.SetConfigFile(configFilePath)
 			err = viper.MergeInConfig()
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok || os.IsNotExist(err) {
