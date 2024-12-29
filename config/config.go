@@ -40,6 +40,7 @@ type AuthConfig struct {
 	GlobalAPIRoutesRequireAuth bool          `mapstructure:"global_api_routes_require_auth"`
 	UserAPIRoutesRequireAuth   bool          `mapstructure:"user_api_routes_require_auth"`
 	UserAPIRequireSameUseUser  bool          `mapstructure:"user_api_require_same_user"`
+	DisableAccountCreation     bool          `mapstructure:"disable_account_creation"`
 }
 
 type GeneralConfig struct {
