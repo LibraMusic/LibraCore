@@ -33,6 +33,12 @@ func Register(c *fiber.Ctx) error {
 		})
 	}
 
+	if config.Conf.Auth.DisableAccountCreation {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"message": "account creation is disabled",
+		})
+	}
+
 	if IsUsernameReserved(req.Username) {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "username is reserved",
