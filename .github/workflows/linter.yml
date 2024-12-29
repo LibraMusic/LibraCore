@@ -31,7 +31,7 @@ jobs:
 
       # Configuration can be set in .github/linters/ruff.toml
       # as long as `--config .github/linters/ruff.toml` is added to the args in both Ruff steps
-      - uses: astral-sh/ruff-action@v2
+      - uses: astral-sh/ruff-action@v3
         with:
           args: check --fix
       - run: ruff format
