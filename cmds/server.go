@@ -208,7 +208,7 @@ var serverCmd = &cobra.Command{
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-		_ = <-c
+		<-c
 		log.Info("Shutting down...")
 		_ = app.Shutdown()
 		_ = db.DB.Close()
