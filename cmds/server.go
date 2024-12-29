@@ -3,8 +3,10 @@ package cmds
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
@@ -197,9 +199,20 @@ var serverCmd = &cobra.Command{
 			return c.Send(v1SpecYAML)
 		})
 
-		if err = app.Listen(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil {
-			log.Fatal("Error starting server", "err", err)
-		}
+		go func() {
+			if err = app.Listen(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil {
+				log.Fatal("Error starting server", "err", err)
+			}
+		}()
+
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+		_ = <-c
+		log.Info("Shutting down...")
+		_ = app.Shutdown()
+		_ = db.DB.Close()
+		log.Info("Successfully shut down")
 	},
 }
 
