@@ -32,11 +32,15 @@ type ApplicationConfig struct {
 	MediaTypes []string `mapstructure:"media_types"`
 }
 
+type JWTAuthConfig struct {
+	SigningMethod          string        `mapstructure:"signing_method"`
+	SigningKey             string        `mapstructure:"signing_key"`
+	RefreshTokenExpiration time.Duration `mapstructure:"refresh_token_expiration"`
+	AccessTokenExpiration  time.Duration `mapstructure:"access_token_expiration"`
+}
+
 type AuthConfig struct {
-	JWTSigningMethod           string        `mapstructure:"jwt_signing_method"`
-	JWTSigningKey              string        `mapstructure:"jwt_signing_key"`
-	JWTRefreshTokenExpiration  time.Duration `mapstructure:"jwt_refresh_token_expiration"`
-	JWTAccessTokenExpiration   time.Duration `mapstructure:"jwt_access_token_expiration"`
+	JWT                        JWTAuthConfig `mapstructure:"jwt"`
 	GlobalAPIRoutesRequireAuth bool          `mapstructure:"global_api_routes_require_auth"`
 	UserAPIRoutesRequireAuth   bool          `mapstructure:"user_api_routes_require_auth"`
 	UserAPIRequireSameUseUser  bool          `mapstructure:"user_api_require_same_user"`

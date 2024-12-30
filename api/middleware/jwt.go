@@ -12,9 +12,9 @@ import (
 
 func JWTProtected(c *fiber.Ctx) error {
 	var key interface{}
-	switch config.Conf.Auth.JWTSigningMethod {
+	switch config.Conf.Auth.JWT.SigningMethod {
 	case "HS256", "HS384", "HS512":
-		key = []byte(config.Conf.Auth.JWTSigningKey)
+		key = []byte(config.Conf.Auth.JWT.SigningKey)
 	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
 		key = utils.RSAPrivateKey.Public()
 	case "ES256", "ES384", "ES512":
@@ -25,7 +25,7 @@ func JWTProtected(c *fiber.Ctx) error {
 
 	return jwtware.New(jwtware.Config{
 		SigningKey: jwtware.SigningKey{
-			JWTAlg: config.Conf.Auth.JWTSigningMethod,
+			JWTAlg: config.Conf.Auth.JWT.SigningMethod,
 			Key:    key,
 		},
 		ContextKey: "jwt",

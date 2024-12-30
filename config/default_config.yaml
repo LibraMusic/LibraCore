@@ -8,10 +8,11 @@ application:
     - video
     - playlist
 auth:
-  jwt_signing_method: HS256 # Supported algorithms: HS256, HS384, HS512, RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, EdDSA
-  jwt_signing_key: secret # The secret key used to sign JWTs. In algorithms that use public/private keys, this should be the private key. Change this to a secure value. File paths are also supported with the format "file:<path>".
-  jwt_refresh_token_expiration: 30d # Default is 30 days.
-  jwt_access_token_expiration: 15m # Default is 15 minutes.
+  jwt:
+    signing_method: HS256 # Supported algorithms: HS256, HS384, HS512, RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, EdDSA
+    signing_key: secret # The secret key used to sign JWTs. In algorithms that use public/private keys, this should be the private key. Change this to a secure value. File paths are also supported with the format "file:<path>".
+    refresh_token_expiration: 30d # Default is 30 days.
+    access_token_expiration: 15m # Default is 15 minutes.
   global_api_routes_require_auth: true # Determines if "global" API routes (e.g., /api/v1/tracks) require authentication.
   user_api_routes_require_auth: true # Determines if "user" API routes (e.g., /api/v1/tracks/:id) require authentication.
   user_api_require_same_user: false # Determines if "user" API routes require that the authenticated user is the same as the user in the route. Disabled by default because enabling it disables song sharing and other interactions between users.
