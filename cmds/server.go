@@ -32,14 +32,14 @@ var serverCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.SetupLogger(config.Conf.Logs.LogFormat, config.Conf.Logs.LogLevel)
 
-		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWTSigningMethod)
+		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
-			log.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWTSigningMethod)
+			log.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWT.SigningMethod)
 		}
-		config.Conf.Auth.JWTSigningMethod = signingMethod
+		config.Conf.Auth.JWT.SigningMethod = signingMethod
 
-		if strings.HasPrefix(config.Conf.Auth.JWTSigningKey, "file:") {
-			keyPath := strings.TrimPrefix(config.Conf.Auth.JWTSigningKey, "file:")
+		if strings.HasPrefix(config.Conf.Auth.JWT.SigningKey, "file:") {
+			keyPath := strings.TrimPrefix(config.Conf.Auth.JWT.SigningKey, "file:")
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
 				log.Fatal("Error getting absolute path of JWT signing key file", "err", err)
@@ -48,10 +48,10 @@ var serverCmd = &cobra.Command{
 			if err != nil {
 				log.Fatal("Error reading JWT signing key file", "err", err)
 			}
-			config.Conf.Auth.JWTSigningKey = string(keyData)
+			config.Conf.Auth.JWT.SigningKey = string(keyData)
 		}
 
-		err := utils.LoadPrivateKey(config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+		err := utils.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
 		if err != nil {
 			log.Fatal("Error loading private key", "err", err)
 		}

@@ -86,7 +86,7 @@ func Register(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
@@ -117,7 +117,7 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWTAccessTokenExpiration, config.Conf.Auth.JWTSigningMethod, config.Conf.Auth.JWTSigningKey)
+	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
