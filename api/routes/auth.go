@@ -26,16 +26,16 @@ type loginRequest struct {
 }
 
 func Register(c *fiber.Ctx) error {
+	if config.Conf.Auth.DisableAccountCreation {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "account creation is disabled",
+		})
+	}
+
 	var req registerRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
-		})
-	}
-
-	if config.Conf.Auth.DisableAccountCreation {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": "account creation is disabled",
 		})
 	}
 
@@ -53,7 +53,7 @@ func Register(c *fiber.Ctx) error {
 		})
 	}
 	if usernameExists {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 			"message": "username already exists",
 		})
 	}
@@ -67,7 +67,7 @@ func Register(c *fiber.Ctx) error {
 			})
 		}
 		if emailExists {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 				"message": "email already exists",
 			})
 		}
@@ -81,7 +81,7 @@ func Register(c *fiber.Ctx) error {
 	}
 	err = db.DB.CreateUser(user)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
@@ -107,7 +107,7 @@ func Login(c *fiber.Ctx) error {
 	}
 	user, err := db.DB.GetUserByUsername(req.Username)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": "user not found",
 		})
 	}
