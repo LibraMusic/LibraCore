@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/charmbracelet/log"
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
 
 	"github.com/LibraMusic/LibraCore/db"
 	"github.com/LibraMusic/LibraCore/storage"
@@ -10,176 +12,171 @@ import (
 
 // mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 
-func V1Playables(c *fiber.Ctx) error {
+func V1Playables(c echo.Context) error {
 	playables, err := db.GetAllPlayables()
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
 	}
-	return c.JSON(fiber.Map{"playables": playables})
+	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
 }
 
-func V1PlayablesUser(c *fiber.Ctx) error {
-	userID := c.Params("id")
+func V1PlayablesUser(c echo.Context) error {
+	userID := c.Param("id")
 	playables, err := db.GetPlayables(userID)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
 	}
-	return c.JSON(fiber.Map{"playables": playables})
+	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
 }
 
-func V1Search(c *fiber.Ctx) error {
+func V1Search(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
 // START TO REFACTOR
 
-func V1Track(c *fiber.Ctx) error {
-	trackID := c.Params("id")
+func V1Track(c echo.Context) error {
+	trackID := c.Param("id")
 	track, err := db.DB.GetTrack(trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 	}
-	return c.JSON(track)
+	return c.JSON(http.StatusOK, track)
 }
 
-func V1TrackIsStored(c *fiber.Ctx) error {
-	trackID := c.Params("id")
-	return c.JSON(fiber.Map{"stored": storage.IsContentStored("track", trackID)})
+func V1TrackIsStored(c echo.Context) error {
+	trackID := c.Param("id")
+	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored("track", trackID)})
 }
 
-func V1TrackStream(c *fiber.Ctx) error {
+func V1TrackStream(c echo.Context) error {
 	log.Error("unimplemented")
-	// https://pcpratheesh.medium.com/streaming-video-with-golang-fiber-a-practical-tutorial-a2170584ae9f
-	// https://pkg.go.dev/bytes#NewReader
-	// https://pkg.go.dev/io#Copy
-	// https://pkg.go.dev/io#CopyN
-	// c.Response().BodyWriter()
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1TrackCover(c *fiber.Ctx) error {
+func V1TrackCover(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1TrackLyrics(c *fiber.Ctx) error {
-	trackID := c.Params("id")
+func V1TrackLyrics(c echo.Context) error {
+	trackID := c.Param("id")
 	track, err := db.DB.GetTrack(trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 	}
-	return c.JSON(track.Lyrics)
+	return c.JSON(http.StatusOK, track.Lyrics)
 }
 
-func V1TrackLyricsLang(c *fiber.Ctx) error {
-	trackID := c.Params("id")
+func V1TrackLyricsLang(c echo.Context) error {
+	trackID := c.Param("id")
 	track, err := db.DB.GetTrack(trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 	}
 
-	lang := c.Params("lang")
+	lang := c.Param("lang")
 	if lyrics, ok := track.Lyrics[lang]; ok {
-		return c.SendString(lyrics)
+		return c.String(http.StatusOK, lyrics)
 	}
-	return c.SendStatus(fiber.StatusNotFound)
+	return c.NoContent(http.StatusNotFound)
 }
 
-func V1Album(c *fiber.Ctx) error {
+func V1Album(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1AlbumCover(c *fiber.Ctx) error {
+func V1AlbumCover(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1AlbumTracks(c *fiber.Ctx) error {
+func V1AlbumTracks(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1Video(c *fiber.Ctx) error {
-	videoID := c.Params("id")
+func V1Video(c echo.Context) error {
+	videoID := c.Param("id")
 	video, err := db.DB.GetVideo(videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 	}
-	return c.JSON(video)
+	return c.JSON(http.StatusOK, video)
 }
 
-func V1VideoIsStored(c *fiber.Ctx) error {
-	videoID := c.Params("id")
-	return c.JSON(fiber.Map{"stored": storage.IsContentStored("video", videoID)})
+func V1VideoIsStored(c echo.Context) error {
+	videoID := c.Param("id")
+	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored("video", videoID)})
 }
 
-func V1VideoStream(c *fiber.Ctx) error {
+func V1VideoStream(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1VideoCover(c *fiber.Ctx) error {
+func V1VideoCover(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1VideoSubtitles(c *fiber.Ctx) error {
-	videoID := c.Params("id")
+func V1VideoSubtitles(c echo.Context) error {
+	videoID := c.Param("id")
 	video, err := db.DB.GetVideo(videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 	}
-	return c.JSON(video.Subtitles)
+	return c.JSON(http.StatusOK, video.Subtitles)
 }
 
-func V1VideoSubtitlesLang(c *fiber.Ctx) error {
-	videoID := c.Params("id")
+func V1VideoSubtitlesLang(c echo.Context) error {
+	videoID := c.Param("id")
 	video, err := db.DB.GetVideo(videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 	}
-	lang := c.Params("lang")
+	lang := c.Param("lang")
 	if subtitles, ok := video.Subtitles[lang]; ok {
-		return c.SendString(subtitles)
+		return c.String(http.StatusOK, subtitles)
 	}
-	return c.SendStatus(fiber.StatusNotFound)
+	return c.NoContent(http.StatusNotFound)
 }
 
-func V1Playlist(c *fiber.Ctx) error {
+func V1Playlist(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1PlaylistCover(c *fiber.Ctx) error {
+func V1PlaylistCover(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1PlaylistTracks(c *fiber.Ctx) error {
+func V1PlaylistTracks(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1Artist(c *fiber.Ctx) error {
+func V1Artist(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1ArtistCover(c *fiber.Ctx) error {
+func V1ArtistCover(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1ArtistAlbums(c *fiber.Ctx) error {
+func V1ArtistAlbums(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
-func V1ArtistTracks(c *fiber.Ctx) error {
+func V1ArtistTracks(c echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(fiber.Map{})
+	return c.JSON(http.StatusOK, echo.Map{})
 }
 
 // END TO REFACTOR

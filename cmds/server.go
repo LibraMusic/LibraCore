@@ -1,18 +1,19 @@
 package cmds
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
-	"syscall"
+	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	"github.com/goccy/go-yaml"
-	"github.com/gofiber/contrib/swagger"
-	"github.com/gofiber/fiber/v2"
+	"github.com/labstack/echo/v4"
 	"github.com/spf13/cobra"
 
 	"github.com/LibraMusic/LibraCore/api"
@@ -51,18 +52,15 @@ var serverCmd = &cobra.Command{
 			config.Conf.Auth.JWT.SigningKey = string(keyData)
 		}
 
-		err := utils.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
-		if err != nil {
+		if err := utils.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey); err != nil {
 			log.Fatal("Error loading private key", "err", err)
 		}
 
-		err = db.ConnectDatabase()
-		if err != nil {
+		if err := db.ConnectDatabase(); err != nil {
 			log.Fatal("Error connecting to database", "err", err)
 		}
 
-		err = db.DB.CleanExpiredTokens()
-		if err != nil {
+		if err := db.DB.CleanExpiredTokens(); err != nil {
 			log.Error("Error cleaning expired tokens", "err", err)
 		}
 
@@ -82,7 +80,7 @@ var serverCmd = &cobra.Command{
 		// fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=uGxcco8Uq6A"))
 		// Test code above (TODO: Remove)
 
-		libraService := fiber.Map{
+		libraService := echo.Map{
 			"id":           config.Conf.Application.SourceID,
 			"name":         config.Conf.Application.SourceName,
 			"version":      utils.LibraVersion.String(),
@@ -90,7 +88,7 @@ var serverCmd = &cobra.Command{
 			"media_types":  config.Conf.Application.MediaTypes,
 		}
 
-		libraMeta := fiber.Map{
+		libraMeta := echo.Map{
 			"version":  utils.LibraVersion.String(),
 			"database": db.DB.EngineName(),
 		}
@@ -109,109 +107,112 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
 		}
 
-		app := fiber.New(fiber.Config{
-			JSONEncoder: json.Marshal,
-			JSONDecoder: json.Unmarshal,
-		})
+		e := echo.New()
+		e.JSONSerializer = &api.GoJSONSerializer{}
 
-		app.Get("/", func(c *fiber.Ctx) error {
-			offer := c.Accepts(fiber.MIMEApplicationJSON, fiber.MIMETextHTML)
-			if offer == fiber.MIMEApplicationJSON {
-				return c.JSON(&libraService)
-			} else if offer == fiber.MIMETextHTML {
+		e.GET("/", func(c echo.Context) error {
+			accept := c.Request().Header.Get(echo.HeaderAccept)
+			if accept == echo.MIMEApplicationJSON {
+				return c.JSON(http.StatusOK, &libraService)
+			} else if accept == echo.MIMETextHTML {
 				// TODO: Implement
-				return c.SendString("<h1>Libra</h1>")
+				return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 			}
 
-			return c.SendStatus(fiber.StatusNotAcceptable)
+			return c.NoContent(http.StatusNotAcceptable)
 		})
 
-		app.Get("/meta", func(c *fiber.Ctx) error {
-			return c.JSON(&libraMeta)
+		e.GET("/meta", func(c echo.Context) error {
+			return c.JSON(http.StatusOK, &libraMeta)
 		})
 
-		app.Get("/service", func(c *fiber.Ctx) error {
-			return c.JSON(&libraService)
+		e.GET("/service", func(c echo.Context) error {
+			return c.JSON(http.StatusOK, &libraService)
 		})
 
-		app.Get("/app", func(c *fiber.Ctx) error {
+		e.GET("/app", func(c echo.Context) error {
 			// TODO: Implement
-			return c.SendString("<h1>Libra</h1>")
+			return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 		})
 
-		api := app.Group("/api")
+		api := e.Group("/api")
 
 		auth := api.Group("/auth")
-		auth.Post("/register", routes.Register)
-		auth.Post("/login", routes.Login)
-		auth.Post("/logout", middleware.JWTProtected, routes.Logout)
+		auth.POST("/register", routes.Register)
+		auth.POST("/login", routes.Login)
+		auth.POST("/logout", routes.Logout, middleware.JWTProtected)
 
 		v1 := api.Group("/v1")
 
-		v1.Use(swagger.New(swagger.Config{
+		/*v1.Use(swagger.New(swagger.Config{
 			BasePath:    "/api/v1/",
 			FilePath:    "/openapi.json",
 			FileContent: v1SpecJSON,
 			Path:        "docs",
 			Title:       "Libra API",
-		}))
+		}))*/
 
-		v1.Get("/playables", routes.V1Playables)
+		v1.GET("/playables", routes.V1Playables)
 		routes.CreateFeedRoutes(v1, "/playables")
-		v1.Get("/search", middleware.GlobalJWTProtected, routes.V1Search)
+		v1.GET("/search", routes.V1Search, middleware.GlobalJWTProtected)
 
 		// START TO REFRACTOR
-		v1.Get("/track/:id", middleware.GlobalJWTProtected, routes.V1Track)
-		v1.Get("/track/:id/is_stored", middleware.GlobalJWTProtected, routes.V1TrackIsStored)
-		v1.Get("/track/:id/stream", middleware.GlobalJWTProtected, routes.V1TrackStream)
-		v1.Get("/track/:id/cover", middleware.GlobalJWTProtected, routes.V1TrackCover)
-		v1.Get("/track/:id/lyrics", middleware.GlobalJWTProtected, routes.V1TrackLyrics)
-		v1.Get("/track/:id/lyrics/:lang", middleware.GlobalJWTProtected, routes.V1TrackLyricsLang)
+		v1.GET("/track/:id", routes.V1Track, middleware.GlobalJWTProtected)
+		v1.GET("/track/:id/is_stored", routes.V1TrackIsStored, middleware.GlobalJWTProtected)
+		v1.GET("/track/:id/stream", routes.V1TrackStream, middleware.GlobalJWTProtected)
+		v1.GET("/track/:id/cover", routes.V1TrackCover, middleware.GlobalJWTProtected)
+		v1.GET("/track/:id/lyrics", routes.V1TrackLyrics, middleware.GlobalJWTProtected)
+		v1.GET("/track/:id/lyrics/:lang", routes.V1TrackLyricsLang, middleware.GlobalJWTProtected)
 
-		v1.Get("/album/:id", middleware.GlobalJWTProtected, routes.V1Album)
-		v1.Get("/album/:id/cover", middleware.GlobalJWTProtected, routes.V1AlbumCover)
-		v1.Get("/album/:id/tracks", middleware.GlobalJWTProtected, routes.V1AlbumTracks)
+		v1.GET("/album/:id", routes.V1Album, middleware.GlobalJWTProtected)
+		v1.GET("/album/:id/cover", routes.V1AlbumCover, middleware.GlobalJWTProtected)
+		v1.GET("/album/:id/tracks", routes.V1AlbumTracks, middleware.GlobalJWTProtected)
 
-		v1.Get("/video/:id", middleware.GlobalJWTProtected, routes.V1Video)
-		v1.Get("/video/:id/is_stored", middleware.GlobalJWTProtected, routes.V1VideoIsStored)
-		v1.Get("/video/:id/stream", middleware.GlobalJWTProtected, routes.V1VideoStream)
-		v1.Get("/video/:id/cover", middleware.GlobalJWTProtected, routes.V1VideoCover)
-		v1.Get("/video/:id/subtitles", middleware.GlobalJWTProtected, routes.V1VideoSubtitles)
-		v1.Get("/video/:id/subtitles/:lang", middleware.GlobalJWTProtected, routes.V1VideoSubtitlesLang)
-		v1.Get("/video/:id/lyrics", middleware.GlobalJWTProtected, routes.V1VideoSubtitles)
-		v1.Get("/video/:id/lyrics/:lang", middleware.GlobalJWTProtected, routes.V1VideoSubtitlesLang)
+		v1.GET("/video/:id", routes.V1Video, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/is_stored", routes.V1VideoIsStored, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/stream", routes.V1VideoStream, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/cover", routes.V1VideoCover, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/subtitles", routes.V1VideoSubtitles, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/subtitles/:lang", routes.V1VideoSubtitlesLang, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/lyrics", routes.V1VideoSubtitles, middleware.GlobalJWTProtected)
+		v1.GET("/video/:id/lyrics/:lang", routes.V1VideoSubtitlesLang, middleware.GlobalJWTProtected)
 
-		v1.Get("/playlist/:id", middleware.GlobalJWTProtected, routes.V1Playlist)
-		v1.Get("/playlist/:id/cover", middleware.GlobalJWTProtected, routes.V1PlaylistCover)
-		v1.Get("/playlist/:id/tracks", middleware.GlobalJWTProtected, routes.V1PlaylistTracks)
+		v1.GET("/playlist/:id", routes.V1Playlist, middleware.GlobalJWTProtected)
+		v1.GET("/playlist/:id/cover", routes.V1PlaylistCover, middleware.GlobalJWTProtected)
+		v1.GET("/playlist/:id/tracks", routes.V1PlaylistTracks, middleware.GlobalJWTProtected)
 
-		v1.Get("/artist/:id", middleware.GlobalJWTProtected, routes.V1Artist)
-		v1.Get("/artist/:id/cover", middleware.GlobalJWTProtected, routes.V1ArtistCover)
-		v1.Get("/artist/:id/albums", middleware.GlobalJWTProtected, routes.V1ArtistAlbums)
-		v1.Get("/artist/:id/tracks", middleware.GlobalJWTProtected, routes.V1ArtistTracks)
+		v1.GET("/artist/:id", routes.V1Artist, middleware.GlobalJWTProtected)
+		v1.GET("/artist/:id/cover", routes.V1ArtistCover, middleware.GlobalJWTProtected)
+		v1.GET("/artist/:id/albums", routes.V1ArtistAlbums, middleware.GlobalJWTProtected)
+		v1.GET("/artist/:id/tracks", routes.V1ArtistTracks, middleware.GlobalJWTProtected)
 		// END TO REFRACTOR
 
-		v1.Get("/openapi.json", func(c *fiber.Ctx) error {
-			return c.JSON(v1SpecJSON)
+		v1.GET("/openapi.json", func(c echo.Context) error {
+			return c.JSON(http.StatusOK, v1SpecJSON)
 		})
 
-		v1.Get("/openapi.yaml", func(c *fiber.Ctx) error {
-			return c.Send(v1SpecYAML)
+		v1.GET("/openapi.yaml", func(c echo.Context) error {
+			return c.String(http.StatusOK, string(v1SpecYAML))
 		})
 
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
 		go func() {
-			if err = app.Listen(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil {
+			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil && err != http.ErrServerClosed {
 				log.Fatal("Error starting server", "err", err)
 			}
 		}()
 
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-		<-c
+		<-ctx.Done()
 		log.Info("Shutting down...")
-		_ = app.Shutdown()
-		_ = db.DB.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := e.Shutdown(ctx); err != nil {
+			log.Fatal("Error shutting down server", "err", err)
+		}
+		if err := db.DB.Close(); err != nil {
+			log.Fatal("Error closing database connection", "err", err)
+		}
 		log.Info("Successfully shut down")
 	},
 }

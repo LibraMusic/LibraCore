@@ -1,70 +1,82 @@
 package middleware
 
 import (
-	jwtware "github.com/gofiber/contrib/jwt"
-	"github.com/gofiber/fiber/v2"
+	"net/http"
+
 	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
+	"github.com/labstack/echo/v4"
 
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/db"
 	"github.com/LibraMusic/LibraCore/utils"
 )
 
-func JWTProtected(c *fiber.Ctx) error {
-	var key interface{}
-	switch config.Conf.Auth.JWT.SigningMethod {
-	case "HS256", "HS384", "HS512":
-		key = []byte(config.Conf.Auth.JWT.SigningKey)
-	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
-		key = utils.RSAPrivateKey.Public()
-	case "ES256", "ES384", "ES512":
-		key = utils.ECDSAPrivateKey.Public()
-	case "EdDSA":
-		key = utils.EdDSAPrivateKey.Public()
-	}
+func JWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var key interface{}
+		switch config.Conf.Auth.JWT.SigningMethod {
+		case "HS256", "HS384", "HS512":
+			key = []byte(config.Conf.Auth.JWT.SigningKey)
+		case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
+			key = utils.RSAPrivateKey.Public()
+		case "ES256", "ES384", "ES512":
+			key = utils.ECDSAPrivateKey.Public()
+		case "EdDSA":
+			key = utils.EdDSAPrivateKey.Public()
+		}
 
-	return jwtware.New(jwtware.Config{
-		SigningKey: jwtware.SigningKey{
-			JWTAlg: config.Conf.Auth.JWT.SigningMethod,
-			Key:    key,
-		},
-		ContextKey: "jwt",
-		SuccessHandler: func(c *fiber.Ctx) error {
-			user := c.Locals("user").(*jwt.Token)
-			isBlacklisted, err := db.DB.IsTokenBlacklisted(user.Raw)
-			if err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-					"error": true,
-					"msg":   err.Error(),
-				})
-			}
-			if isBlacklisted {
-				return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-					"error": true,
-					"msg":   "Token invalidated",
-				})
-			}
-			return c.Next()
-		},
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": true,
-				"msg":   err.Error(),
-			})
-		},
-	})(c)
+		config := echojwt.Config{
+			SigningKey:     key,
+			SigningMethod:  config.Conf.Auth.JWT.SigningMethod,
+			ContextKey:     "jwt",
+			SuccessHandler: jwtSuccessHandler,
+			ErrorHandler:   jwtErrorHandler,
+		}
+
+		return echojwt.WithConfig(config)(next)(c)
+	}
 }
 
-func GlobalJWTProtected(c *fiber.Ctx) error {
-	if config.Conf.Auth.GlobalAPIRoutesRequireAuth {
-		return JWTProtected(c)
+func GlobalJWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if config.Conf.Auth.GlobalAPIRoutesRequireAuth {
+			return JWTProtected(next)(c)
+		}
+		return next(c)
 	}
-	return c.Next()
 }
 
-func UserJWTProtected(c *fiber.Ctx) error {
-	if config.Conf.Auth.UserAPIRoutesRequireAuth {
-		return JWTProtected(c)
+func UserJWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if config.Conf.Auth.UserAPIRoutesRequireAuth {
+			return JWTProtected(next)(c)
+		}
+		return next(c)
 	}
-	return c.Next()
+}
+
+func jwtSuccessHandler(c echo.Context) {
+	user := c.Get("jwt").(*jwt.Token)
+	isBlacklisted, err := db.DB.IsTokenBlacklisted(user.Raw)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"error": true,
+			"msg":   err.Error(),
+		})
+		return
+	}
+	if isBlacklisted {
+		c.JSON(http.StatusUnauthorized, map[string]interface{}{
+			"error": true,
+			"msg":   "Token invalidated",
+		})
+	}
+}
+
+func jwtErrorHandler(c echo.Context, err error) error {
+	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+		"error": true,
+		"msg":   err.Error(),
+	})
 }
