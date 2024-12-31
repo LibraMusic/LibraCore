@@ -1,53 +1,50 @@
 package routes
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/gofiber/fiber/v2"
 	"github.com/gorilla/feeds"
+	"github.com/labstack/echo/v4"
 )
 
-func CreateFeedRoutes(router fiber.Router, basePath string, handlers ...fiber.Handler) {
-	router.Get(basePath+"/feed", append(handlers, func(c *fiber.Ctx) error {
-		rss, err := CreateFeed(c.BaseURL(), c.Route().Path).ToRss()
+func CreateFeedRoutes(e *echo.Group, basePath string, handlers ...echo.MiddlewareFunc) {
+	e.GET(basePath+"/feed", func(c echo.Context) error {
+		rss, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToRss()
 		if err != nil {
 			log.Error("Error creating RSS feed", "err", err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.NoContent(http.StatusInternalServerError)
 		}
-		c.Set("Content-Type", "application/rss+xml")
-		return c.SendString(rss)
-	})...)
+		return c.XMLBlob(http.StatusOK, []byte(rss))
+	}, handlers...)
 
-	router.Get(basePath+"/feed/rss", append(handlers, func(c *fiber.Ctx) error {
-		rss, err := CreateFeed(c.BaseURL(), c.Route().Path).ToRss()
+	e.GET(basePath+"/feed/rss", func(c echo.Context) error {
+		rss, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToRss()
 		if err != nil {
 			log.Error("Error creating RSS feed", "err", err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.NoContent(http.StatusInternalServerError)
 		}
-		c.Set("Content-Type", "application/rss+xml")
-		return c.SendString(rss)
-	})...)
+		return c.XMLBlob(http.StatusOK, []byte(rss))
+	}, handlers...)
 
-	router.Get(basePath+"/feed/atom", append(handlers, func(c *fiber.Ctx) error {
-		atom, err := CreateFeed(c.BaseURL(), c.Route().Path).ToAtom()
+	e.GET(basePath+"/feed/atom", func(c echo.Context) error {
+		atom, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToAtom()
 		if err != nil {
 			log.Error("Error creating Atom feed", "err", err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.NoContent(http.StatusInternalServerError)
 		}
-		c.Set("Content-Type", "application/atom+xml")
-		return c.SendString(atom)
-	})...)
+		return c.XMLBlob(http.StatusOK, []byte(atom))
+	}, handlers...)
 
-	router.Get(basePath+"/feed/json", append(handlers, func(c *fiber.Ctx) error {
-		json, err := CreateFeed(c.BaseURL(), c.Route().Path).ToJSON()
+	e.GET(basePath+"/feed/json", func(c echo.Context) error {
+		json, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToJSON()
 		if err != nil {
 			log.Error("Error creating JSON feed", "err", err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			return c.NoContent(http.StatusInternalServerError)
 		}
-		c.Set("Content-Type", "application/feed+json")
-		return c.SendString(json)
-	})...)
+		return c.JSONBlob(http.StatusOK, []byte(json))
+	}, handlers...)
 }
 
 func CreateFeed(baseURL string, routePath string) *feeds.Feed {
