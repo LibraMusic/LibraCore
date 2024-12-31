@@ -60,14 +60,14 @@ func jwtSuccessHandler(c echo.Context) {
 	user := c.Get("jwt").(*jwt.Token)
 	isBlacklisted, err := db.DB.IsTokenBlacklisted(user.Raw)
 	if err != nil {
-		_ = c.JSON(http.StatusInternalServerError, map[string]interface{}{
+		_ = c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": true,
 			"msg":   err.Error(),
 		})
 		return
 	}
 	if isBlacklisted {
-		_ = c.JSON(http.StatusUnauthorized, map[string]interface{}{
+		_ = c.JSON(http.StatusUnauthorized, echo.Map{
 			"error": true,
 			"msg":   "Token invalidated",
 		})
@@ -75,7 +75,7 @@ func jwtSuccessHandler(c echo.Context) {
 }
 
 func jwtErrorHandler(c echo.Context, err error) error {
-	return c.JSON(http.StatusUnauthorized, map[string]interface{}{
+	return c.JSON(http.StatusUnauthorized, echo.Map{
 		"error": true,
 		"msg":   err.Error(),
 	})
