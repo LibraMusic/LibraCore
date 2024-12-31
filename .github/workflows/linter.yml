@@ -27,7 +27,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          args: --config=.github/linters/.golangci.yml
+          args: --config=.github/linters/.golangci.yml --timeout=10m
 
       # Configuration can be set in .github/linters/ruff.toml
       # as long as `--config .github/linters/ruff.toml` is added to the args in both Ruff steps
