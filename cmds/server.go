@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/goccy/go-json"
 	"github.com/goccy/go-yaml"
+	openapidocs "github.com/kohkimakimoto/echo-openapidocs"
 	"github.com/labstack/echo/v4"
 	"github.com/spf13/cobra"
 
@@ -98,10 +98,6 @@ var serverCmd = &cobra.Command{
 		fmt.Printf("Database: %s\n", db.DB.EngineName())
 
 		v1Spec := api.V1OpenAPI3Spec()
-		v1SpecJSON, err := json.Marshal(v1Spec)
-		if err != nil {
-			log.Fatal("Error marshalling OpenAPI spec to JSON", "err", err)
-		}
 		v1SpecYAML, err := yaml.Marshal(v1Spec)
 		if err != nil {
 			log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
@@ -144,13 +140,10 @@ var serverCmd = &cobra.Command{
 
 		v1 := api.Group("/v1")
 
-		/*v1.Use(swagger.New(swagger.Config{
-			BasePath:    "/api/v1/",
-			FilePath:    "/openapi.json",
-			FileContent: v1SpecJSON,
-			Path:        "docs",
-			Title:       "Libra API",
-		}))*/
+		openapidocs.ElementsDocuments(e, "/api/v1/docs", openapidocs.ElementsConfig{
+			SpecUrl: "/api/v1/openapi.json",
+			Title:   "Libra API",
+		})
 
 		v1.GET("/playables", routes.V1Playables)
 		routes.CreateFeedRoutes(v1, "/playables")
@@ -188,7 +181,7 @@ var serverCmd = &cobra.Command{
 		// END TO REFRACTOR
 
 		v1.GET("/openapi.json", func(c echo.Context) error {
-			return c.JSON(http.StatusOK, v1SpecJSON)
+			return c.JSON(http.StatusOK, v1Spec)
 		})
 
 		v1.GET("/openapi.yaml", func(c echo.Context) error {

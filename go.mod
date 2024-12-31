@@ -17,6 +17,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/gorilla/feeds v1.2.0
 	github.com/jackc/pgx/v5 v5.7.2
+	github.com/kohkimakimoto/echo-openapidocs v0.2.0
 	github.com/labstack/echo-jwt/v4 v4.3.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/mattn/go-sqlite3 v1.14.24
