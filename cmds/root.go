@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/LibraMusic/LibraCore/config"
 	"github.com/LibraMusic/LibraCore/utils"
@@ -32,13 +31,11 @@ func init() {
 
 	rootCmd.PersistentFlags().String("logLevel", "", "log level (debug|info|warn|error)")
 	_ = rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
-	_ = viper.BindPFlag("logLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
+	config.BindFlag("Logs.LogLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
 }
 
 func initConfig() {
-	conf, err := config.LoadConfig()
-	if err != nil {
+	if err := config.LoadConfig(); err != nil {
 		log.Fatal("Failed to load config", "err", err)
 	}
-	config.Conf = conf
 }

@@ -6,14 +6,15 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/adrg/xdg"
 	"github.com/c2h5oh/datasize"
 	"github.com/charmbracelet/log"
-	"github.com/go-viper/mapstructure/v2"
-	"github.com/spf13/viper"
+	"github.com/goccy/go-yaml"
+	"github.com/spf13/pflag"
 
 	"github.com/LibraMusic/LibraCore/types"
 	"github.com/LibraMusic/LibraCore/utils"
@@ -24,144 +25,163 @@ var Conf Config
 //go:embed default_config.yaml
 var defaultConfig string
 
+const EnvPrefix = "LIBRA"
+
+var envAliases = map[string][]string{
+	"APPLICATION_PORT": {"PORT"},
+}
+var flags = make(map[string]*pflag.Flag)
+
 type ApplicationConfig struct {
-	PublicURL  string   `mapstructure:"public_url"`
-	Port       int      `mapstructure:"port"`
-	SourceID   string   `mapstructure:"source_id"`
-	SourceName string   `mapstructure:"source_name"`
-	MediaTypes []string `mapstructure:"media_types"`
+	PublicURL  string   `yaml:"public_url"`
+	Port       int      `yaml:"port"`
+	SourceID   string   `yaml:"source_id"`
+	SourceName string   `yaml:"source_name"`
+	MediaTypes []string `yaml:"media_types"`
 }
 
 type JWTAuthConfig struct {
-	SigningMethod          string        `mapstructure:"signing_method"`
-	SigningKey             string        `mapstructure:"signing_key"`
-	RefreshTokenExpiration time.Duration `mapstructure:"refresh_token_expiration"`
-	AccessTokenExpiration  time.Duration `mapstructure:"access_token_expiration"`
+	SigningMethod          string        `yaml:"signing_method"`
+	SigningKey             string        `yaml:"signing_key"`
+	RefreshTokenExpiration time.Duration `yaml:"refresh_token_expiration"`
+	AccessTokenExpiration  time.Duration `yaml:"access_token_expiration"`
 }
 
 type AuthConfig struct {
-	JWT                        JWTAuthConfig `mapstructure:"jwt"`
-	GlobalAPIRoutesRequireAuth bool          `mapstructure:"global_api_routes_require_auth"`
-	UserAPIRoutesRequireAuth   bool          `mapstructure:"user_api_routes_require_auth"`
-	UserAPIRequireSameUseUser  bool          `mapstructure:"user_api_require_same_user"`
-	DisableAccountCreation     bool          `mapstructure:"disable_account_creation"`
+	JWT                        JWTAuthConfig `yaml:"jwt"`
+	GlobalAPIRoutesRequireAuth bool          `yaml:"global_api_routes_require_auth"`
+	UserAPIRoutesRequireAuth   bool          `yaml:"user_api_routes_require_auth"`
+	UserAPIRequireSameUseUser  bool          `yaml:"user_api_require_same_user"`
+	DisableAccountCreation     bool          `yaml:"disable_account_creation"`
 }
 
 type GeneralConfig struct {
-	IDLength                  int                               `mapstructure:"id_length"`
-	IncludeVideoResults       bool                              `mapstructure:"include_video_results"`
-	VideoAudioOnly            bool                              `mapstructure:"video_audio_only"`
-	InheritListenCounts       bool                              `mapstructure:"inherit_listen_counts"`
-	ArtistListenCountsByTrack bool                              `mapstructure:"artist_listen_counts_by_track"`
-	UserArtistLinking         bool                              `mapstructure:"user_artist_linking"`
-	MaxSearchResults          int                               `mapstructure:"max_search_results"`
-	MaxTrackDuration          time.Duration                     `mapstructure:"max_track_duration"`
-	ReservedUsernames         []string                          `mapstructure:"reserved_usernames"`
-	CustomDisplayNames        bool                              `mapstructure:"custom_display_names"`
-	ReserveDisplayNames       bool                              `mapstructure:"reserve_display_names"`
-	AdminPermissions          map[string]types.AdminPermissions `mapstructure:"admin_permissions"`
-	EnabledSources            []string                          `mapstructure:"enabled_sources"`
+	IDLength                  int                               `yaml:"id_length"`
+	IncludeVideoResults       bool                              `yaml:"include_video_results"`
+	VideoAudioOnly            bool                              `yaml:"video_audio_only"`
+	InheritListenCounts       bool                              `yaml:"inherit_listen_counts"`
+	ArtistListenCountsByTrack bool                              `yaml:"artist_listen_counts_by_track"`
+	UserArtistLinking         bool                              `yaml:"user_artist_linking"`
+	MaxSearchResults          int                               `yaml:"max_search_results"`
+	MaxTrackDuration          time.Duration                     `yaml:"max_track_duration"`
+	ReservedUsernames         []string                          `yaml:"reserved_usernames"`
+	CustomDisplayNames        bool                              `yaml:"custom_display_names"`
+	ReserveDisplayNames       bool                              `yaml:"reserve_display_names"`
+	AdminPermissions          map[string]types.AdminPermissions `yaml:"admin_permissions"`
+	EnabledSources            []string                          `yaml:"enabled_sources"`
 }
 
 type SourceScriptsConfig struct {
-	PythonCommand   string `mapstructure:"python_command"`
-	YouTubeLocation string `mapstructure:"youtube_location"`
+	PythonCommand   string `yaml:"python_command"`
+	YouTubeLocation string `yaml:"youtube_location"`
 }
 
 type LogsConfig struct {
-	LogLevel  log.Level `mapstructure:"log_level"`
-	LogFormat string    `mapstructure:"log_format"`
+	LogLevel  log.Level `yaml:"log_level"`
+	LogFormat string    `yaml:"log_format"`
 }
 
 type StorageConfig struct {
-	Location            string            `mapstructure:"location"`
-	SizeLimit           datasize.ByteSize `mapstructure:"size_limit"`
-	MinimumAgeThreshold time.Duration     `mapstructure:"minimum_age_threshold"`
+	Location            string            `yaml:"location"`
+	SizeLimit           datasize.ByteSize `yaml:"size_limit"`
+	MinimumAgeThreshold time.Duration     `yaml:"minimum_age_threshold"`
 }
 
 type SQLiteDatabaseConfig struct {
-	Path string `mapstructure:"path"`
+	Path string `yaml:"path"`
 }
 
 type PostgreSQLDatabaseConfig struct {
-	Host   string `mapstructure:"host"`
-	Port   int    `mapstructure:"port"`
-	User   string `mapstructure:"user"`
-	Pass   string `mapstructure:"pass"`
-	DBName string `mapstructure:"db_name"`
-	Params string `mapstructure:"params"`
+	Host   string `yaml:"host"`
+	Port   int    `yaml:"port"`
+	User   string `yaml:"user"`
+	Pass   string `yaml:"pass"`
+	DBName string `yaml:"db_name"`
+	Params string `yaml:"params"`
 }
 
 type DatabaseConfig struct {
-	Engine     string                   `mapstructure:"engine"`
-	SQLite     SQLiteDatabaseConfig     `mapstructure:"sqlite"`
-	PostgreSQL PostgreSQLDatabaseConfig `mapstructure:"postgresql"`
+	Engine     string                   `yaml:"engine"`
+	SQLite     SQLiteDatabaseConfig     `yaml:"sqlite"`
+	PostgreSQL PostgreSQLDatabaseConfig `yaml:"postgresql"`
 }
 
 type Config struct {
-	Application   ApplicationConfig   `mapstructure:"application"`
-	Auth          AuthConfig          `mapstructure:"auth"`
-	General       GeneralConfig       `mapstructure:"general"`
-	SourceScripts SourceScriptsConfig `mapstructure:"source_scripts"`
-	Logs          LogsConfig          `mapstructure:"logs"`
-	Storage       StorageConfig       `mapstructure:"storage"`
-	Database      DatabaseConfig      `mapstructure:"database"`
+	Application   ApplicationConfig   `yaml:"application"`
+	Auth          AuthConfig          `yaml:"auth"`
+	General       GeneralConfig       `yaml:"general"`
+	SourceScripts SourceScriptsConfig `yaml:"source_scripts"`
+	Logs          LogsConfig          `yaml:"logs"`
+	Storage       StorageConfig       `yaml:"storage"`
+	Database      DatabaseConfig      `yaml:"database"`
 }
 
-func LoadConfig() (Config, error) {
-	var conf Config
+func LoadConfig() error {
+	setupYAML()
 
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath(".")
-
-	viper.SetEnvPrefix("LIBRA")
-	viper.AutomaticEnv()
-
-	if err := loadDefaultConfig(); err != nil {
-		return conf, fmt.Errorf("failed to read default config: %w", err)
+	if err := yaml.Unmarshal([]byte(defaultConfig), &Conf); err != nil {
+		return fmt.Errorf("failed to read default config: %w", err)
 	}
 
-	if err := mergeConfig(); err != nil {
+	if err := mergeFile(); err != nil {
 		log.Warn("Failed to read config", "err", err)
-		log.Warn("Using default config")
+		log.Info("Using default config")
 	}
 
-	if err := unmarshalConfig(&conf); err != nil {
-		return conf, fmt.Errorf("failed to unmarshal config: %w", err)
+	if err := mergeEnv(EnvPrefix, &Conf); err != nil {
+		log.Warn("Failed to read and merge environment variables", "err", err)
 	}
 
-	return conf, nil
+	if err := mergeFlags("", &Conf); err != nil {
+		log.Warn("Failed to read and merge flags", "err", err)
+	}
+
+	return nil
 }
 
-func loadDefaultConfig() error {
-	return viper.ReadConfig(strings.NewReader(defaultConfig))
+func BindFlag(fieldPath string, flag *pflag.Flag) {
+	flags[fieldPath] = flag
 }
 
-func mergeConfig() error {
-	err := viper.MergeInConfig()
-	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-		var configFilePath string
-		configFilePath, err = getConfigFilePath()
-		if err != nil {
-			return err
-		}
+func setupYAML() error {
+	yaml.RegisterCustomMarshaler[log.Level](func(level log.Level) ([]byte, error) {
+		return []byte(level.String()), nil
+	})
 
-		if configFilePath != "" {
-			_ = os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
-			viper.SetConfigFile(configFilePath)
-			err = viper.MergeInConfig()
-			if _, ok := err.(viper.ConfigFileNotFoundError); ok || os.IsNotExist(err) {
-				if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0o644); err != nil {
-					log.Warn("Failed to write default config", "err", err)
-				}
-			}
-			if err != nil {
-				err = viper.MergeInConfig()
-			}
+	yaml.RegisterCustomUnmarshaler[log.Level](func(level *log.Level, data []byte) error {
+		var err error
+		*level, err = log.ParseLevel(string(data))
+		return err
+	})
+	yaml.RegisterCustomUnmarshaler[time.Duration](func(duration *time.Duration, data []byte) error {
+		var err error
+		*duration, err = utils.ParseHumanDuration(string(data))
+		return err
+	})
+
+	return nil
+}
+
+func mergeFile() error {
+	configFilePath, err := getConfigFilePath()
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0o644); err != nil {
+			log.Warn("Failed to write default config", "err", err)
 		}
 	}
-	return err
+
+	configFileContent, err := os.ReadFile(configFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to read config file: %w", err)
+	}
+	if err := yaml.Unmarshal(configFileContent, &Conf); err != nil {
+		return fmt.Errorf("failed to unmarshal config file: %w", err)
+	}
+	return nil
 }
 
 func getConfigFilePath() (string, error) {
@@ -195,23 +215,151 @@ func getConfigFilePath() (string, error) {
 	return configFilePath, nil
 }
 
-func unmarshalConfig(conf *Config) error {
-	err := viper.Unmarshal(conf, viper.DecodeHook(
-		mapstructure.ComposeDecodeHookFunc(
-			func(from reflect.Kind, to reflect.Kind, data interface{}) (interface{}, error) {
-				if from == reflect.String && to == reflect.TypeFor[time.Duration]().Kind() {
-					return utils.ParseHumanDuration(data.(string))
-				}
-				if from == reflect.String && to == reflect.TypeFor[datasize.ByteSize]().Kind() {
-					return datasize.ParseString(data.(string))
-				}
-				if from == reflect.String && to == reflect.TypeFor[log.Level]().Kind() {
-					return log.ParseLevel(data.(string))
-				}
-				return data, nil
-			},
-		),
-	))
+func mergeEnv(prefix string, cfg interface{}) error {
+	v := reflect.ValueOf(cfg)
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("cfg must be a pointer to a struct")
+	}
 
-	return err
+	v = v.Elem()
+	t := v.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		// Get the `yaml` tag or default to field name
+		tag := field.Tag.Get("yaml")
+		if tag == "" {
+			tag = field.Name
+		}
+		envKey := prefix + "_" + strings.ToUpper(tag)
+
+		if field.Type.Kind() == reflect.Struct {
+			if err := mergeEnv(envKey, fieldValue.Addr().Interface()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if !fieldValue.CanSet() {
+			continue
+		}
+
+		envVal, exists := os.LookupEnv(envKey)
+		if !exists {
+			for _, key := range envAliases[strings.TrimPrefix(envKey, EnvPrefix+"_")] {
+				envVal, exists = os.LookupEnv(EnvPrefix + "_" + key)
+				if exists {
+					envKey = EnvPrefix + "_" + key
+					break
+				}
+			}
+		}
+		if !exists {
+			continue
+		}
+
+		if err := setField(field, fieldValue, envVal); err != nil {
+			return fmt.Errorf("error setting field for %s: %v", envKey, err)
+		}
+	}
+	return nil
+}
+
+func mergeFlags(prefix string, cfg interface{}) error {
+	v := reflect.ValueOf(cfg)
+	if v.Kind() != reflect.Ptr || v.Elem().Kind() != reflect.Struct {
+		return fmt.Errorf("cfg must be a pointer to a struct")
+	}
+
+	v = v.Elem()
+	t := v.Type()
+
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		fieldPath := field.Name
+		if prefix != "" {
+			fieldPath = prefix + "." + fieldPath
+		}
+
+		if field.Type.Kind() == reflect.Struct {
+			if err := mergeFlags(fieldPath, fieldValue.Addr().Interface()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		if !fieldValue.CanSet() {
+			continue
+		}
+
+		fl, exists := flags[fieldPath]
+		if !exists || !fl.Changed {
+			continue
+		}
+
+		if err := setField(field, fieldValue, fl.Value.String()); err != nil {
+			return fmt.Errorf("error setting field for %s: %v", fieldPath, err)
+		}
+	}
+	return nil
+}
+
+func setField(field reflect.StructField, fieldValue reflect.Value, value string) error {
+	switch fieldValue.Kind() {
+	case reflect.String:
+		fieldValue.SetString(value)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if field.Type == reflect.TypeFor[time.Duration]() {
+			dur, err := utils.ParseHumanDuration(value)
+			if err != nil {
+				return fmt.Errorf("invalid duration: %v", err)
+			}
+			fieldValue.Set(reflect.ValueOf(dur))
+		} else if field.Type == reflect.TypeFor[log.Level]() {
+			level, err := log.ParseLevel(value)
+			if err != nil {
+				return fmt.Errorf("invalid log level: %v", err)
+			}
+			fieldValue.Set(reflect.ValueOf(level))
+		} else {
+			val, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid int: %v", err)
+			}
+			fieldValue.SetInt(val)
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		if field.Type == reflect.TypeFor[datasize.ByteSize]() {
+			size, err := datasize.ParseString(value)
+			if err != nil {
+				return fmt.Errorf("invalid datasize: %v", err)
+			}
+			fieldValue.Set(reflect.ValueOf(size))
+		} else {
+			val, err := strconv.ParseUint(value, 10, 64)
+			if err != nil {
+				return fmt.Errorf("invalid uint: %v", err)
+			}
+			fieldValue.SetUint(val)
+		}
+	case reflect.Float32, reflect.Float64:
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return fmt.Errorf("invalid float: %v", err)
+		}
+		fieldValue.SetFloat(val)
+	case reflect.Bool:
+		val, err := strconv.ParseBool(value)
+		if err != nil {
+			return fmt.Errorf("invalid bool: %v", err)
+		}
+		fieldValue.SetBool(val)
+	default:
+		return fmt.Errorf("unsupported field type: %s", field.Type.Kind())
+	}
+	return nil
 }
