@@ -211,5 +211,9 @@ var serverCmd = &cobra.Command{
 }
 
 func init() {
+	serverCmd.PersistentFlags().IntP("port", "p", 8090, "port on which the server will listen")
+	_ = serverCmd.RegisterFlagCompletionFunc("port", cobra.NoFileCompletions)
+	config.BindFlag("Application.Port", serverCmd.PersistentFlags().Lookup("port"))
+
 	rootCmd.AddCommand(serverCmd)
 }
