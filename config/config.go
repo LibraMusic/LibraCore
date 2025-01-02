@@ -143,7 +143,7 @@ func BindFlag(fieldPath string, flag *pflag.Flag) {
 	flags[fieldPath] = flag
 }
 
-func setupYAML() error {
+func setupYAML() {
 	yaml.RegisterCustomMarshaler[log.Level](func(level log.Level) ([]byte, error) {
 		return []byte(level.String()), nil
 	})
@@ -158,8 +158,6 @@ func setupYAML() error {
 		*duration, err = utils.ParseHumanDuration(string(data))
 		return err
 	})
-
-	return nil
 }
 
 func mergeFile() error {
