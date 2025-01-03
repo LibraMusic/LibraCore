@@ -10,8 +10,8 @@ import (
 	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
-	"github.com/LibraMusic/LibraCore/types"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/utils"
 )
 
 type LocalFileSource struct {

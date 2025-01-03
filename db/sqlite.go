@@ -13,9 +13,9 @@ import (
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/mattn/go-sqlite3"
 
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/types"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/utils"
 )
 
 type SQLiteDatabase struct {

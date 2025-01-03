@@ -6,7 +6,7 @@ import (
 
 	"github.com/charmbracelet/log"
 
-	"github.com/LibraMusic/LibraCore/cmds"
+	"github.com/libramusic/libracore/cmds"
 )
 
 func main() {

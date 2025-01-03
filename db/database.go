@@ -8,8 +8,8 @@ import (
 
 	"github.com/charmbracelet/log"
 
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/types"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/types"
 )
 
 var DB Database

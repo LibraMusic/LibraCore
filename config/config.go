@@ -12,8 +12,8 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/libramusic/taurus"
 
-	"github.com/LibraMusic/LibraCore/types"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/utils"
 )
 
 var Conf Config

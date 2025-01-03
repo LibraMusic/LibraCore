@@ -17,14 +17,14 @@ import (
 	"github.com/libramusic/taurus"
 	"github.com/spf13/cobra"
 
-	"github.com/LibraMusic/LibraCore/api"
-	"github.com/LibraMusic/LibraCore/api/middleware"
-	"github.com/LibraMusic/LibraCore/api/routes"
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/sources"
-	"github.com/LibraMusic/LibraCore/storage"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/api"
+	"github.com/libramusic/libracore/api/middleware"
+	"github.com/libramusic/libracore/api/routes"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/sources"
+	"github.com/libramusic/libracore/storage"
+	"github.com/libramusic/libracore/utils"
 )
 
 var serverCmd = &cobra.Command{

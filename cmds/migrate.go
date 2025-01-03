@@ -7,8 +7,8 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 
-	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/utils"
 )
 
 var migrateCmd = &cobra.Command{

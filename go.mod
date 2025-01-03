@@ -1,4 +1,4 @@
-module github.com/LibraMusic/LibraCore
+module github.com/libramusic/libracore
 
 go 1.22.2
 

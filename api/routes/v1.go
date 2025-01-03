@@ -6,8 +6,8 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/labstack/echo/v4"
 
-	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/storage"
+	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/storage"
 )
 
 // mimeType := mime.TypeByExtension(filepath.Ext(filePath))
