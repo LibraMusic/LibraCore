@@ -14,8 +14,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/types"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/types"
 )
 
 type PostgreSQLDatabase struct {

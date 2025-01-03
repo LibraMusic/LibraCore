@@ -7,9 +7,9 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/db"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/utils"
 )
 
 func JWTProtected(next echo.HandlerFunc) echo.HandlerFunc {

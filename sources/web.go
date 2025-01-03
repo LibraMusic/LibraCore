@@ -4,8 +4,8 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
-	"github.com/LibraMusic/LibraCore/types"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/utils"
 )
 
 type WebSource struct {

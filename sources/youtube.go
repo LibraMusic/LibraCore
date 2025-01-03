@@ -12,9 +12,9 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/goccy/go-json"
 
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/types"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/utils"
 )
 
 //go:embed scripts/youtube.py

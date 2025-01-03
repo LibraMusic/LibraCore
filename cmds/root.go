@@ -7,8 +7,8 @@ import (
 	"github.com/libramusic/taurus"
 	"github.com/spf13/cobra"
 
-	"github.com/LibraMusic/LibraCore/config"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/utils"
 )
 
 var rootCmd = &cobra.Command{

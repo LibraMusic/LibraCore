@@ -5,8 +5,8 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
 
-	"github.com/LibraMusic/LibraCore/types"
-	"github.com/LibraMusic/LibraCore/utils"
+	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/utils"
 )
 
 func V1OpenAPI3Spec() openapi3.T {

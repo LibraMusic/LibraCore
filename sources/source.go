@@ -5,7 +5,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 
-	"github.com/LibraMusic/LibraCore/types"
+	"github.com/libramusic/libracore/types"
 )
 
 type Source interface {

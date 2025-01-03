@@ -3,8 +3,9 @@ package cmds
 import (
 	"fmt"
 
-	"github.com/LibraMusic/LibraCore/utils"
 	"github.com/spf13/cobra"
+
+	"github.com/libramusic/libracore/utils"
 )
 
 var versionCmd = &cobra.Command{
