@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/charmbracelet/log"
+	"github.com/libramusic/taurus"
 	"github.com/spf13/cobra"
 
 	"github.com/LibraMusic/LibraCore/config"
@@ -31,7 +32,7 @@ func init() {
 
 	rootCmd.PersistentFlags().String("logLevel", "", "log level (debug|info|warn|error)")
 	_ = rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
-	config.BindFlag("Logs.LogLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
+	taurus.BindFlag("Logs.LogLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
 }
 
 func initConfig() {

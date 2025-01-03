@@ -14,6 +14,7 @@ import (
 	"github.com/goccy/go-yaml"
 	openapidocs "github.com/kohkimakimoto/echo-openapidocs"
 	"github.com/labstack/echo/v4"
+	"github.com/libramusic/taurus"
 	"github.com/spf13/cobra"
 
 	"github.com/LibraMusic/LibraCore/api"
@@ -213,7 +214,7 @@ var serverCmd = &cobra.Command{
 func init() {
 	serverCmd.PersistentFlags().IntP("port", "p", 8090, "port on which the server will listen")
 	_ = serverCmd.RegisterFlagCompletionFunc("port", cobra.NoFileCompletions)
-	config.BindFlag("Application.Port", serverCmd.PersistentFlags().Lookup("port"))
+	taurus.BindFlag("Application.Port", serverCmd.PersistentFlags().Lookup("port"))
 
 	rootCmd.AddCommand(serverCmd)
 }
