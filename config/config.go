@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/adrg/xdg"
@@ -186,6 +187,14 @@ func getConfigFilePath() (string, error) {
 	if err != nil {
 		log.Warn("Failed to get config file path from XDG config directory", "err", err)
 		return "", err
+	}
+
+	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+			if _, err := os.Stat("/etc/libra/config.yaml"); err == nil {
+				configFilePath = "/etc/libra/config.yaml"
+			}
+		}
 	}
 
 	return configFilePath, nil
