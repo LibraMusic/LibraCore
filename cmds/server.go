@@ -15,6 +15,7 @@ import (
 	openapidocs "github.com/kohkimakimoto/echo-openapidocs"
 	"github.com/labstack/echo/v4"
 	"github.com/libramusic/taurus"
+	"github.com/markbates/goth"
 	"github.com/spf13/cobra"
 
 	"github.com/libramusic/libracore/api"
@@ -55,6 +56,21 @@ var serverCmd = &cobra.Command{
 
 		if err := utils.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey); err != nil {
 			log.Fatal("Error loading private key", "err", err)
+		}
+
+		api.InitProviderFactories(config.Conf.Application.PublicURL)
+		for _, provider := range config.Conf.Auth.OAuth.Providers {
+			if provider.ID == "" {
+				log.Fatal("OAuth provider ID cannot be empty")
+			}
+			if provider.GetName() == "" {
+				log.Fatal("Unsupported OAuth provider", "id", provider.ID)
+			}
+			if p, err := provider.GetProvider(); err != nil {
+				log.Fatal("Failed to initialize OAuth provider", "id", provider.ID, "err", err)
+			} else {
+				goth.UseProviders(p)
+			}
 		}
 
 		if err := db.ConnectDatabase(); err != nil {
