@@ -2,7 +2,9 @@ package config
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -131,7 +133,7 @@ func LoadConfig() error {
 		return err
 	}
 
-	if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+	if _, err := os.Stat(configFilePath); errors.Is(err, fs.ErrNotExist) {
 		if err := os.WriteFile(configFilePath, []byte(defaultConfig), 0o644); err != nil {
 			log.Warn("Failed to write default config", "err", err)
 		}
@@ -199,7 +201,7 @@ func getConfigFilePath() (string, error) {
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		if _, err := os.Stat(configFilePath); os.IsNotExist(err) {
+		if _, err := os.Stat(configFilePath); errors.Is(err, fs.ErrNotExist) {
 			if _, err := os.Stat("/etc/libra/config.yaml"); err == nil {
 				configFilePath = "/etc/libra/config.yaml"
 			}

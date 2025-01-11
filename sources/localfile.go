@@ -1,6 +1,8 @@
 package sources
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -49,7 +51,7 @@ func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]inte
 
 	fileInfo, err := os.Stat(s.Path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return results, nil
 		}
 		return nil, err

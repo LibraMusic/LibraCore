@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -38,7 +40,7 @@ func CleanOverfilledStorage() {
 	path = filepath.Join(path, ContentPath)
 	files, err := os.ReadDir(path)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			log.Error("Error reading storage directory", "err", err)
 		}
 		return
@@ -208,7 +210,7 @@ func IsContentStored(contentType string, playableID string) bool {
 
 	files, err := os.ReadDir(path)
 	if err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			log.Error("Error reading directory", "err", err)
 		}
 		return false

@@ -2,7 +2,9 @@ package sources
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -25,7 +27,7 @@ type YouTubeSource struct{}
 func InitYouTubeSource() (*YouTubeSource, error) {
 	youtubeLocation := getYouTubeScriptPath()
 
-	if _, err := os.Stat(youtubeLocation); os.IsNotExist(err) {
+	if _, err := os.Stat(youtubeLocation); errors.Is(err, fs.ErrNotExist) {
 		err = os.MkdirAll(filepath.Dir(youtubeLocation), os.ModePerm)
 		if err != nil {
 			return &YouTubeSource{}, err
