@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/adrg/xdg"
 	"github.com/c2h5oh/datasize"
 	"github.com/charmbracelet/log"
 	"github.com/libramusic/taurus"
@@ -194,10 +193,14 @@ func getConfigFilePath() (string, error) {
 		return configFilePath, nil
 	}
 
-	configFilePath, err = xdg.ConfigFile("libra/config.yaml")
+	configFilePath, err = os.UserConfigDir()
 	if err != nil {
-		log.Warn("Failed to get config file path from XDG config directory", "err", err)
-		return "", err
+		log.Warn("Failed to get user config directory", "err", err)
+	} else {
+		configFilePath = filepath.Join(configFilePath, "libra", "config.yaml")
+		if _, err := os.Stat(configFilePath); err == nil {
+			return configFilePath, nil
+		}
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
