@@ -41,8 +41,8 @@ source_scripts:
   python_command: python3
   youtube_location: source_scripts/youtube.py # Where youtube.py will be downladed to as well as what will be run.
 logs:
-  log_level: info # Supported levels: debug, info, warn, error, fatal. Default is info.
-  log_format: text # Possible values, text, json, or logfmt. Default is text.
+  level: info # Supported levels: debug, info, warn, error, fatal. Default is info.
+  format: text # Possible values, text, json, or logfmt. Default is text.
 storage:
   location: ./storage
   size_limit: 0B # A value of 0 means no limit.
