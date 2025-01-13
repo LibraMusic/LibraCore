@@ -32,7 +32,7 @@ func init() {
 
 	rootCmd.PersistentFlags().String("logLevel", "", "log level (debug|info|warn|error)")
 	_ = rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
-	taurus.BindFlag("Logs.LogLevel", rootCmd.PersistentFlags().Lookup("logLevel"))
+	taurus.BindFlag("Logs.Level", rootCmd.PersistentFlags().Lookup("logLevel"))
 }
 
 func initConfig() {

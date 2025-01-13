@@ -76,8 +76,8 @@ type SourceScriptsConfig struct {
 }
 
 type LogsConfig struct {
-	LogLevel  log.Level `yaml:"log_level"`
-	LogFormat string    `yaml:"log_format"`
+	Level  log.Level `yaml:"level"`
+	Format string    `yaml:"format"`
 }
 
 type StorageConfig struct {
@@ -119,8 +119,8 @@ func LoadConfig() error {
 	taurus.SetEnvPrefix(EnvPrefix)
 	taurus.SetExpandEnv(true)
 	taurus.BindEnvAlias("APPLICATION_PORT", "PORT")
-	taurus.BindEnvAlias("LOGS_LOG_LEVEL", "LOG_LEVEL")
-	taurus.BindEnvAlias("LOGS_LOG_FORMAT", "LOG_FORMAT")
+	taurus.BindEnvAlias("LOGS_LEVEL", "LOG_LEVEL")
+	taurus.BindEnvAlias("LOGS_FORMAT", "LOG_FORMAT")
 	setupTypes()
 
 	if err := taurus.Load(defaultConfig, &Conf); err != nil {

@@ -33,7 +33,7 @@ var serverCmd = &cobra.Command{
 	Aliases: []string{"start"},
 	Short:   "Start the server",
 	Run: func(cmd *cobra.Command, args []string) {
-		utils.SetupLogger(config.Conf.Logs.LogFormat, config.Conf.Logs.LogLevel)
+		utils.SetupLogger(config.Conf.Logs.Format, config.Conf.Logs.Level)
 
 		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
