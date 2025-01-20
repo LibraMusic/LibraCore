@@ -1,8 +1,6 @@
 module github.com/libramusic/libracore
 
-go 1.22.2
-
-toolchain go1.23.2
+go 1.23
 
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
