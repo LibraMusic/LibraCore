@@ -154,6 +154,9 @@ var serverCmd = &cobra.Command{
 		auth.POST("/register", routes.Register)
 		auth.POST("/login", routes.Login)
 		auth.POST("/logout", routes.Logout, middleware.JWTProtected)
+		auth.POST("/logout/:provider", routes.OAuthLogout)
+		auth.GET("/:provider", routes.OAuth)
+		auth.GET("/:provider/callback", routes.OAuthCallback)
 
 		v1 := api.Group("/v1")
 

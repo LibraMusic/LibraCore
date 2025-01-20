@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"errors"
 	"net/http"
 	"slices"
 	"strings"
@@ -8,6 +9,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/markbates/goth/gothic"
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
@@ -107,9 +109,13 @@ func Login(c echo.Context) error {
 		})
 	}
 	user, err := db.DB.GetUserByUsername(req.Username)
-	if err != nil {
+	if errors.Is(err, db.ErrNotFound) {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"message": "user not found",
+		})
+	} else if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
 		})
 	}
 	if !utils.ComparePassword(user.PasswordHash, req.Password) {
@@ -147,6 +153,84 @@ func Logout(c echo.Context) error {
 	}
 	c.Set("user", nil)
 	return c.NoContent(http.StatusOK)
+}
+
+func OAuthLogout(c echo.Context) error {
+	// TODO: Implement OAuth logout
+	return c.NoContent(http.StatusNotImplemented)
+}
+
+func OAuthCallback(c echo.Context) error {
+	user, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
+	if err != nil {
+		return c.String(http.StatusBadRequest, err.Error())
+	}
+
+	existingUser, err := db.DB.GetOAuthUser(user.Provider, user.UserID)
+	if !errors.Is(err, db.ErrNotFound) {
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{
+				"message": err.Error(),
+			})
+		}
+		token, err := utils.GenerateToken(existingUser.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, echo.Map{
+				"message": err.Error(),
+			})
+		}
+		return c.JSON(http.StatusOK, echo.Map{
+			"token": token,
+		})
+	}
+
+	// TODO: Check for existing user (not OAuth).
+
+	newUser := types.User{
+		ID:          utils.GenerateID(config.Conf.General.IDLength),
+		Username:    user.NickName,
+		Email:       user.Email,
+		DisplayName: user.Name,
+	}
+
+	// TODO: Profile picture.
+
+	if err := db.DB.CreateUser(newUser); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	if err := db.DB.LinkOAuthAccount(user.Provider, newUser.ID, user.UserID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	token, err := utils.GenerateToken(newUser.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	// TODO: Make sure this is correct and working.
+	// TODO: Maybe figure out frontend redirection since the login route is meant to be called as an API but the OAuth callback is redirected to by the OAuth provider.
+	return c.JSON(http.StatusOK, echo.Map{
+		"token": token,
+	})
+}
+
+func OAuth(c echo.Context) error {
+	// provider := c.Param("provider")
+	user, err := gothic.CompleteUserAuth(c.Response(), c.Request())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "OAuth callback failed", "error": err.Error()})
+	}
+
+	// TODO
+
+	return c.JSON(http.StatusOK, user)
 }
 
 func GetReservedUsernames() []string {

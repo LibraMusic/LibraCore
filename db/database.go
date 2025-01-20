@@ -2,6 +2,7 @@ package db
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -16,6 +17,8 @@ var DB Database
 
 //go:embed migrations
 var migrationsFS embed.FS
+
+var ErrNotFound = errors.New("not found in database")
 
 type Database interface {
 	Connect() error
@@ -68,6 +71,10 @@ type Database interface {
 	UsernameExists(username string) (bool, error)
 	EmailExists(email string) (bool, error)
 	DeleteUser(id string) error
+
+	GetOAuthUser(provider string, providerUserID string) (types.User, error)
+	LinkOAuthAccount(provider string, userID string, providerUserID string) error
+	DisconnectOAuthAccount(provider string, userID string) error
 
 	BlacklistToken(token string, expiration time.Time) error
 	CleanExpiredTokens() error
