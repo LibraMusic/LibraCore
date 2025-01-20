@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/log v0.4.0
 	github.com/getkin/kin-openapi v0.128.0
 	github.com/goccy/go-json v0.10.4
-	github.com/goccy/go-yaml v1.15.13
+	github.com/goccy/go-yaml v1.15.15
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
 	github.com/gorilla/feeds v1.2.0
