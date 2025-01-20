@@ -25,7 +25,7 @@ type SQLiteDatabase struct {
 func ConnectSQLite() (*SQLiteDatabase, error) {
 	result := &SQLiteDatabase{}
 	err := result.Connect()
-	return result, err
+	return result, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) Connect() error {
@@ -37,29 +37,32 @@ func (db *SQLiteDatabase) Connect() error {
 	sqlDB, err := sql.Open("sqlite3", dbPath)
 	db.sqlDB = sqlDB
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 
 	if err = db.createTracksTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	if err = db.createAlbumsTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	if err = db.createVideosTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	if err = db.createArtistsTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	if err = db.createPlaylistsTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	if err = db.createUsersTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
+	}
+	if err = db.createOAuthProvidersTable(); err != nil {
+		return normalizeSQLiteError(err)
 	}
 	if err = db.createBlacklistedTokensTable(); err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 
 	return nil
@@ -92,7 +95,7 @@ func (db *SQLiteDatabase) createTracksTable() error {
       lyric_sources BLOB -- JSONB (json object)
     );
   `)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) createAlbumsTable() error {
@@ -116,7 +119,7 @@ func (db *SQLiteDatabase) createAlbumsTable() error {
 		  metadata_source TEXT
 	  );
 	`)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) createVideosTable() error {
@@ -142,7 +145,7 @@ func (db *SQLiteDatabase) createVideosTable() error {
 		  lyric_sources BLOB -- JSONB (json object)
 	  );
 	`)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) createArtistsTable() error {
@@ -165,7 +168,7 @@ func (db *SQLiteDatabase) createArtistsTable() error {
 		  metadata_source TEXT
 	  );
 	`)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) createPlaylistsTable() error {
@@ -186,7 +189,7 @@ func (db *SQLiteDatabase) createPlaylistsTable() error {
 		  metadata_source TEXT
 	  );
 	`)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) createUsersTable() error {
@@ -207,7 +210,20 @@ func (db *SQLiteDatabase) createUsersTable() error {
 		  linked_sources BLOB -- JSONB (json object)
 	  );
 	`)
-	return err
+	return normalizeSQLiteError(err)
+}
+
+func (db *SQLiteDatabase) createOAuthProvidersTable() error {
+	_, err := db.sqlDB.Exec(`
+	  CREATE TABLE IF NOT EXISTS oauth_providers (
+          id TEXT PRIMARY KEY,
+          user_id TEXT,
+          provider TEXT,
+          provider_user_id TEXT,
+          UNIQUE(user_id, provider)
+      );
+	`)
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) createBlacklistedTokensTable() error {
@@ -217,12 +233,13 @@ func (db *SQLiteDatabase) createBlacklistedTokensTable() error {
 		  expiration TEXT
 	  );
 	`)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) Close() error {
 	log.Info("Closing SQLite connection...")
-	return db.sqlDB.Close()
+	err := db.sqlDB.Close()
+	return normalizeSQLiteError(err)
 }
 
 func (*SQLiteDatabase) EngineName() string {
@@ -232,16 +249,16 @@ func (*SQLiteDatabase) EngineName() string {
 func (db *SQLiteDatabase) MigrateUp(steps int) error {
 	d, err := iofs.New(migrationsFS, "migrations/sqlite")
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 
 	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 
 	if steps <= 0 {
@@ -252,22 +269,22 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 	if errors.Is(err, migrate.ErrNoChange) {
 		return nil
 	}
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	d, err := iofs.New(migrationsFS, "migrations/sqlite")
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 
 	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
 	if err != nil {
-		return err
+		return normalizeSQLiteError(err)
 	}
 
 	if steps <= 0 {
@@ -278,14 +295,14 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	if errors.Is(err, migrate.ErrNoChange) {
 		return nil
 	}
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 	var tracks []types.Track
 	rows, err := db.sqlDB.Query("SELECT * FROM tracks;")
 	if err != nil {
-		return tracks, err
+		return tracks, normalizeSQLiteError(err)
 	}
 	defer rows.Close()
 
@@ -303,7 +320,7 @@ func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 			&track.ContentSource, &track.MetadataSource, &lyricSources,
 		)
 		if err != nil {
-			return tracks, err
+			return tracks, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -336,17 +353,17 @@ func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return tracks, err
+		return tracks, normalizeSQLiteError(err)
 	}
 
-	return tracks, err
+	return tracks, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 	var tracks []types.Track
 	rows, err := db.sqlDB.Query("SELECT * FROM tracks WHERE user_id = ?;", userID)
 	if err != nil {
-		return tracks, err
+		return tracks, normalizeSQLiteError(err)
 	}
 	defer rows.Close()
 
@@ -364,7 +381,7 @@ func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 			&track.ContentSource, &track.MetadataSource, &lyricSources,
 		)
 		if err != nil {
-			return tracks, err
+			return tracks, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -397,10 +414,10 @@ func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return tracks, err
+		return tracks, normalizeSQLiteError(err)
 	}
 
-	return tracks, err
+	return tracks, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
@@ -418,7 +435,7 @@ func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
 		&track.ContentSource, &track.MetadataSource, &lyricSources,
 	)
 	if err != nil {
-		return track, err
+		return track, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -499,7 +516,7 @@ func (db *SQLiteDatabase) AddTrack(track types.Track) error {
 		string(linkedItemIDs), track.ContentSource, track.MetadataSource, string(lyricSources),
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
@@ -554,19 +571,19 @@ func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
 		string(lyricSources), track.ID,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) DeleteTrack(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM tracks WHERE id = ?;", id)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 	var albums []types.Album
 	rows, err := db.sqlDB.Query("SELECT * FROM albums;")
 	if err != nil {
-		return albums, err
+		return albums, normalizeSQLiteError(err)
 	}
 	defer rows.Close()
 
@@ -583,7 +600,7 @@ func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 			&album.MetadataSource,
 		)
 		if err != nil {
-			return albums, err
+			return albums, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -610,17 +627,17 @@ func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return albums, err
+		return albums, normalizeSQLiteError(err)
 	}
 
-	return albums, err
+	return albums, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 	var albums []types.Album
 	rows, err := db.sqlDB.Query("SELECT * FROM albums WHERE user_id = ?;", userID)
 	if err != nil {
-		return albums, err
+		return albums, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -636,7 +653,7 @@ func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 			&album.MetadataSource,
 		)
 		if err != nil {
-			return albums, err
+			return albums, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -663,10 +680,10 @@ func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return albums, err
+		return albums, normalizeSQLiteError(err)
 	}
 
-	return albums, err
+	return albums, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
@@ -683,7 +700,7 @@ func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
 		&album.MetadataSource,
 	)
 	if err != nil {
-		return album, err
+		return album, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -749,7 +766,7 @@ func (db *SQLiteDatabase) AddAlbum(album types.Album) error {
 		string(linkedItemIDs), album.MetadataSource,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
@@ -792,19 +809,19 @@ func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
 		string(linkedItemIDs), album.MetadataSource, album.ID,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) DeleteAlbum(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM albums WHERE id = ?;", id)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAllVideos() ([]types.Video, error) {
 	var videos []types.Video
 	rows, err := db.sqlDB.Query("SELECT * FROM videos;")
 	if err != nil {
-		return videos, err
+		return videos, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -820,7 +837,7 @@ func (db *SQLiteDatabase) GetAllVideos() ([]types.Video, error) {
 			&video.ContentSource, &video.MetadataSource, &lyricSources,
 		)
 		if err != nil {
-			return videos, err
+			return videos, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -850,17 +867,17 @@ func (db *SQLiteDatabase) GetAllVideos() ([]types.Video, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return videos, err
+		return videos, normalizeSQLiteError(err)
 	}
 
-	return videos, err
+	return videos, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetVideos(userID string) ([]types.Video, error) {
 	var videos []types.Video
 	rows, err := db.sqlDB.Query("SELECT * FROM videos WHERE user_id = ?;", userID)
 	if err != nil {
-		return videos, err
+		return videos, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -876,7 +893,7 @@ func (db *SQLiteDatabase) GetVideos(userID string) ([]types.Video, error) {
 			&video.ContentSource, &video.MetadataSource, &lyricSources,
 		)
 		if err != nil {
-			return videos, err
+			return videos, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -906,10 +923,10 @@ func (db *SQLiteDatabase) GetVideos(userID string) ([]types.Video, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return videos, err
+		return videos, normalizeSQLiteError(err)
 	}
 
-	return videos, err
+	return videos, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetVideo(id string) (types.Video, error) {
@@ -926,7 +943,7 @@ func (db *SQLiteDatabase) GetVideo(id string) (types.Video, error) {
 		&video.ContentSource, &video.MetadataSource, &lyricSources,
 	)
 	if err != nil {
-		return video, err
+		return video, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -1000,7 +1017,7 @@ func (db *SQLiteDatabase) AddVideo(video types.Video) error {
 		video.MetadataSource, string(lyricSources),
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
@@ -1049,19 +1066,19 @@ func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
 		string(lyricSources), video.ID,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) DeleteVideo(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM videos WHERE id = ?;", id)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 	var artists []types.Artist
 	rows, err := db.sqlDB.Query("SELECT * FROM artists;")
 	if err != nil {
-		return artists, err
+		return artists, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -1076,7 +1093,7 @@ func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 			&additionalMeta, &permissions, &linkedItemIDs, &artist.MetadataSource,
 		)
 		if err != nil {
-			return artists, err
+			return artists, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -1103,17 +1120,17 @@ func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return artists, err
+		return artists, normalizeSQLiteError(err)
 	}
 
-	return artists, err
+	return artists, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetArtists(userID string) ([]types.Artist, error) {
 	var artists []types.Artist
 	rows, err := db.sqlDB.Query("SELECT * FROM artists WHERE user_id = ?;", userID)
 	if err != nil {
-		return artists, err
+		return artists, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -1128,7 +1145,7 @@ func (db *SQLiteDatabase) GetArtists(userID string) ([]types.Artist, error) {
 			&additionalMeta, &permissions, &linkedItemIDs, &artist.MetadataSource,
 		)
 		if err != nil {
-			return artists, err
+			return artists, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -1155,10 +1172,10 @@ func (db *SQLiteDatabase) GetArtists(userID string) ([]types.Artist, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return artists, err
+		return artists, normalizeSQLiteError(err)
 	}
 
-	return artists, err
+	return artists, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetArtist(id string) (types.Artist, error) {
@@ -1174,7 +1191,7 @@ func (db *SQLiteDatabase) GetArtist(id string) (types.Artist, error) {
 		&additionalMeta, &permissions, &linkedItemIDs, &artist.MetadataSource,
 	)
 	if err != nil {
-		return artist, err
+		return artist, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -1240,7 +1257,7 @@ func (db *SQLiteDatabase) AddArtist(artist types.Artist) error {
 		string(linkedItemIDs), artist.MetadataSource,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
@@ -1283,19 +1300,19 @@ func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
 		string(linkedItemIDs), artist.MetadataSource, artist.ID,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) DeleteArtist(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM artists WHERE id = ?;", id)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetAllPlaylists() ([]types.Playlist, error) {
 	var playlists []types.Playlist
 	rows, err := db.sqlDB.Query("SELECT * FROM playlists;")
 	if err != nil {
-		return playlists, err
+		return playlists, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -1310,7 +1327,7 @@ func (db *SQLiteDatabase) GetAllPlaylists() ([]types.Playlist, error) {
 			&additionalMeta, &permissions, &playlist.MetadataSource,
 		)
 		if err != nil {
-			return playlists, err
+			return playlists, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -1331,17 +1348,17 @@ func (db *SQLiteDatabase) GetAllPlaylists() ([]types.Playlist, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return playlists, err
+		return playlists, normalizeSQLiteError(err)
 	}
 
-	return playlists, err
+	return playlists, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetPlaylists(userID string) ([]types.Playlist, error) {
 	var playlists []types.Playlist
 	rows, err := db.sqlDB.Query("SELECT * FROM playlists WHERE user_id = ?;", userID)
 	if err != nil {
-		return playlists, err
+		return playlists, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -1356,7 +1373,7 @@ func (db *SQLiteDatabase) GetPlaylists(userID string) ([]types.Playlist, error) 
 			&additionalMeta, &permissions, &playlist.MetadataSource,
 		)
 		if err != nil {
-			return playlists, err
+			return playlists, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -1377,10 +1394,10 @@ func (db *SQLiteDatabase) GetPlaylists(userID string) ([]types.Playlist, error) 
 	}
 
 	if err = rows.Err(); err != nil {
-		return playlists, err
+		return playlists, normalizeSQLiteError(err)
 	}
 
-	return playlists, err
+	return playlists, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetPlaylist(id string) (types.Playlist, error) {
@@ -1396,7 +1413,7 @@ func (db *SQLiteDatabase) GetPlaylist(id string) (types.Playlist, error) {
 		&additionalMeta, &permissions, &playlist.MetadataSource,
 	)
 	if err != nil {
-		return playlist, err
+		return playlist, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -1449,7 +1466,7 @@ func (db *SQLiteDatabase) AddPlaylist(playlist types.Playlist) error {
 		string(additionalMeta), string(permissions), playlist.MetadataSource,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
@@ -1485,19 +1502,19 @@ func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
 		playlist.ID,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) DeletePlaylist(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM playlists WHERE id = ?;", id)
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
 	var users []types.User
 	rows, err := db.sqlDB.Query("SELECT * FROM users;")
 	if err != nil {
-		return users, err
+		return users, normalizeSQLiteError(err)
 	}
 
 	for rows.Next() {
@@ -1511,7 +1528,7 @@ func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
 			&user.LinkedArtistID, &linkedSources,
 		)
 		if err != nil {
-			return users, err
+			return users, normalizeSQLiteError(err)
 		}
 
 		// Parse JSON fields
@@ -1532,10 +1549,10 @@ func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
 	}
 
 	if err = rows.Err(); err != nil {
-		return users, err
+		return users, normalizeSQLiteError(err)
 	}
 
-	return users, err
+	return users, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) GetUser(id string) (types.User, error) {
@@ -1550,7 +1567,7 @@ func (db *SQLiteDatabase) GetUser(id string) (types.User, error) {
 		&user.LinkedArtistID, &linkedSources,
 	)
 	if err != nil {
-		return user, err
+		return user, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -1582,7 +1599,7 @@ func (db *SQLiteDatabase) GetUserByUsername(username string) (types.User, error)
 		&user.LinkedArtistID, &linkedSources,
 	)
 	if err != nil {
-		return user, err
+		return user, normalizeSQLiteError(err)
 	}
 
 	// Parse JSON fields
@@ -1635,7 +1652,7 @@ func (db *SQLiteDatabase) CreateUser(user types.User) error {
 		user.CreationDate, string(permissions), user.LinkedArtistID, string(linkedSources),
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UpdateUser(user types.User) error {
@@ -1669,38 +1686,71 @@ func (db *SQLiteDatabase) UpdateUser(user types.User) error {
 		string(permissions), user.LinkedArtistID, string(linkedSources), user.ID,
 	)
 
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) DeleteUser(id string) error {
 	_, err := db.sqlDB.Exec("DELETE FROM users WHERE id = ?;", id)
-	return err
+	return normalizeSQLiteError(err)
+}
+
+func (db *SQLiteDatabase) GetOAuthUser(provider string, providerUserID string) (types.User, error) {
+	var user types.User
+	row := db.sqlDB.QueryRow(`
+        SELECT u.* FROM users u
+        JOIN oauth_providers o ON u.id = o.user_id
+        WHERE o.provider = ? AND o.provider_user_id = ?;
+    `, provider, providerUserID)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
+	return user, normalizeSQLiteError(err)
+}
+
+func (db *SQLiteDatabase) LinkOAuthAccount(provider string, userID string, providerUserID string) error {
+	_, err := db.sqlDB.Exec(`
+        INSERT INTO oauth_providers (id, user_id, provider, provider_user_id)
+        VALUES (?, ?, ?, ?);
+    `, utils.GenerateID(config.Conf.General.IDLength), userID, provider, providerUserID)
+	return normalizeSQLiteError(err)
+}
+
+func (db *SQLiteDatabase) DisconnectOAuthAccount(provider string, userID string) error {
+	_, err := db.sqlDB.Exec(`
+        DELETE FROM oauth_providers WHERE user_id = ? AND provider = ?;
+    `, userID, provider)
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) UsernameExists(username string) (bool, error) {
 	var exists bool
 	err := db.sqlDB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?);", username).Scan(&exists)
-	return exists, err
+	return exists, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) EmailExists(email string) (bool, error) {
 	var exists bool
 	err := db.sqlDB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = ?);", email).Scan(&exists)
-	return exists, err
+	return exists, normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) BlacklistToken(token string, expiration time.Time) error {
 	_, err := db.sqlDB.Exec("INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);", token, expiration.Format(time.DateTime))
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) CleanExpiredTokens() error {
 	_, err := db.sqlDB.Exec("DELETE FROM blacklisted_tokens WHERE expiration < datetime('now');")
-	return err
+	return normalizeSQLiteError(err)
 }
 
 func (db *SQLiteDatabase) IsTokenBlacklisted(token string) (bool, error) {
 	var exists bool
 	err := db.sqlDB.QueryRow("SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);", token).Scan(&exists)
-	return exists, err
+	return exists, normalizeSQLiteError(err)
+}
+
+func normalizeSQLiteError(err error) error {
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNotFound
+	}
+	return err
 }
