@@ -12,6 +12,9 @@ before:
     - ./scripts/completions.sh
     - ./scripts/manpages.sh
 
+gomod:
+  proxy: true
+
 report_sizes: true
 
 git:
@@ -278,17 +281,15 @@ nfpms:
     maintainer: DevReaper0 <devreaper0@gmail.com>
     description: A new, open, and extensible music service
     license: MIT
+    bindir: /usr/bin
     formats:
       - apk
       - deb
       - rpm
       - archlinux
-    bindir: /usr/bin
+    dependencies:
+      - ffmpeg
     contents:
-      - dst: /some/dir
-        type: dir
-        file_info:
-          mode: 0700
       - src: ./completions/libra.bash
         dst: /usr/share/bash-completion/completions/libra
         file_info:
@@ -309,6 +310,23 @@ nfpms:
         dst: /usr/share/doc/libra/copyright
         file_info:
           mode: 0644
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+
+universal_binaries:
+  - id: libra
+    ids:
+      - macos
+    name_template: "{{ .Env.SHORT_PROJECT_NAME }}"
+    replace: true
+
+upx:
+  - enabled: true
+
+signs:
+  - artifacts: checksum
 
 checksum:
   name_template: "checksums.txt"
