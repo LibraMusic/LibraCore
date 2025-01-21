@@ -18,7 +18,10 @@ var DB Database
 //go:embed migrations
 var migrationsFS embed.FS
 
-var ErrNotFound = errors.New("not found in database")
+var (
+	ErrNotFound = errors.New("not found in database")
+	ErrTooMany  = errors.New("too many found in database")
+)
 
 type Database interface {
 	Connect() error
