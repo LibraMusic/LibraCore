@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   release:
-    # runs-on: macos-13
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -25,15 +24,6 @@ jobs:
         with:
           go-version: "1.23.x"
           cache: true
-
-      - uses: mlugg/setup-zig@v1
-        # with:
-        #   version: "0.11.0"
-
-      # - name: Setup Docker
-      #   run: |
-      #     brew install docker colima
-      #     colima start
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -53,10 +43,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Set output
-      #   id: macos_sdk
-      #   run: echo "path=$(xcrun --show-sdk-path)" >> $GITHUB_OUTPUT
 
       - name: Prepare for nightly release
         run: |
@@ -140,15 +126,12 @@ jobs:
         if: ${{ github.ref_type == 'tag' && !endsWith(github.ref, '-nightly') }}
 
       - name: Run GoReleaser
-        # timeout-minutes: 120
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: ~> v2
-          # args: release --clean --timeout 120m --verbose
           args: release --clean
         env:
-          # SDK_PATH: ${{ steps.macos_sdk.outputs.path }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload assets
@@ -156,6 +139,3 @@ jobs:
         with:
           name: libra
           path: dist/*
-
-      # - name: Clean up
-      #   run: colima stop

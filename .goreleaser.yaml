@@ -21,31 +21,19 @@ metadata:
   mod_timestamp: "{{ .CommitTimestamp }}"
 
 builds:
-  # - id: macos
-  #   binary: libra
-  #   goos:
-  #     - darwin
-  #   goarch:
-  #     - amd64
-  #     - arm64
-  #   ldflags:
-  #     - -s -w
-  #     - -X github.com/libramusic/libracore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
-  #   flags:
-  #     - -trimpath
-  #     - -buildmode=pie
-  #   env:
-  #     - CGO_ENABLED=1
-  #     - >-
-  #       {{- if eq .Os "darwin" }}
-  #         {{- if eq .Arch "amd64"}}CC=zig cc -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #         {{- if eq .Arch "arm64"}}CC=zig cc -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #       {{- end }}
-  #     - >-
-  #       {{- if eq .Os "darwin" }}
-  #         {{- if eq .Arch "amd64"}}CXX=zig c++ -target x86_64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #         {{- if eq .Arch "arm64"}}CXX=zig c++ -target aarch64-macos-none -F{{ .Env.SDK_PATH }}/System/Library/Frameworks{{- end }}
-  #       {{- end }}
+  - id: macos
+    binary: libra
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/libramusic/libracore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
+    flags:
+      - -trimpath
+      - -buildmode=pie
 
   - id: linux
     binary: libra
@@ -64,22 +52,6 @@ builds:
       - -X github.com/libramusic/libracore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
     flags:
       - -trimpath
-    env:
-      - CGO_ENABLED=1
-      - >-
-        {{- if eq .Os "linux" }}
-          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-linux-musl{{- end }}
-          {{- if eq .Arch "arm64" }}CC=zig cc -target aarch64-linux-musl{{- end }}
-          {{- if eq .Arch "arm" }}CC=zig cc -target arm-linux-musleabihf{{- end }}
-          {{- if eq .Arch "386" }}CC=zig cc -target x86-linux-musl{{- end }}
-        {{- end }}
-      - >-
-        {{- if eq .Os "linux" }}
-          {{- if eq .Arch "amd64" }}CXX=zig c++ -target x86_64-linux-musl{{- end }}
-          {{- if eq .Arch "arm64" }}CXX=zig c++ -target aarch64-linux-musl{{- end }}
-          {{- if eq .Arch "arm" }}CXX=zig c++ -target arm-linux-musleabihf{{- end }}
-          {{- if eq .Arch "386" }}CXX=zig c++ -target x86-linux-musl{{- end }}
-        {{- end }}
 
   - id: windows
     binary: libra
@@ -94,20 +66,6 @@ builds:
       - -X github.com/libramusic/libracore/utils.rawVersion={{ if isEnvSet "IS_NIGHTLY_BUILD" }}{{ .RawVersion }}-DEV{{ else }}{{ .Version }}{{ end }}
     flags:
       - -trimpath
-    env:
-      - CGO_ENABLED=1
-      - >-
-        {{- if eq .Os "windows" }}
-          {{- if eq .Arch "amd64" }}CC=zig cc -target x86_64-windows-gnu{{- end }}
-          {{- if eq .Arch "arm64" }}CC=zig cc -target aarch64-windows-gnu{{- end }}
-          {{- if eq .Arch "386" }}CC=zig cc -target x86-windows-gnu{{- end }}
-        {{- end }}
-      - >-
-        {{- if eq .Os "windows" }}
-          {{- if eq .Arch "amd64" }}CXX=zig c++ -target x86_64-windows-gnu{{- end }}
-          {{- if eq .Arch "arm64" }}CXX=zig c++ -target aarch64-windows-gnu{{- end }}
-          {{- if eq .Arch "386" }}CXX=zig c++ -target x86-windows-gnu{{- end }}
-        {{- end }}
 
 dockers:
   - image_templates:
