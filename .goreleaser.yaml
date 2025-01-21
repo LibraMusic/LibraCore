@@ -4,6 +4,7 @@ version: 2
 
 env:
   - '{{ if not (isEnvSet "NIGHTLY_TAG") }}NIGHTLY_TAG=v0.1.0-nightly{{ end }}'
+  - SHORT_PROJECT_NAME=libra
 
 before:
   hooks:
@@ -233,7 +234,7 @@ archives:
   - format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
-      {{ .ProjectName }}_
+      {{ .Env.SHORT_PROJECT_NAME }}_
       {{- title .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
@@ -308,6 +309,9 @@ nfpms:
         dst: /usr/share/doc/libra/copyright
         file_info:
           mode: 0644
+
+checksum:
+  name_template: "checksums.txt"
 
 changelog:
   sort: asc
