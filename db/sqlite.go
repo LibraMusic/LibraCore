@@ -1,17 +1,17 @@
 package db
 
+// TODO: Custom golang-migrate driver for SQLite with zombiezen's go-sqlite package
+
 import (
-	"database/sql"
-	"errors"
+	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/sqlite3"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
-	_ "github.com/mattn/go-sqlite3"
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/types"
@@ -19,13 +19,13 @@ import (
 )
 
 type SQLiteDatabase struct {
-	sqlDB *sql.DB
+	pool *sqlitex.Pool
 }
 
 func ConnectSQLite() (*SQLiteDatabase, error) {
 	result := &SQLiteDatabase{}
 	err := result.Connect()
-	return result, normalizeSQLiteError(err)
+	return result, err
 }
 
 func (db *SQLiteDatabase) Connect() error {
@@ -34,42 +34,48 @@ func (db *SQLiteDatabase) Connect() error {
 	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
 		dbPath = filepath.Join(utils.DataDir, dbPath)
 	}
-	sqlDB, err := sql.Open("sqlite3", dbPath)
-	db.sqlDB = sqlDB
+	pool, err := sqlitex.NewPool(dbPath, sqlitex.PoolOptions{})
+	db.pool = pool
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 
 	if err = db.createTracksTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createAlbumsTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createVideosTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createArtistsTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createPlaylistsTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createUsersTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createOAuthProvidersTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	if err = db.createBlacklistedTokensTable(); err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 
 	return nil
 }
 
 func (db *SQLiteDatabase) createTracksTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
     CREATE TABLE IF NOT EXISTS tracks (
       id TEXT PRIMARY KEY,
       user_id TEXT,
@@ -93,13 +99,18 @@ func (db *SQLiteDatabase) createTracksTable() error {
       content_source TEXT,
       metadata_source TEXT,
       lyric_sources BLOB -- JSONB (json object)
-    );
-  `)
-	return normalizeSQLiteError(err)
+    );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createAlbumsTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS albums (
 		  id TEXT PRIMARY KEY,
 		  user_id TEXT,
@@ -117,13 +128,18 @@ func (db *SQLiteDatabase) createAlbumsTable() error {
 		  permissions BLOB, -- JSONB (json object)
 		  linked_item_ids TEXT, -- JSON (json array)
 		  metadata_source TEXT
-	  );
-	`)
-	return normalizeSQLiteError(err)
+	  );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createVideosTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS videos (
 		  id TEXT PRIMARY KEY,
 		  user_id TEXT,
@@ -143,13 +159,18 @@ func (db *SQLiteDatabase) createVideosTable() error {
 		  content_source TEXT,
 		  metadata_source TEXT,
 		  lyric_sources BLOB -- JSONB (json object)
-	  );
-	`)
-	return normalizeSQLiteError(err)
+	  );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createArtistsTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS artists (
 		  id TEXT PRIMARY KEY,
 		  user_id TEXT,
@@ -166,13 +187,18 @@ func (db *SQLiteDatabase) createArtistsTable() error {
 		  permissions BLOB, -- JSONB (json object)
 		  linked_item_ids TEXT, -- JSON (json array)
 		  metadata_source TEXT
-	  );
-	`)
-	return normalizeSQLiteError(err)
+	  );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createPlaylistsTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS playlists (
 		  id TEXT PRIMARY KEY,
 		  user_id TEXT,
@@ -187,13 +213,18 @@ func (db *SQLiteDatabase) createPlaylistsTable() error {
 		  additional_meta BLOB, -- JSONB (json object)
 		  permissions BLOB, -- JSONB (json object)
 		  metadata_source TEXT
-	  );
-	`)
-	return normalizeSQLiteError(err)
+	  );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createUsersTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS users (
 		  id TEXT PRIMARY KEY,
 		  username TEXT NOT NULL,
@@ -208,38 +239,47 @@ func (db *SQLiteDatabase) createUsersTable() error {
 		  permissions BLOB, -- JSONB (json object)
 		  linked_artist_id TEXT,
 		  linked_sources BLOB -- JSONB (json object)
-	  );
-	`)
-	return normalizeSQLiteError(err)
+	  );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createOAuthProvidersTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS oauth_providers (
           id TEXT PRIMARY KEY,
           user_id TEXT,
           provider TEXT,
           provider_user_id TEXT,
           UNIQUE(user_id, provider)
-      );
-	`)
-	return normalizeSQLiteError(err)
+      );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) createBlacklistedTokensTable() error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  CREATE TABLE IF NOT EXISTS blacklisted_tokens (
 		  token TEXT PRIMARY KEY,
 		  expiration TEXT
-	  );
-	`)
-	return normalizeSQLiteError(err)
+	  );`, nil)
+	return err
 }
 
 func (db *SQLiteDatabase) Close() error {
 	log.Info("Closing SQLite connection...")
-	err := db.sqlDB.Close()
-	return normalizeSQLiteError(err)
+	err := db.pool.Close()
+	return err
 }
 
 func (*SQLiteDatabase) EngineName() string {
@@ -247,18 +287,24 @@ func (*SQLiteDatabase) EngineName() string {
 }
 
 func (db *SQLiteDatabase) MigrateUp(steps int) error {
-	d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	conn, err := db.pool.Take(context.Background())
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	/*d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	if err != nil {
+		return err
 	}
 
 	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 
 	if steps <= 0 {
@@ -268,23 +314,29 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 	}
 	if errors.Is(err, migrate.ErrNoChange) {
 		return nil
-	}
-	return normalizeSQLiteError(err)
+	}*/
+	return err
 }
 
 func (db *SQLiteDatabase) MigrateDown(steps int) error {
-	d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	conn, err := db.pool.Take(context.Background())
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	/*d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	if err != nil {
+		return err
 	}
 
 	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
 	if err != nil {
-		return normalizeSQLiteError(err)
+		return err
 	}
 
 	if steps <= 0 {
@@ -294,174 +346,198 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	}
 	if errors.Is(err, migrate.ErrNoChange) {
 		return nil
-	}
-	return normalizeSQLiteError(err)
+	}*/
+	return err
 }
 
 func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 	var tracks []types.Track
-	rows, err := db.sqlDB.Query("SELECT * FROM tracks;")
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return tracks, normalizeSQLiteError(err)
+		return tracks, err
 	}
-	defer rows.Close()
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		track := types.Track{}
-		var artistIDs, albumIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions, lyrics, lyricSources string
+	err = sqlitex.Execute(conn, "SELECT * FROM tracks;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			track := types.Track{}
 
-		err = rows.Scan(
-			&track.ID, &track.UserID, &track.ISRC, &track.Title,
-			&artistIDs, &albumIDs, &track.PrimaryAlbumID, &track.TrackNumber,
-			&track.Duration, &track.Description, &track.ReleaseDate, &lyrics,
-			&track.ListenCount, &track.FavoriteCount, &track.AdditionDate,
-			&tags, &additionalMeta, &permissions, &linkedItemIDs,
-			&track.ContentSource, &track.MetadataSource, &lyricSources,
-		)
-		if err != nil {
-			return tracks, normalizeSQLiteError(err)
-		}
+			track.ID = stmt.ColumnText(0)
+			track.UserID = stmt.ColumnText(1)
+			track.ISRC = stmt.ColumnText(2)
+			track.Title = stmt.ColumnText(3)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
+				return fmt.Errorf("failed to parse album_ids: %w", err)
+			}
+			track.PrimaryAlbumID = stmt.ColumnText(6)
+			track.TrackNumber = stmt.ColumnInt(7)
+			track.Duration = stmt.ColumnInt(8)
+			track.Description = stmt.ColumnText(9)
+			track.ReleaseDate = stmt.ColumnText(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
+				return fmt.Errorf("failed to parse lyrics: %w", err)
+			}
+			track.ListenCount = stmt.ColumnInt(12)
+			track.FavoriteCount = stmt.ColumnInt(13)
+			track.AdditionDate = stmt.ColumnInt64(14)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
+			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
+			if err := json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
+				return fmt.Errorf("failed to parse lyric_sources: %w", err)
+			}
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(artistIDs), &track.ArtistIDs); err != nil {
-			return tracks, errors.New("failed to parse artist_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(albumIDs), &track.AlbumIDs); err != nil {
-			return tracks, errors.New("failed to parse album_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &track.Tags); err != nil {
-			return tracks, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &track.LinkedItemIDs); err != nil {
-			return tracks, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &track.AdditionalMeta); err != nil {
-			return tracks, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &track.Permissions); err != nil {
-			return tracks, errors.New("failed to parse permissions: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(lyrics), &track.Lyrics); err != nil {
-			return tracks, errors.New("failed to parse lyrics: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(lyricSources), &track.LyricSources); err != nil {
-			return tracks, errors.New("failed to parse lyric_sources: " + err.Error())
-		}
+			tracks = append(tracks, track)
 
-		tracks = append(tracks, track)
-	}
+			return nil
+		},
+	})
 
-	if err = rows.Err(); err != nil {
-		return tracks, normalizeSQLiteError(err)
-	}
-
-	return tracks, normalizeSQLiteError(err)
+	return tracks, err
 }
 
 func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 	var tracks []types.Track
-	rows, err := db.sqlDB.Query("SELECT * FROM tracks WHERE user_id = ?;", userID)
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return tracks, normalizeSQLiteError(err)
+		return tracks, err
 	}
-	defer rows.Close()
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		track := types.Track{}
-		var artistIDs, albumIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions, lyrics, lyricSources string
+	err = sqlitex.Execute(conn, "SELECT * FROM tracks WHERE user_id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			track := types.Track{}
 
-		err = rows.Scan(
-			&track.ID, &track.UserID, &track.ISRC, &track.Title,
-			&artistIDs, &albumIDs, &track.PrimaryAlbumID, &track.TrackNumber,
-			&track.Duration, &track.Description, &track.ReleaseDate, &lyrics,
-			&track.ListenCount, &track.FavoriteCount, &track.AdditionDate,
-			&tags, &additionalMeta, &permissions, &linkedItemIDs,
-			&track.ContentSource, &track.MetadataSource, &lyricSources,
-		)
-		if err != nil {
-			return tracks, normalizeSQLiteError(err)
-		}
+			track.ID = stmt.ColumnText(0)
+			track.UserID = stmt.ColumnText(1)
+			track.ISRC = stmt.ColumnText(2)
+			track.Title = stmt.ColumnText(3)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
+				return fmt.Errorf("failed to parse album_ids: %w", err)
+			}
+			track.PrimaryAlbumID = stmt.ColumnText(6)
+			track.TrackNumber = stmt.ColumnInt(7)
+			track.Duration = stmt.ColumnInt(8)
+			track.Description = stmt.ColumnText(9)
+			track.ReleaseDate = stmt.ColumnText(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
+				return fmt.Errorf("failed to parse lyrics: %w", err)
+			}
+			track.ListenCount = stmt.ColumnInt(12)
+			track.FavoriteCount = stmt.ColumnInt(13)
+			track.AdditionDate = stmt.ColumnInt64(14)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
+			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
+			if err := json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
+				return fmt.Errorf("failed to parse lyric_sources: %w", err)
+			}
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(artistIDs), &track.ArtistIDs); err != nil {
-			return tracks, errors.New("failed to parse artist_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(albumIDs), &track.AlbumIDs); err != nil {
-			return tracks, errors.New("failed to parse album_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &track.Tags); err != nil {
-			return tracks, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &track.LinkedItemIDs); err != nil {
-			return tracks, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &track.AdditionalMeta); err != nil {
-			return tracks, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &track.Permissions); err != nil {
-			return tracks, errors.New("failed to parse permissions: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(lyrics), &track.Lyrics); err != nil {
-			return tracks, errors.New("failed to parse lyrics: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(lyricSources), &track.LyricSources); err != nil {
-			return tracks, errors.New("failed to parse lyric_sources: " + err.Error())
-		}
+			tracks = append(tracks, track)
 
-		tracks = append(tracks, track)
-	}
+			return nil
+		},
+		Args: []any{userID},
+	})
 
-	if err = rows.Err(); err != nil {
-		return tracks, normalizeSQLiteError(err)
-	}
-
-	return tracks, normalizeSQLiteError(err)
+	return tracks, err
 }
 
 func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
 	track := types.Track{}
-	var artistIDs, albumIDs, tags, linkedItemIDs string
-	var additionalMeta, permissions, lyrics, lyricSources string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM tracks WHERE id = ?;", id)
-	err := row.Scan(
-		&track.ID, &track.UserID, &track.ISRC, &track.Title,
-		&artistIDs, &albumIDs, &track.PrimaryAlbumID, &track.TrackNumber,
-		&track.Duration, &track.Description, &track.ReleaseDate, &lyrics,
-		&track.ListenCount, &track.FavoriteCount, &track.AdditionDate,
-		&tags, &additionalMeta, &permissions, &linkedItemIDs,
-		&track.ContentSource, &track.MetadataSource, &lyricSources,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return track, normalizeSQLiteError(err)
+		return track, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(artistIDs), &track.ArtistIDs); err != nil {
-		return track, errors.New("failed to parse artist_ids: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM tracks WHERE id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			track.ID = stmt.ColumnText(0)
+			track.UserID = stmt.ColumnText(1)
+			track.ISRC = stmt.ColumnText(2)
+			track.Title = stmt.ColumnText(3)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
+				return fmt.Errorf("failed to parse album_ids: %w", err)
+			}
+			track.PrimaryAlbumID = stmt.ColumnText(6)
+			track.TrackNumber = stmt.ColumnInt(7)
+			track.Duration = stmt.ColumnInt(8)
+			track.Description = stmt.ColumnText(9)
+			track.ReleaseDate = stmt.ColumnText(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
+				return fmt.Errorf("failed to parse lyrics: %w", err)
+			}
+			track.ListenCount = stmt.ColumnInt(12)
+			track.FavoriteCount = stmt.ColumnInt(13)
+			track.AdditionDate = stmt.ColumnInt64(14)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
+			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
+			if err := json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
+				return fmt.Errorf("failed to parse lyric_sources: %w", err)
+			}
+
+			return nil
+		},
+		Args: []any{id},
+	})
+	if err != nil {
+		return track, err
 	}
-	if err = json.Unmarshal([]byte(albumIDs), &track.AlbumIDs); err != nil {
-		return track, errors.New("failed to parse album_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(tags), &track.Tags); err != nil {
-		return track, errors.New("failed to parse tags: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(linkedItemIDs), &track.LinkedItemIDs); err != nil {
-		return track, errors.New("failed to parse linked_item_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(additionalMeta), &track.AdditionalMeta); err != nil {
-		return track, errors.New("failed to parse additional_meta: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &track.Permissions); err != nil {
-		return track, errors.New("failed to parse permissions: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(lyrics), &track.Lyrics); err != nil {
-		return track, errors.New("failed to parse lyrics: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(lyricSources), &track.LyricSources); err != nil {
-		return track, errors.New("failed to parse lyric_sources: " + err.Error())
+	if !scanned {
+		return track, ErrNotFound
 	}
 
 	return track, nil
@@ -471,256 +547,294 @@ func (db *SQLiteDatabase) AddTrack(track types.Track) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
-		return errors.New("failed to marshal artist_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal artist_ids: %w", err)
 	}
 	albumIDs, err := json.Marshal(track.AlbumIDs)
 	if err != nil {
-		return errors.New("failed to marshal album_ids: " + err.Error())
-	}
-	tags, err := json.Marshal(track.Tags)
-	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(track.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
-	}
-	additionalMeta, err := json.Marshal(track.AdditionalMeta)
-	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
-	}
-	permissions, err := json.Marshal(track.Permissions)
-	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal album_ids: %w", err)
 	}
 	lyrics, err := json.Marshal(track.Lyrics)
 	if err != nil {
-		return errors.New("failed to marshal lyrics: " + err.Error())
+		return fmt.Errorf("failed to marshal lyrics: %w", err)
+	}
+	tags, err := json.Marshal(track.Tags)
+	if err != nil {
+		return fmt.Errorf("failed to marshal tags: %w", err)
+	}
+	additionalMeta, err := json.Marshal(track.AdditionalMeta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
+	}
+	permissions, err := json.Marshal(track.Permissions)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(track.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 	lyricSources, err := json.Marshal(track.LyricSources)
 	if err != nil {
-		return errors.New("failed to marshal lyric_sources: " + err.Error())
+		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  INSERT INTO tracks (
 	    id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
 	  ) VALUES (
 	    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );
-	`,
-		track.ID, track.UserID, track.ISRC, track.Title, string(artistIDs), string(albumIDs),
-		track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
-		track.ReleaseDate, string(lyrics), track.ListenCount, track.FavoriteCount,
-		track.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), track.ContentSource, track.MetadataSource, string(lyricSources),
-	)
+	  );`, &sqlitex.ExecOptions{
+		Args: []any{
+			track.ID, track.UserID, track.ISRC, track.Title, string(artistIDs), string(albumIDs),
+			track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
+			track.ReleaseDate, string(lyrics), track.ListenCount, track.FavoriteCount,
+			track.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), track.ContentSource, track.MetadataSource, string(lyricSources),
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
-		return errors.New("failed to marshal artist_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal artist_ids: %w", err)
 	}
 	albumIDs, err := json.Marshal(track.AlbumIDs)
 	if err != nil {
-		return errors.New("failed to marshal album_ids: " + err.Error())
-	}
-	tags, err := json.Marshal(track.Tags)
-	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(track.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
-	}
-	additionalMeta, err := json.Marshal(track.AdditionalMeta)
-	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
-	}
-	permissions, err := json.Marshal(track.Permissions)
-	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal album_ids: %w", err)
 	}
 	lyrics, err := json.Marshal(track.Lyrics)
 	if err != nil {
-		return errors.New("failed to marshal lyrics: " + err.Error())
+		return fmt.Errorf("failed to marshal lyrics: %w", err)
+	}
+	tags, err := json.Marshal(track.Tags)
+	if err != nil {
+		return fmt.Errorf("failed to marshal tags: %w", err)
+	}
+	additionalMeta, err := json.Marshal(track.AdditionalMeta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
+	}
+	permissions, err := json.Marshal(track.Permissions)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(track.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 	lyricSources, err := json.Marshal(track.LyricSources)
 	if err != nil {
-		return errors.New("failed to marshal lyric_sources: " + err.Error())
+		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  UPDATE tracks
 	  SET user_id=?, isrc=?, title=?, artist_ids=?, album_ids=?, primary_album_id=?, 
 	      track_number=?, duration=?, description=?, release_date=?, lyrics=?, 
 	      listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?, 
 	      permissions=?, linked_item_ids=?, content_source=?, metadata_source=?, 
 	      lyric_sources=?
-	  WHERE id=?;
-	`,
-		track.UserID, track.ISRC, track.Title, string(artistIDs), string(albumIDs),
-		track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
-		track.ReleaseDate, string(lyrics), track.ListenCount, track.FavoriteCount,
-		track.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), track.ContentSource, track.MetadataSource,
-		string(lyricSources), track.ID,
-	)
+	  WHERE id=?;`, &sqlitex.ExecOptions{
+		Args: []any{
+			track.UserID, track.ISRC, track.Title, string(artistIDs), string(albumIDs),
+			track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
+			track.ReleaseDate, string(lyrics), track.ListenCount, track.FavoriteCount,
+			track.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), track.ContentSource, track.MetadataSource,
+			string(lyricSources), track.ID,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) DeleteTrack(id string) error {
-	_, err := db.sqlDB.Exec("DELETE FROM tracks WHERE id = ?;", id)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM tracks WHERE id = ?;", &sqlitex.ExecOptions{
+		Args: []any{id},
+	})
+	return err
 }
 
 func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 	var albums []types.Album
-	rows, err := db.sqlDB.Query("SELECT * FROM albums;")
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return albums, normalizeSQLiteError(err)
+		return albums, err
 	}
-	defer rows.Close()
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		album := types.Album{}
-		var artistIDs, trackIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions string
+	err = sqlitex.Execute(conn, "SELECT * FROM albums;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			album := types.Album{}
 
-		err = rows.Scan(
-			&album.ID, &album.UserID, &album.UPC, &album.Title,
-			&artistIDs, &trackIDs, &album.Description, &album.ReleaseDate,
-			&album.ListenCount, &album.FavoriteCount, &album.AdditionDate,
-			&tags, &additionalMeta, &permissions, &linkedItemIDs,
-			&album.MetadataSource,
-		)
-		if err != nil {
-			return albums, normalizeSQLiteError(err)
-		}
+			album.ID = stmt.ColumnText(0)
+			album.UserID = stmt.ColumnText(1)
+			album.UPC = stmt.ColumnText(2)
+			album.Title = stmt.ColumnText(3)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			album.Description = stmt.ColumnText(6)
+			album.ReleaseDate = stmt.ColumnText(7)
+			album.ListenCount = stmt.ColumnInt(8)
+			album.FavoriteCount = stmt.ColumnInt(9)
+			album.AdditionDate = stmt.ColumnInt64(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(artistIDs), &album.ArtistIDs); err != nil {
-			return albums, errors.New("failed to parse artist_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(trackIDs), &album.TrackIDs); err != nil {
-			return albums, errors.New("failed to parse track_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &album.Tags); err != nil {
-			return albums, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &album.LinkedItemIDs); err != nil {
-			return albums, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &album.AdditionalMeta); err != nil {
-			return albums, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &album.Permissions); err != nil {
-			return albums, errors.New("failed to parse permissions: " + err.Error())
-		}
+			albums = append(albums, album)
 
-		albums = append(albums, album)
-	}
+			return nil
+		},
+	})
 
-	if err = rows.Err(); err != nil {
-		return albums, normalizeSQLiteError(err)
-	}
-
-	return albums, normalizeSQLiteError(err)
+	return albums, err
 }
 
 func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 	var albums []types.Album
-	rows, err := db.sqlDB.Query("SELECT * FROM albums WHERE user_id = ?;", userID)
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return albums, normalizeSQLiteError(err)
+		return albums, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		album := types.Album{}
-		var artistIDs, trackIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions string
+	err = sqlitex.Execute(conn, "SELECT * FROM albums WHERE user_id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			album := types.Album{}
 
-		err = rows.Scan(
-			&album.ID, &album.UserID, &album.UPC, &album.Title,
-			&artistIDs, &trackIDs, &album.Description, &album.ReleaseDate,
-			&album.ListenCount, &album.FavoriteCount, &album.AdditionDate,
-			&tags, &additionalMeta, &permissions, &linkedItemIDs,
-			&album.MetadataSource,
-		)
-		if err != nil {
-			return albums, normalizeSQLiteError(err)
-		}
+			album.ID = stmt.ColumnText(0)
+			album.UserID = stmt.ColumnText(1)
+			album.UPC = stmt.ColumnText(2)
+			album.Title = stmt.ColumnText(3)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			album.Description = stmt.ColumnText(6)
+			album.ReleaseDate = stmt.ColumnText(7)
+			album.ListenCount = stmt.ColumnInt(8)
+			album.FavoriteCount = stmt.ColumnInt(9)
+			album.AdditionDate = stmt.ColumnInt64(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(artistIDs), &album.ArtistIDs); err != nil {
-			return albums, errors.New("failed to parse artist_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(trackIDs), &album.TrackIDs); err != nil {
-			return albums, errors.New("failed to parse track_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &album.Tags); err != nil {
-			return albums, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &album.LinkedItemIDs); err != nil {
-			return albums, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &album.AdditionalMeta); err != nil {
-			return albums, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &album.Permissions); err != nil {
-			return albums, errors.New("failed to parse permissions: " + err.Error())
-		}
+			albums = append(albums, album)
 
-		albums = append(albums, album)
-	}
+			return nil
+		},
+		Args: []any{userID},
+	})
 
-	if err = rows.Err(); err != nil {
-		return albums, normalizeSQLiteError(err)
-	}
-
-	return albums, normalizeSQLiteError(err)
+	return albums, err
 }
 
 func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
 	album := types.Album{}
-	var artistIDs, trackIDs, tags, linkedItemIDs string
-	var additionalMeta, permissions string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM albums WHERE id = ?;", id)
-	err := row.Scan(
-		&album.ID, &album.UserID, &album.UPC, &album.Title,
-		&artistIDs, &trackIDs, &album.Description, &album.ReleaseDate,
-		&album.ListenCount, &album.FavoriteCount, &album.AdditionDate,
-		&tags, &additionalMeta, &permissions, &linkedItemIDs,
-		&album.MetadataSource,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return album, normalizeSQLiteError(err)
+		return album, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(artistIDs), &album.ArtistIDs); err != nil {
-		return album, errors.New("failed to parse artist_ids: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM albums WHERE id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			album.ID = stmt.ColumnText(0)
+			album.UserID = stmt.ColumnText(1)
+			album.UPC = stmt.ColumnText(2)
+			album.Title = stmt.ColumnText(3)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			album.Description = stmt.ColumnText(6)
+			album.ReleaseDate = stmt.ColumnText(7)
+			album.ListenCount = stmt.ColumnInt(8)
+			album.FavoriteCount = stmt.ColumnInt(9)
+			album.AdditionDate = stmt.ColumnInt64(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
+
+			return nil
+		},
+		Args: []any{id},
+	})
+	if err != nil {
+		return album, err
 	}
-	if err = json.Unmarshal([]byte(trackIDs), &album.TrackIDs); err != nil {
-		return album, errors.New("failed to parse track_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(tags), &album.Tags); err != nil {
-		return album, errors.New("failed to parse tags: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(linkedItemIDs), &album.LinkedItemIDs); err != nil {
-		return album, errors.New("failed to parse linked_item_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(additionalMeta), &album.AdditionalMeta); err != nil {
-		return album, errors.New("failed to parse additional_meta: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &album.Permissions); err != nil {
-		return album, errors.New("failed to parse permissions: " + err.Error())
+	if !scanned {
+		return album, ErrNotFound
 	}
 
 	return album, nil
@@ -730,243 +844,285 @@ func (db *SQLiteDatabase) AddAlbum(album types.Album) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
-		return errors.New("failed to marshal artist_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal artist_ids: %w", err)
 	}
 	trackIDs, err := json.Marshal(album.TrackIDs)
 	if err != nil {
-		return errors.New("failed to marshal track_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal track_ids: %w", err)
 	}
 	tags, err := json.Marshal(album.Tags)
 	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(album.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	additionalMeta, err := json.Marshal(album.AdditionalMeta)
 	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
 	}
 	permissions, err := json.Marshal(album.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(album.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  INSERT INTO albums (
 	    id, user_id, upc, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
 	  ) VALUES (
 	    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );
-	`,
-		album.ID, album.UserID, album.UPC, album.Title, string(artistIDs), string(trackIDs),
-		album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
-		album.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), album.MetadataSource,
-	)
+	  );`, &sqlitex.ExecOptions{
+		Args: []any{
+			album.ID, album.UserID, album.UPC, album.Title, string(artistIDs), string(trackIDs),
+			album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
+			album.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), album.MetadataSource,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
-		return errors.New("failed to marshal artist_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal artist_ids: %w", err)
 	}
 	trackIDs, err := json.Marshal(album.TrackIDs)
 	if err != nil {
-		return errors.New("failed to marshal track_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal track_ids: %w", err)
 	}
 	tags, err := json.Marshal(album.Tags)
 	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(album.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	additionalMeta, err := json.Marshal(album.AdditionalMeta)
 	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
 	}
 	permissions, err := json.Marshal(album.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(album.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  UPDATE albums
 	  SET user_id=?, upc=?, title=?, artist_ids=?, track_ids=?, description=?, 
 	      release_date=?, listen_count=?, favorite_count=?, addition_date=?, tags=?, 
 	      additional_meta=?, permissions=?, linked_item_ids=?, metadata_source=?
-	  WHERE id=?;
-	`,
-		album.UserID, album.UPC, album.Title, string(artistIDs), string(trackIDs),
-		album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
-		album.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), album.MetadataSource, album.ID,
-	)
+	  WHERE id=?;`, &sqlitex.ExecOptions{
+		Args: []any{
+			album.UserID, album.UPC, album.Title, string(artistIDs), string(trackIDs),
+			album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
+			album.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), album.MetadataSource, album.ID,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) DeleteAlbum(id string) error {
-	_, err := db.sqlDB.Exec("DELETE FROM albums WHERE id = ?;", id)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM albums WHERE id = ?;", &sqlitex.ExecOptions{
+		Args: []any{id},
+	})
+	return err
 }
 
 func (db *SQLiteDatabase) GetAllVideos() ([]types.Video, error) {
 	var videos []types.Video
-	rows, err := db.sqlDB.Query("SELECT * FROM videos;")
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return videos, normalizeSQLiteError(err)
+		return videos, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		video := types.Video{}
-		var artistIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions, subtitles, lyricSources string
+	err = sqlitex.Execute(conn, "SELECT * FROM videos;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			video := types.Video{}
 
-		err = rows.Scan(
-			&video.ID, &video.UserID, &video.Title, &artistIDs,
-			&video.Duration, &video.Description, &video.ReleaseDate, &subtitles,
-			&video.WatchCount, &video.FavoriteCount, &video.AdditionDate,
-			&tags, &additionalMeta, &permissions, &linkedItemIDs,
-			&video.ContentSource, &video.MetadataSource, &lyricSources,
-		)
-		if err != nil {
-			return videos, normalizeSQLiteError(err)
-		}
+			video.ID = stmt.ColumnText(0)
+			video.UserID = stmt.ColumnText(1)
+			video.Title = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &video.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			video.Duration = stmt.ColumnInt(4)
+			video.Description = stmt.ColumnText(5)
+			video.ReleaseDate = stmt.ColumnText(6)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &video.Subtitles); err != nil {
+				return fmt.Errorf("failed to parse subtitles: %w", err)
+			}
+			video.WatchCount = stmt.ColumnInt(8)
+			video.FavoriteCount = stmt.ColumnInt(9)
+			video.AdditionDate = stmt.ColumnInt64(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &video.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &video.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &video.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			video.ContentSource = types.LinkedSource(stmt.ColumnText(15))
+			video.MetadataSource = types.LinkedSource(stmt.ColumnText(16))
+			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
+				return fmt.Errorf("failed to parse lyric_sources: %w", err)
+			}
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(artistIDs), &video.ArtistIDs); err != nil {
-			return videos, errors.New("failed to parse artist_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &video.Tags); err != nil {
-			return videos, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &video.LinkedItemIDs); err != nil {
-			return videos, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &video.AdditionalMeta); err != nil {
-			return videos, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &video.Permissions); err != nil {
-			return videos, errors.New("failed to parse permissions: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(subtitles), &video.Subtitles); err != nil {
-			return videos, errors.New("failed to parse subtitles: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(lyricSources), &video.LyricSources); err != nil {
-			return videos, errors.New("failed to parse lyric_sources: " + err.Error())
-		}
+			videos = append(videos, video)
 
-		videos = append(videos, video)
-	}
+			return nil
+		},
+	})
 
-	if err = rows.Err(); err != nil {
-		return videos, normalizeSQLiteError(err)
-	}
-
-	return videos, normalizeSQLiteError(err)
+	return videos, err
 }
 
 func (db *SQLiteDatabase) GetVideos(userID string) ([]types.Video, error) {
 	var videos []types.Video
-	rows, err := db.sqlDB.Query("SELECT * FROM videos WHERE user_id = ?;", userID)
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return videos, normalizeSQLiteError(err)
+		return videos, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		video := types.Video{}
-		var artistIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions, subtitles, lyricSources string
+	err = sqlitex.Execute(conn, "SELECT * FROM videos WHERE user_id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			video := types.Video{}
 
-		err = rows.Scan(
-			&video.ID, &video.UserID, &video.Title, &artistIDs,
-			&video.Duration, &video.Description, &video.ReleaseDate, &subtitles,
-			&video.WatchCount, &video.FavoriteCount, &video.AdditionDate,
-			&tags, &additionalMeta, &permissions, &linkedItemIDs,
-			&video.ContentSource, &video.MetadataSource, &lyricSources,
-		)
-		if err != nil {
-			return videos, normalizeSQLiteError(err)
-		}
+			video.ID = stmt.ColumnText(0)
+			video.UserID = stmt.ColumnText(1)
+			video.Title = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &video.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			video.Duration = stmt.ColumnInt(4)
+			video.Description = stmt.ColumnText(5)
+			video.ReleaseDate = stmt.ColumnText(6)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &video.Subtitles); err != nil {
+				return fmt.Errorf("failed to parse subtitles: %w", err)
+			}
+			video.WatchCount = stmt.ColumnInt(8)
+			video.FavoriteCount = stmt.ColumnInt(9)
+			video.AdditionDate = stmt.ColumnInt64(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &video.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &video.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &video.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			video.ContentSource = types.LinkedSource(stmt.ColumnText(15))
+			video.MetadataSource = types.LinkedSource(stmt.ColumnText(16))
+			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
+				return fmt.Errorf("failed to parse lyric_sources: %w", err)
+			}
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(artistIDs), &video.ArtistIDs); err != nil {
-			return videos, errors.New("failed to parse artist_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &video.Tags); err != nil {
-			return videos, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &video.LinkedItemIDs); err != nil {
-			return videos, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &video.AdditionalMeta); err != nil {
-			return videos, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &video.Permissions); err != nil {
-			return videos, errors.New("failed to parse permissions: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(subtitles), &video.Subtitles); err != nil {
-			return videos, errors.New("failed to parse subtitles: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(lyricSources), &video.LyricSources); err != nil {
-			return videos, errors.New("failed to parse lyric_sources: " + err.Error())
-		}
+			videos = append(videos, video)
 
-		videos = append(videos, video)
-	}
+			return nil
+		},
+		Args: []any{userID},
+	})
 
-	if err = rows.Err(); err != nil {
-		return videos, normalizeSQLiteError(err)
-	}
-
-	return videos, normalizeSQLiteError(err)
+	return videos, err
 }
 
 func (db *SQLiteDatabase) GetVideo(id string) (types.Video, error) {
 	video := types.Video{}
-	var artistIDs, tags, linkedItemIDs string
-	var additionalMeta, permissions, subtitles, lyricSources string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM videos WHERE id = ?;", id)
-	err := row.Scan(
-		&video.ID, &video.UserID, &video.Title, &artistIDs,
-		&video.Duration, &video.Description, &video.ReleaseDate, &subtitles,
-		&video.WatchCount, &video.FavoriteCount, &video.AdditionDate,
-		&tags, &additionalMeta, &permissions, &linkedItemIDs,
-		&video.ContentSource, &video.MetadataSource, &lyricSources,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return video, normalizeSQLiteError(err)
+		return video, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(artistIDs), &video.ArtistIDs); err != nil {
-		return video, errors.New("failed to parse artist_ids: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM videos WHERE id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			video.ID = stmt.ColumnText(0)
+			video.UserID = stmt.ColumnText(1)
+			video.Title = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &video.ArtistIDs); err != nil {
+				return fmt.Errorf("failed to parse artist_ids: %w", err)
+			}
+			video.Duration = stmt.ColumnInt(4)
+			video.Description = stmt.ColumnText(5)
+			video.ReleaseDate = stmt.ColumnText(6)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &video.Subtitles); err != nil {
+				return fmt.Errorf("failed to parse subtitles: %w", err)
+			}
+			video.WatchCount = stmt.ColumnInt(8)
+			video.FavoriteCount = stmt.ColumnInt(9)
+			video.AdditionDate = stmt.ColumnInt64(10)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &video.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &video.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &video.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			video.ContentSource = types.LinkedSource(stmt.ColumnText(15))
+			video.MetadataSource = types.LinkedSource(stmt.ColumnText(16))
+			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
+				return fmt.Errorf("failed to parse lyric_sources: %w", err)
+			}
+
+			return nil
+		},
+		Args: []any{id},
+	})
+	if err != nil {
+		return video, err
 	}
-	if err = json.Unmarshal([]byte(tags), &video.Tags); err != nil {
-		return video, errors.New("failed to parse tags: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(linkedItemIDs), &video.LinkedItemIDs); err != nil {
-		return video, errors.New("failed to parse linked_item_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(additionalMeta), &video.AdditionalMeta); err != nil {
-		return video, errors.New("failed to parse additional_meta: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &video.Permissions); err != nil {
-		return video, errors.New("failed to parse permissions: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(subtitles), &video.Subtitles); err != nil {
-		return video, errors.New("failed to parse subtitles: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(lyricSources), &video.LyricSources); err != nil {
-		return video, errors.New("failed to parse lyric_sources: " + err.Error())
+	if !scanned {
+		return video, ErrNotFound
 	}
 
 	return video, nil
@@ -976,242 +1132,281 @@ func (db *SQLiteDatabase) AddVideo(video types.Video) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
-		return errors.New("failed to marshal artist_ids: " + err.Error())
-	}
-	tags, err := json.Marshal(video.Tags)
-	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(video.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
-	}
-	additionalMeta, err := json.Marshal(video.AdditionalMeta)
-	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
-	}
-	permissions, err := json.Marshal(video.Permissions)
-	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal artist_ids: %w", err)
 	}
 	subtitles, err := json.Marshal(video.Subtitles)
 	if err != nil {
-		return errors.New("failed to marshal subtitles: " + err.Error())
+		return fmt.Errorf("failed to marshal subtitles: %w", err)
+	}
+	tags, err := json.Marshal(video.Tags)
+	if err != nil {
+		return fmt.Errorf("failed to marshal tags: %w", err)
+	}
+	additionalMeta, err := json.Marshal(video.AdditionalMeta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
+	}
+	permissions, err := json.Marshal(video.Permissions)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(video.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 	lyricSources, err := json.Marshal(video.LyricSources)
 	if err != nil {
-		return errors.New("failed to marshal lyric_sources: " + err.Error())
+		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  INSERT INTO videos (
 	    id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
 	  ) VALUES (
 	   	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );
-	`,
-		video.ID, video.UserID, video.Title, string(artistIDs), video.Duration,
-		video.Description, video.ReleaseDate, string(subtitles), video.WatchCount,
-		video.FavoriteCount, video.AdditionDate, string(tags), string(additionalMeta),
-		string(permissions), string(linkedItemIDs), video.ContentSource,
-		video.MetadataSource, string(lyricSources),
-	)
+	  );`, &sqlitex.ExecOptions{
+		Args: []any{
+			video.ID, video.UserID, video.Title, string(artistIDs), video.Duration,
+			video.Description, video.ReleaseDate, string(subtitles), video.WatchCount,
+			video.FavoriteCount, video.AdditionDate, string(tags), string(additionalMeta),
+			string(permissions), string(linkedItemIDs), video.ContentSource,
+			video.MetadataSource, string(lyricSources),
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
-		return errors.New("failed to marshal artist_ids: " + err.Error())
-	}
-	tags, err := json.Marshal(video.Tags)
-	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(video.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
-	}
-	additionalMeta, err := json.Marshal(video.AdditionalMeta)
-	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
-	}
-	permissions, err := json.Marshal(video.Permissions)
-	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal artist_ids: %w", err)
 	}
 	subtitles, err := json.Marshal(video.Subtitles)
 	if err != nil {
-		return errors.New("failed to marshal subtitles: " + err.Error())
+		return fmt.Errorf("failed to marshal subtitles: %w", err)
+	}
+	tags, err := json.Marshal(video.Tags)
+	if err != nil {
+		return fmt.Errorf("failed to marshal tags: %w", err)
+	}
+	additionalMeta, err := json.Marshal(video.AdditionalMeta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
+	}
+	permissions, err := json.Marshal(video.Permissions)
+	if err != nil {
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(video.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 	lyricSources, err := json.Marshal(video.LyricSources)
 	if err != nil {
-		return errors.New("failed to marshal lyric_sources: " + err.Error())
+		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
-	  UPDATE videos
-	  SET user_id=?, title=?, artist_ids=?, duration=?, description=?, release_date=?, 
-	      subtitles=?, watch_count=?, favorite_count=?, addition_date=?, tags=?, 
-	      additional_meta=?, permissions=?, linked_item_ids=?, content_source=?, 
-	      metadata_source=?, lyric_sources=?
-	  WHERE id=?;
-	`,
-		video.UserID, video.Title, string(artistIDs), video.Duration, video.Description,
-		video.ReleaseDate, string(subtitles), video.WatchCount, video.FavoriteCount,
-		video.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), video.ContentSource, video.MetadataSource,
-		string(lyricSources), video.ID,
-	)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
 
-	return normalizeSQLiteError(err)
+	err = sqlitex.Execute(conn, `
+	  UPDATE videos
+	  SET user_id=?, title=?, artist_ids=?, duration=?, description=?, release_date=?,
+	      subtitles=?, watch_count=?, favorite_count=?, addition_date=?, tags=?,
+	      additional_meta=?, permissions=?, linked_item_ids=?, content_source=?,
+	      metadata_source=?, lyric_sources=?
+	  WHERE id=?;`, &sqlitex.ExecOptions{
+		Args: []any{
+			video.UserID, video.Title, string(artistIDs), video.Duration, video.Description,
+			video.ReleaseDate, string(subtitles), video.WatchCount, video.FavoriteCount,
+			video.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), video.ContentSource, video.MetadataSource,
+			string(lyricSources), video.ID,
+		},
+	})
+
+	return err
 }
 
 func (db *SQLiteDatabase) DeleteVideo(id string) error {
-	_, err := db.sqlDB.Exec("DELETE FROM videos WHERE id = ?;", id)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM videos WHERE id = ?;", &sqlitex.ExecOptions{
+		Args: []any{id},
+	})
+	return err
 }
 
 func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 	var artists []types.Artist
-	rows, err := db.sqlDB.Query("SELECT * FROM artists;")
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return artists, normalizeSQLiteError(err)
+		return artists, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		artist := types.Artist{}
-		var albumIDs, trackIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions string
+	err = sqlitex.Execute(conn, "SELECT * FROM artists;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			artist := types.Artist{}
 
-		err = rows.Scan(
-			&artist.ID, &artist.UserID, &artist.Name, &albumIDs, &trackIDs,
-			&artist.Description, &artist.CreationDate, &artist.ListenCount,
-			&artist.FavoriteCount, &artist.AdditionDate, &tags,
-			&additionalMeta, &permissions, &linkedItemIDs, &artist.MetadataSource,
-		)
-		if err != nil {
-			return artists, normalizeSQLiteError(err)
-		}
+			artist.ID = stmt.ColumnText(0)
+			artist.UserID = stmt.ColumnText(1)
+			artist.Name = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &artist.AlbumIDs); err != nil {
+				return fmt.Errorf("failed to parse album_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &artist.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			artist.Description = stmt.ColumnText(5)
+			artist.CreationDate = stmt.ColumnText(6)
+			artist.ListenCount = stmt.ColumnInt(7)
+			artist.FavoriteCount = stmt.ColumnInt(8)
+			artist.AdditionDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &artist.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &artist.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &artist.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &artist.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			artist.MetadataSource = types.LinkedSource(stmt.ColumnText(14))
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(albumIDs), &artist.AlbumIDs); err != nil {
-			return artists, errors.New("failed to parse album_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(trackIDs), &artist.TrackIDs); err != nil {
-			return artists, errors.New("failed to parse track_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &artist.Tags); err != nil {
-			return artists, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &artist.LinkedItemIDs); err != nil {
-			return artists, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &artist.AdditionalMeta); err != nil {
-			return artists, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &artist.Permissions); err != nil {
-			return artists, errors.New("failed to parse permissions: " + err.Error())
-		}
+			artists = append(artists, artist)
 
-		artists = append(artists, artist)
-	}
+			return nil
+		},
+	})
 
-	if err = rows.Err(); err != nil {
-		return artists, normalizeSQLiteError(err)
-	}
-
-	return artists, normalizeSQLiteError(err)
+	return artists, err
 }
 
 func (db *SQLiteDatabase) GetArtists(userID string) ([]types.Artist, error) {
 	var artists []types.Artist
-	rows, err := db.sqlDB.Query("SELECT * FROM artists WHERE user_id = ?;", userID)
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return artists, normalizeSQLiteError(err)
+		return artists, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		artist := types.Artist{}
-		var albumIDs, trackIDs, tags, linkedItemIDs string
-		var additionalMeta, permissions string
+	err = sqlitex.Execute(conn, "SELECT * FROM artists WHERE user_id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			artist := types.Artist{}
 
-		err = rows.Scan(
-			&artist.ID, &artist.UserID, &artist.Name, &albumIDs, &trackIDs,
-			&artist.Description, &artist.CreationDate, &artist.ListenCount,
-			&artist.FavoriteCount, &artist.AdditionDate, &tags,
-			&additionalMeta, &permissions, &linkedItemIDs, &artist.MetadataSource,
-		)
-		if err != nil {
-			return artists, normalizeSQLiteError(err)
-		}
+			artist.ID = stmt.ColumnText(0)
+			artist.UserID = stmt.ColumnText(1)
+			artist.Name = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &artist.AlbumIDs); err != nil {
+				return fmt.Errorf("failed to parse album_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &artist.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			artist.Description = stmt.ColumnText(5)
+			artist.CreationDate = stmt.ColumnText(6)
+			artist.ListenCount = stmt.ColumnInt(7)
+			artist.FavoriteCount = stmt.ColumnInt(8)
+			artist.AdditionDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &artist.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &artist.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &artist.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &artist.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			artist.MetadataSource = types.LinkedSource(stmt.ColumnText(14))
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(albumIDs), &artist.AlbumIDs); err != nil {
-			return artists, errors.New("failed to parse album_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(trackIDs), &artist.TrackIDs); err != nil {
-			return artists, errors.New("failed to parse track_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &artist.Tags); err != nil {
-			return artists, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedItemIDs), &artist.LinkedItemIDs); err != nil {
-			return artists, errors.New("failed to parse linked_item_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &artist.AdditionalMeta); err != nil {
-			return artists, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &artist.Permissions); err != nil {
-			return artists, errors.New("failed to parse permissions: " + err.Error())
-		}
+			artists = append(artists, artist)
 
-		artists = append(artists, artist)
-	}
+			return nil
+		},
+		Args: []any{userID},
+	})
 
-	if err = rows.Err(); err != nil {
-		return artists, normalizeSQLiteError(err)
-	}
-
-	return artists, normalizeSQLiteError(err)
+	return artists, err
 }
 
 func (db *SQLiteDatabase) GetArtist(id string) (types.Artist, error) {
 	artist := types.Artist{}
-	var albumIDs, trackIDs, tags, linkedItemIDs string
-	var additionalMeta, permissions string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM artists WHERE id = ?;", id)
-	err := row.Scan(
-		&artist.ID, &artist.UserID, &artist.Name, &albumIDs, &trackIDs,
-		&artist.Description, &artist.CreationDate, &artist.ListenCount,
-		&artist.FavoriteCount, &artist.AdditionDate, &tags,
-		&additionalMeta, &permissions, &linkedItemIDs, &artist.MetadataSource,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return artist, normalizeSQLiteError(err)
+		return artist, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(albumIDs), &artist.AlbumIDs); err != nil {
-		return artist, errors.New("failed to parse album_ids: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM artists WHERE id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			artist.ID = stmt.ColumnText(0)
+			artist.UserID = stmt.ColumnText(1)
+			artist.Name = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &artist.AlbumIDs); err != nil {
+				return fmt.Errorf("failed to parse album_ids: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &artist.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			artist.Description = stmt.ColumnText(5)
+			artist.CreationDate = stmt.ColumnText(6)
+			artist.ListenCount = stmt.ColumnInt(7)
+			artist.FavoriteCount = stmt.ColumnInt(8)
+			artist.AdditionDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &artist.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &artist.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &artist.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &artist.LinkedItemIDs); err != nil {
+				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
+			}
+			artist.MetadataSource = types.LinkedSource(stmt.ColumnText(14))
+
+			return nil
+		},
+		Args: []any{id},
+	})
+	if err != nil {
+		return artist, err
 	}
-	if err = json.Unmarshal([]byte(trackIDs), &artist.TrackIDs); err != nil {
-		return artist, errors.New("failed to parse track_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(tags), &artist.Tags); err != nil {
-		return artist, errors.New("failed to parse tags: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(linkedItemIDs), &artist.LinkedItemIDs); err != nil {
-		return artist, errors.New("failed to parse linked_item_ids: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(additionalMeta), &artist.AdditionalMeta); err != nil {
-		return artist, errors.New("failed to parse additional_meta: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &artist.Permissions); err != nil {
-		return artist, errors.New("failed to parse permissions: " + err.Error())
+	if !scanned {
+		return artist, ErrNotFound
 	}
 
 	return artist, nil
@@ -1221,213 +1416,252 @@ func (db *SQLiteDatabase) AddArtist(artist types.Artist) error {
 	// Convert JSON fields to strings
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
-		return errors.New("failed to marshal album_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal album_ids: %w", err)
 	}
 	trackIDs, err := json.Marshal(artist.TrackIDs)
 	if err != nil {
-		return errors.New("failed to marshal track_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal track_ids: %w", err)
 	}
 	tags, err := json.Marshal(artist.Tags)
 	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(artist.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	additionalMeta, err := json.Marshal(artist.AdditionalMeta)
 	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
 	}
 	permissions, err := json.Marshal(artist.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(artist.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  INSERT INTO artists (
 	    id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
 	  ) VALUES (
 	   	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );
-	`,
-		artist.ID, artist.UserID, artist.Name, string(albumIDs), string(trackIDs),
-		artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount,
-		artist.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), artist.MetadataSource,
-	)
+	  );`, &sqlitex.ExecOptions{
+		Args: []any{
+			artist.ID, artist.UserID, artist.Name, string(albumIDs), string(trackIDs),
+			artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount,
+			artist.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), artist.MetadataSource,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
 	// Convert JSON fields to strings
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
-		return errors.New("failed to marshal album_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal album_ids: %w", err)
 	}
 	trackIDs, err := json.Marshal(artist.TrackIDs)
 	if err != nil {
-		return errors.New("failed to marshal track_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal track_ids: %w", err)
 	}
 	tags, err := json.Marshal(artist.Tags)
 	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
-	}
-	linkedItemIDs, err := json.Marshal(artist.LinkedItemIDs)
-	if err != nil {
-		return errors.New("failed to marshal linked_item_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	additionalMeta, err := json.Marshal(artist.AdditionalMeta)
 	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
 	}
 	permissions, err := json.Marshal(artist.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
+	}
+	linkedItemIDs, err := json.Marshal(artist.LinkedItemIDs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  UPDATE artists
 	  SET user_id=?, name=?, album_ids=?, track_ids=?, description=?, creation_date=?,
 	      listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?,
 		  permissions=?, linked_item_ids=?, metadata_source=?
-	  WHERE id=?;
-	`,
-		artist.UserID, artist.Name, string(albumIDs), string(trackIDs),
-		artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount,
-		artist.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-		string(linkedItemIDs), artist.MetadataSource, artist.ID,
-	)
+	  WHERE id=?;`, &sqlitex.ExecOptions{
+		Args: []any{
+			artist.UserID, artist.Name, string(albumIDs), string(trackIDs),
+			artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount,
+			artist.AdditionDate, string(tags), string(additionalMeta), string(permissions),
+			string(linkedItemIDs), artist.MetadataSource, artist.ID,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) DeleteArtist(id string) error {
-	_, err := db.sqlDB.Exec("DELETE FROM artists WHERE id = ?;", id)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM artists WHERE id = ?;", &sqlitex.ExecOptions{
+		Args: []any{id},
+	})
+	return err
 }
 
 func (db *SQLiteDatabase) GetAllPlaylists() ([]types.Playlist, error) {
 	var playlists []types.Playlist
-	rows, err := db.sqlDB.Query("SELECT * FROM playlists;")
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return playlists, normalizeSQLiteError(err)
+		return playlists, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		playlist := types.Playlist{}
-		var trackIDs, tags string
-		var additionalMeta, permissions string
+	err = sqlitex.Execute(conn, "SELECT * FROM playlists;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			playlist := types.Playlist{}
 
-		err = rows.Scan(
-			&playlist.ID, &playlist.UserID, &playlist.Title, &trackIDs,
-			&playlist.ListenCount, &playlist.FavoriteCount, &playlist.Description,
-			&playlist.CreationDate, &playlist.AdditionDate, &tags,
-			&additionalMeta, &permissions, &playlist.MetadataSource,
-		)
-		if err != nil {
-			return playlists, normalizeSQLiteError(err)
-		}
+			playlist.ID = stmt.ColumnText(0)
+			playlist.UserID = stmt.ColumnText(1)
+			playlist.Title = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &playlist.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			playlist.ListenCount = stmt.ColumnInt(4)
+			playlist.FavoriteCount = stmt.ColumnInt(5)
+			playlist.Description = stmt.ColumnText(6)
+			playlist.CreationDate = stmt.ColumnText(7)
+			playlist.AdditionDate = stmt.ColumnInt64(8)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(9)), &playlist.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &playlist.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &playlist.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			playlist.MetadataSource = types.LinkedSource(stmt.ColumnText(12))
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(trackIDs), &playlist.TrackIDs); err != nil {
-			return playlists, errors.New("failed to parse track_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &playlist.Tags); err != nil {
-			return playlists, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &playlist.AdditionalMeta); err != nil {
-			return playlists, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &playlist.Permissions); err != nil {
-			return playlists, errors.New("failed to parse permissions: " + err.Error())
-		}
+			playlists = append(playlists, playlist)
 
-		playlists = append(playlists, playlist)
-	}
+			return nil
+		},
+	})
 
-	if err = rows.Err(); err != nil {
-		return playlists, normalizeSQLiteError(err)
-	}
-
-	return playlists, normalizeSQLiteError(err)
+	return playlists, err
 }
 
 func (db *SQLiteDatabase) GetPlaylists(userID string) ([]types.Playlist, error) {
 	var playlists []types.Playlist
-	rows, err := db.sqlDB.Query("SELECT * FROM playlists WHERE user_id = ?;", userID)
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return playlists, normalizeSQLiteError(err)
+		return playlists, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		playlist := types.Playlist{}
-		var trackIDs, tags string
-		var additionalMeta, permissions string
+	err = sqlitex.Execute(conn, "SELECT * FROM playlists WHERE user_id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			playlist := types.Playlist{}
 
-		err = rows.Scan(
-			&playlist.ID, &playlist.UserID, &playlist.Title, &trackIDs,
-			&playlist.ListenCount, &playlist.FavoriteCount, &playlist.Description,
-			&playlist.CreationDate, &playlist.AdditionDate, &tags,
-			&additionalMeta, &permissions, &playlist.MetadataSource,
-		)
-		if err != nil {
-			return playlists, normalizeSQLiteError(err)
-		}
+			playlist.ID = stmt.ColumnText(0)
+			playlist.UserID = stmt.ColumnText(1)
+			playlist.Title = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &playlist.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			playlist.ListenCount = stmt.ColumnInt(4)
+			playlist.FavoriteCount = stmt.ColumnInt(5)
+			playlist.Description = stmt.ColumnText(6)
+			playlist.CreationDate = stmt.ColumnText(7)
+			playlist.AdditionDate = stmt.ColumnInt64(8)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(9)), &playlist.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &playlist.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &playlist.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			playlist.MetadataSource = types.LinkedSource(stmt.ColumnText(12))
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(trackIDs), &playlist.TrackIDs); err != nil {
-			return playlists, errors.New("failed to parse track_ids: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(tags), &playlist.Tags); err != nil {
-			return playlists, errors.New("failed to parse tags: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(additionalMeta), &playlist.AdditionalMeta); err != nil {
-			return playlists, errors.New("failed to parse additional_meta: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &playlist.Permissions); err != nil {
-			return playlists, errors.New("failed to parse permissions: " + err.Error())
-		}
+			playlists = append(playlists, playlist)
 
-		playlists = append(playlists, playlist)
-	}
+			return nil
+		},
+		Args: []any{userID},
+	})
 
-	if err = rows.Err(); err != nil {
-		return playlists, normalizeSQLiteError(err)
-	}
-
-	return playlists, normalizeSQLiteError(err)
+	return playlists, err
 }
 
 func (db *SQLiteDatabase) GetPlaylist(id string) (types.Playlist, error) {
 	playlist := types.Playlist{}
-	var trackIDs, tags string
-	var additionalMeta, permissions string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM playlists WHERE id = ?;", id)
-	err := row.Scan(
-		&playlist.ID, &playlist.UserID, &playlist.Title, &trackIDs,
-		&playlist.ListenCount, &playlist.FavoriteCount, &playlist.Description,
-		&playlist.CreationDate, &playlist.AdditionDate, &tags,
-		&additionalMeta, &permissions, &playlist.MetadataSource,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return playlist, normalizeSQLiteError(err)
+		return playlist, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(trackIDs), &playlist.TrackIDs); err != nil {
-		return playlist, errors.New("failed to parse track_ids: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM playlists WHERE id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			playlist.ID = stmt.ColumnText(0)
+			playlist.UserID = stmt.ColumnText(1)
+			playlist.Title = stmt.ColumnText(2)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(3)), &playlist.TrackIDs); err != nil {
+				return fmt.Errorf("failed to parse track_ids: %w", err)
+			}
+			playlist.ListenCount = stmt.ColumnInt(4)
+			playlist.FavoriteCount = stmt.ColumnInt(5)
+			playlist.Description = stmt.ColumnText(6)
+			playlist.CreationDate = stmt.ColumnText(7)
+			playlist.AdditionDate = stmt.ColumnInt64(8)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(9)), &playlist.Tags); err != nil {
+				return fmt.Errorf("failed to parse tags: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &playlist.AdditionalMeta); err != nil {
+				return fmt.Errorf("failed to parse additional_meta: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &playlist.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			playlist.MetadataSource = types.LinkedSource(stmt.ColumnText(12))
+
+			return nil
+		},
+		Args: []any{id},
+	})
+	if err != nil {
+		return playlist, err
 	}
-	if err = json.Unmarshal([]byte(tags), &playlist.Tags); err != nil {
-		return playlist, errors.New("failed to parse tags: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(additionalMeta), &playlist.AdditionalMeta); err != nil {
-		return playlist, errors.New("failed to parse additional_meta: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &playlist.Permissions); err != nil {
-		return playlist, errors.New("failed to parse permissions: " + err.Error())
+	if !scanned {
+		return playlist, ErrNotFound
 	}
 
 	return playlist, nil
@@ -1437,151 +1671,193 @@ func (db *SQLiteDatabase) AddPlaylist(playlist types.Playlist) error {
 	// Convert JSON fields to strings
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
-		return errors.New("failed to marshal track_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal track_ids: %w", err)
 	}
 	tags, err := json.Marshal(playlist.Tags)
 	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	additionalMeta, err := json.Marshal(playlist.AdditionalMeta)
 	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
 	}
 	permissions, err := json.Marshal(playlist.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  INSERT INTO playlists (
 	    id, user_id, title, track_ids, listen_count, favorite_count, description, 
 	    creation_date, addition_date, tags, additional_meta, permissions, metadata_source
 	  ) VALUES (
 	   	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );
-	`,
-		playlist.ID, playlist.UserID, playlist.Title, string(trackIDs),
-		playlist.ListenCount, playlist.FavoriteCount, playlist.Description,
-		playlist.CreationDate, playlist.AdditionDate, string(tags),
-		string(additionalMeta), string(permissions), playlist.MetadataSource,
-	)
+	  );`, &sqlitex.ExecOptions{
+		Args: []any{
+			playlist.ID, playlist.UserID, playlist.Title, string(trackIDs),
+			playlist.ListenCount, playlist.FavoriteCount, playlist.Description,
+			playlist.CreationDate, playlist.AdditionDate, string(tags),
+			string(additionalMeta), string(permissions), playlist.MetadataSource,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
 	// Convert JSON fields to strings
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
-		return errors.New("failed to marshal track_ids: " + err.Error())
+		return fmt.Errorf("failed to marshal track_ids: %w", err)
 	}
 	tags, err := json.Marshal(playlist.Tags)
 	if err != nil {
-		return errors.New("failed to marshal tags: " + err.Error())
+		return fmt.Errorf("failed to marshal tags: %w", err)
 	}
 	additionalMeta, err := json.Marshal(playlist.AdditionalMeta)
 	if err != nil {
-		return errors.New("failed to marshal additional_meta: " + err.Error())
+		return fmt.Errorf("failed to marshal additional_meta: %w", err)
 	}
 	permissions, err := json.Marshal(playlist.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  UPDATE playlists
 	  SET user_id=?, title=?, track_ids=?, listen_count=?, favorite_count=?, description=?, 
 	      creation_date=?, addition_date=?, tags=?, additional_meta=?, permissions=?, 
 	      metadata_source=?
-	  WHERE id=?;
-	`,
-		playlist.UserID, playlist.Title, string(trackIDs),
-		playlist.ListenCount, playlist.FavoriteCount, playlist.Description,
-		playlist.CreationDate, playlist.AdditionDate, string(tags),
-		string(additionalMeta), string(permissions), playlist.MetadataSource,
-		playlist.ID,
-	)
+	  WHERE id=?;`, &sqlitex.ExecOptions{
+		Args: []any{
+			playlist.UserID, playlist.Title, string(trackIDs),
+			playlist.ListenCount, playlist.FavoriteCount, playlist.Description,
+			playlist.CreationDate, playlist.AdditionDate, string(tags),
+			string(additionalMeta), string(permissions), playlist.MetadataSource,
+			playlist.ID,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) DeletePlaylist(id string) error {
-	_, err := db.sqlDB.Exec("DELETE FROM playlists WHERE id = ?;", id)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM playlists WHERE id = ?;", &sqlitex.ExecOptions{
+		Args: []any{id},
+	})
+	return err
 }
 
 func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
 	var users []types.User
-	rows, err := db.sqlDB.Query("SELECT * FROM users;")
+
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return users, normalizeSQLiteError(err)
+		return users, err
 	}
+	defer db.pool.Put(conn)
 
-	for rows.Next() {
-		user := types.User{}
-		var listenedTo, favorites, permissions, linkedSources string
+	err = sqlitex.Execute(conn, "SELECT * FROM users;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			user := types.User{}
 
-		err = rows.Scan(
-			&user.ID, &user.Username, &user.Email, &user.PasswordHash,
-			&user.DisplayName, &user.Description, &listenedTo, &favorites,
-			&user.PublicViewCount, &user.CreationDate, &permissions,
-			&user.LinkedArtistID, &linkedSources,
-		)
-		if err != nil {
-			return users, normalizeSQLiteError(err)
-		}
+			user.ID = stmt.ColumnText(0)
+			user.Username = stmt.ColumnText(1)
+			user.Email = stmt.ColumnText(2)
+			user.PasswordHash = stmt.ColumnText(3)
+			user.DisplayName = stmt.ColumnText(4)
+			user.Description = stmt.ColumnText(5)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(6)), &user.ListenedTo); err != nil {
+				return fmt.Errorf("failed to parse listened_to: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &user.Favorites); err != nil {
+				return fmt.Errorf("failed to parse favorites: %w", err)
+			}
+			user.PublicViewCount = stmt.ColumnInt(8)
+			user.CreationDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &user.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			user.LinkedArtistID = stmt.ColumnText(11)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &user.LinkedSources); err != nil {
+				return fmt.Errorf("failed to parse linked_sources: %w", err)
+			}
 
-		// Parse JSON fields
-		if err = json.Unmarshal([]byte(listenedTo), &user.ListenedTo); err != nil {
-			return users, errors.New("failed to parse listened_to: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(favorites), &user.Favorites); err != nil {
-			return users, errors.New("failed to parse favorites: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(permissions), &user.Permissions); err != nil {
-			return users, errors.New("failed to parse permissions: " + err.Error())
-		}
-		if err = json.Unmarshal([]byte(linkedSources), &user.LinkedSources); err != nil {
-			return users, errors.New("failed to parse linked_sources: " + err.Error())
-		}
+			users = append(users, user)
 
-		users = append(users, user)
-	}
+			return nil
+		},
+	})
 
-	if err = rows.Err(); err != nil {
-		return users, normalizeSQLiteError(err)
-	}
-
-	return users, normalizeSQLiteError(err)
+	return users, err
 }
 
 func (db *SQLiteDatabase) GetUser(id string) (types.User, error) {
 	user := types.User{}
-	var listenedTo, favorites, permissions, linkedSources string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM users WHERE id = ?;", id)
-	err := row.Scan(
-		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
-		&user.DisplayName, &user.Description, &listenedTo, &favorites,
-		&user.PublicViewCount, &user.CreationDate, &permissions,
-		&user.LinkedArtistID, &linkedSources,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return user, normalizeSQLiteError(err)
+		return user, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(listenedTo), &user.ListenedTo); err != nil {
-		return user, errors.New("failed to parse listened_to: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM users WHERE id = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			user.ID = stmt.ColumnText(0)
+			user.Username = stmt.ColumnText(1)
+			user.Email = stmt.ColumnText(2)
+			user.PasswordHash = stmt.ColumnText(3)
+			user.DisplayName = stmt.ColumnText(4)
+			user.Description = stmt.ColumnText(5)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(6)), &user.ListenedTo); err != nil {
+				return fmt.Errorf("failed to parse listened_to: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &user.Favorites); err != nil {
+				return fmt.Errorf("failed to parse favorites: %w", err)
+			}
+			user.PublicViewCount = stmt.ColumnInt(8)
+			user.CreationDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &user.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			user.LinkedArtistID = stmt.ColumnText(11)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &user.LinkedSources); err != nil {
+				return fmt.Errorf("failed to parse linked_sources: %w", err)
+			}
+
+			return nil
+		},
+		Args: []any{id},
+	})
+	if err != nil {
+		return user, err
 	}
-	if err = json.Unmarshal([]byte(favorites), &user.Favorites); err != nil {
-		return user, errors.New("failed to parse favorites: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &user.Permissions); err != nil {
-		return user, errors.New("failed to parse permissions: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(linkedSources), &user.LinkedSources); err != nil {
-		return user, errors.New("failed to parse linked_sources: " + err.Error())
+	if !scanned {
+		return user, ErrNotFound
 	}
 
 	return user, nil
@@ -1589,31 +1865,52 @@ func (db *SQLiteDatabase) GetUser(id string) (types.User, error) {
 
 func (db *SQLiteDatabase) GetUserByUsername(username string) (types.User, error) {
 	user := types.User{}
-	var listenedTo, favorites, permissions, linkedSources string
 
-	row := db.sqlDB.QueryRow("SELECT * FROM users WHERE username = ?;", username)
-	err := row.Scan(
-		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
-		&user.DisplayName, &user.Description, &listenedTo, &favorites,
-		&user.PublicViewCount, &user.CreationDate, &permissions,
-		&user.LinkedArtistID, &linkedSources,
-	)
+	conn, err := db.pool.Take(context.TODO())
 	if err != nil {
-		return user, normalizeSQLiteError(err)
+		return user, err
 	}
+	defer db.pool.Put(conn)
 
-	// Parse JSON fields
-	if err = json.Unmarshal([]byte(listenedTo), &user.ListenedTo); err != nil {
-		return user, errors.New("failed to parse listened_to: " + err.Error())
+	scanned := false
+	err = sqlitex.Execute(conn, "SELECT * FROM users WHERE username = ?;", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			user.ID = stmt.ColumnText(0)
+			user.Username = stmt.ColumnText(1)
+			user.Email = stmt.ColumnText(2)
+			user.PasswordHash = stmt.ColumnText(3)
+			user.DisplayName = stmt.ColumnText(4)
+			user.Description = stmt.ColumnText(5)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(6)), &user.ListenedTo); err != nil {
+				return fmt.Errorf("failed to parse listened_to: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &user.Favorites); err != nil {
+				return fmt.Errorf("failed to parse favorites: %w", err)
+			}
+			user.PublicViewCount = stmt.ColumnInt(8)
+			user.CreationDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &user.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			user.LinkedArtistID = stmt.ColumnText(11)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &user.LinkedSources); err != nil {
+				return fmt.Errorf("failed to parse linked_sources: %w", err)
+			}
+
+			return nil
+		},
+		Args: []any{username},
+	})
+	if err != nil {
+		return user, err
 	}
-	if err = json.Unmarshal([]byte(favorites), &user.Favorites); err != nil {
-		return user, errors.New("failed to parse favorites: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(permissions), &user.Permissions); err != nil {
-		return user, errors.New("failed to parse permissions: " + err.Error())
-	}
-	if err = json.Unmarshal([]byte(linkedSources), &user.LinkedSources); err != nil {
-		return user, errors.New("failed to parse linked_sources: " + err.Error())
+	if !scanned {
+		return user, ErrNotFound
 	}
 
 	return user, nil
@@ -1623,134 +1920,271 @@ func (db *SQLiteDatabase) CreateUser(user types.User) error {
 	// Convert JSON fields to strings
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
-		return errors.New("failed to marshal listened_to: " + err.Error())
+		return fmt.Errorf("failed to marshal listened_to: %w", err)
 	}
 	favorites, err := json.Marshal(user.Favorites)
 	if err != nil {
-		return errors.New("failed to marshal favorites: " + err.Error())
+		return fmt.Errorf("failed to marshal favorites: %w", err)
 	}
 	permissions, err := json.Marshal(user.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
 	}
 	linkedSources, err := json.Marshal(user.LinkedSources)
 	if err != nil {
-		return errors.New("failed to marshal linked_sources: " + err.Error())
+		return fmt.Errorf("failed to marshal linked_sources: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  INSERT INTO users (
-	    id, username, email, password_hash, display_name, description, listened_to, 
-	    favorites, public_view_count, creation_date, permissions, linked_artist_id, 
+	    id, username, email, password_hash, display_name, description, listened_to,
+	    favorites, public_view_count, creation_date, permissions, linked_artist_id,
 	    linked_sources
 	  ) VALUES (
 	   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );
-	`,
-		user.ID, user.Username, user.Email, user.PasswordHash, user.DisplayName,
-		user.Description, string(listenedTo), string(favorites), user.PublicViewCount,
-		user.CreationDate, string(permissions), user.LinkedArtistID, string(linkedSources),
-	)
+	  );`, &sqlitex.ExecOptions{
+		Args: []any{
+			user.ID, user.Username, user.Email, user.PasswordHash, user.DisplayName,
+			user.Description, string(listenedTo), string(favorites), user.PublicViewCount,
+			user.CreationDate, string(permissions), user.LinkedArtistID, string(linkedSources),
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) UpdateUser(user types.User) error {
 	// Convert JSON fields to strings
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
-		return errors.New("failed to marshal listened_to: " + err.Error())
+		return fmt.Errorf("failed to marshal listened_to: %w", err)
 	}
 	favorites, err := json.Marshal(user.Favorites)
 	if err != nil {
-		return errors.New("failed to marshal favorites: " + err.Error())
+		return fmt.Errorf("failed to marshal favorites: %w", err)
 	}
 	permissions, err := json.Marshal(user.Permissions)
 	if err != nil {
-		return errors.New("failed to marshal permissions: " + err.Error())
+		return fmt.Errorf("failed to marshal permissions: %w", err)
 	}
 	linkedSources, err := json.Marshal(user.LinkedSources)
 	if err != nil {
-		return errors.New("failed to marshal linked_sources: " + err.Error())
+		return fmt.Errorf("failed to marshal linked_sources: %w", err)
 	}
 
-	_, err = db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
 	  UPDATE users
 	  SET username=?, email=?, password_hash=?, display_name=?, description=?, listened_to=?, 
 	      favorites=?, public_view_count=?, creation_date=?, permissions=?, linked_artist_id=?, 
 	      linked_sources=?
-	  WHERE id=?;
-	`,
-		user.Username, user.Email, user.PasswordHash, user.DisplayName, user.Description,
-		string(listenedTo), string(favorites), user.PublicViewCount, user.CreationDate,
-		string(permissions), user.LinkedArtistID, string(linkedSources), user.ID,
-	)
+	  WHERE id=?;`, &sqlitex.ExecOptions{
+		Args: []any{
+			user.Username, user.Email, user.PasswordHash, user.DisplayName, user.Description,
+			string(listenedTo), string(favorites), user.PublicViewCount, user.CreationDate,
+			string(permissions), user.LinkedArtistID, string(linkedSources), user.ID,
+		},
+	})
 
-	return normalizeSQLiteError(err)
+	return err
 }
 
 func (db *SQLiteDatabase) DeleteUser(id string) error {
-	_, err := db.sqlDB.Exec("DELETE FROM users WHERE id = ?;", id)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM users WHERE id = ?;", &sqlitex.ExecOptions{
+		Args: []any{id},
+	})
+	return err
 }
 
 func (db *SQLiteDatabase) GetOAuthUser(provider string, providerUserID string) (types.User, error) {
 	var user types.User
-	row := db.sqlDB.QueryRow(`
+
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return user, err
+	}
+	defer db.pool.Put(conn)
+
+	scanned := false
+	err = sqlitex.Execute(conn, `
         SELECT u.* FROM users u
         JOIN oauth_providers o ON u.id = o.user_id
-        WHERE o.provider = ? AND o.provider_user_id = ?;
-    `, provider, providerUserID)
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
-	return user, normalizeSQLiteError(err)
+        WHERE o.provider = ? AND o.provider_user_id = ?;`, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			if scanned {
+				return ErrTooMany
+			}
+			scanned = true
+
+			user.ID = stmt.ColumnText(0)
+			user.Username = stmt.ColumnText(1)
+			user.Email = stmt.ColumnText(2)
+			user.PasswordHash = stmt.ColumnText(3)
+			user.DisplayName = stmt.ColumnText(4)
+			user.Description = stmt.ColumnText(5)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(6)), &user.ListenedTo); err != nil {
+				return fmt.Errorf("failed to parse listened_to: %w", err)
+			}
+			if err := json.Unmarshal([]byte(stmt.ColumnText(7)), &user.Favorites); err != nil {
+				return fmt.Errorf("failed to parse favorites: %w", err)
+			}
+			user.PublicViewCount = stmt.ColumnInt(8)
+			user.CreationDate = stmt.ColumnInt64(9)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(10)), &user.Permissions); err != nil {
+				return fmt.Errorf("failed to parse permissions: %w", err)
+			}
+			user.LinkedArtistID = stmt.ColumnText(11)
+			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &user.LinkedSources); err != nil {
+				return fmt.Errorf("failed to parse linked_sources: %w", err)
+			}
+
+			return nil
+		},
+		Args: []any{provider, providerUserID},
+	})
+	if err != nil {
+		return user, err
+	}
+	if !scanned {
+		return user, ErrNotFound
+	}
+
+	return user, nil
 }
 
 func (db *SQLiteDatabase) LinkOAuthAccount(provider string, userID string, providerUserID string) error {
-	_, err := db.sqlDB.Exec(`
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
         INSERT INTO oauth_providers (id, user_id, provider, provider_user_id)
-        VALUES (?, ?, ?, ?);
-    `, utils.GenerateID(config.Conf.General.IDLength), userID, provider, providerUserID)
-	return normalizeSQLiteError(err)
+        VALUES (?, ?, ?, ?);`, &sqlitex.ExecOptions{
+		Args: []any{utils.GenerateID(config.Conf.General.IDLength), userID, provider, providerUserID},
+	})
+
+	return err
 }
 
 func (db *SQLiteDatabase) DisconnectOAuthAccount(provider string, userID string) error {
-	_, err := db.sqlDB.Exec(`
-        DELETE FROM oauth_providers WHERE user_id = ? AND provider = ?;
-    `, userID, provider)
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        DELETE FROM oauth_providers WHERE user_id = ? AND provider = ?;`, &sqlitex.ExecOptions{
+		Args: []any{userID, provider},
+	})
+
+	return err
 }
 
 func (db *SQLiteDatabase) UsernameExists(username string) (bool, error) {
 	var exists bool
-	err := db.sqlDB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE username = ?);", username).Scan(&exists)
-	return exists, normalizeSQLiteError(err)
+
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return exists, err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?);", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			exists = stmt.ColumnBool(0)
+
+			return nil
+		},
+		Args: []any{username},
+	})
+
+	return exists, err
 }
 
 func (db *SQLiteDatabase) EmailExists(email string) (bool, error) {
 	var exists bool
-	err := db.sqlDB.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE email = ?);", email).Scan(&exists)
-	return exists, normalizeSQLiteError(err)
+
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return exists, err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?);", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			exists = stmt.ColumnBool(0)
+
+			return nil
+		},
+		Args: []any{email},
+	})
+
+	return exists, err
 }
 
 func (db *SQLiteDatabase) BlacklistToken(token string, expiration time.Time) error {
-	_, err := db.sqlDB.Exec("INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);", token, expiration.Format(time.DateTime))
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);", &sqlitex.ExecOptions{
+		Args: []any{token, expiration.Format(time.DateTime)},
+	})
+
+	return err
 }
 
 func (db *SQLiteDatabase) CleanExpiredTokens() error {
-	_, err := db.sqlDB.Exec("DELETE FROM blacklisted_tokens WHERE expiration < datetime('now');")
-	return normalizeSQLiteError(err)
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "DELETE FROM blacklisted_tokens WHERE expiration < datetime('now');", nil)
+
+	return err
 }
 
 func (db *SQLiteDatabase) IsTokenBlacklisted(token string) (bool, error) {
 	var exists bool
-	err := db.sqlDB.QueryRow("SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);", token).Scan(&exists)
-	return exists, normalizeSQLiteError(err)
-}
 
-func normalizeSQLiteError(err error) error {
-	if errors.Is(err, sql.ErrNoRows) {
-		return ErrNotFound
+	conn, err := db.pool.Take(context.TODO())
+	if err != nil {
+		return exists, err
 	}
-	return err
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, "SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);", &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			exists = stmt.ColumnBool(0)
+
+			return nil
+		},
+		Args: []any{token},
+	})
+
+	return exists, err
 }
