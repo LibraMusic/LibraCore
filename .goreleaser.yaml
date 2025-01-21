@@ -322,9 +322,6 @@ universal_binaries:
 upx:
   - enabled: true
 
-signs:
-  - artifacts: checksum
-
 checksum:
   name_template: "checksums.txt"
 
