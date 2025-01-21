@@ -12,6 +12,8 @@ manpages/
 source_scripts/
 data/
 libra.db
+libra.db-wal
+libra.db-shm
 libra
 libra-*
 *.exe
