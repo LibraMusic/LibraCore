@@ -12,9 +12,6 @@ before:
     - ./scripts/completions.sh
     - ./scripts/manpages.sh
 
-gomod:
-  proxy: true
-
 report_sizes: true
 
 git:
