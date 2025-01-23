@@ -14,9 +14,10 @@ import (
 	"github.com/goccy/go-yaml"
 	openapidocs "github.com/kohkimakimoto/echo-openapidocs"
 	"github.com/labstack/echo/v4"
-	"github.com/libramusic/taurus"
 	"github.com/markbates/goth"
 	"github.com/spf13/cobra"
+
+	"github.com/libramusic/taurus"
 
 	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/api/middleware"
