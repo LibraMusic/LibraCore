@@ -1,8 +1,6 @@
 package utils
 
-import (
-	"github.com/charmbracelet/log"
-)
+import "github.com/charmbracelet/log"
 
 func SetupLogger(logFormat string, logLevel log.Level) {
 	if logFormat == "json" {

@@ -4,8 +4,9 @@ import (
 	"os"
 
 	"github.com/charmbracelet/log"
-	"github.com/libramusic/taurus"
 	"github.com/spf13/cobra"
+
+	"github.com/libramusic/taurus"
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/utils"
