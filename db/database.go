@@ -4,6 +4,8 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io/fs"
+	"slices"
 	"strings"
 	"time"
 
@@ -198,4 +200,25 @@ func GetPlayables(userID string) ([]types.Playable, error) {
 	}
 
 	return playables, nil
+}
+
+func GetOrderedMigrationFiles(entries []fs.DirEntry, up bool) []string {
+	var files []string
+	for _, entry := range entries {
+		name := entry.Name()
+		if up && strings.Contains(name, ".down.") {
+			continue
+		}
+		if !up && strings.Contains(name, ".up.") {
+			continue
+		}
+		files = append(files, name)
+	}
+
+	slices.Sort(files)
+	if !up {
+		// Down migrations are applied in reverse order
+		slices.Reverse(files)
+	}
+	return files
 }

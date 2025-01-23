@@ -32,7 +32,7 @@ var upCmd = &cobra.Command{
 	Long:  `Migrate the database up. Use 'steps' to specify the number of steps to migrate.`,
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		steps := 0
+		steps := -1
 		if len(args) > 0 {
 			var err error
 			steps, err = strconv.Atoi(args[0])
@@ -55,7 +55,7 @@ var downCmd = &cobra.Command{
 	Long:  `Migrate the database down. Use 'steps' to specify the number of steps to migrate.`,
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		steps := 0
+		steps := -1
 		if len(args) > 0 {
 			var err error
 			steps, err = strconv.Atoi(args[0])
