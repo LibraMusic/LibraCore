@@ -3,17 +3,15 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/golang-migrate/migrate/v4"
-	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
-	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/types"
@@ -39,200 +37,196 @@ func (db *PostgreSQLDatabase) Connect() error {
 		return normalizePostgreSQLError(err)
 	}
 
-	if err = db.createTracksTable(); err != nil {
-		return normalizePostgreSQLError(err)
+	// If the migrations table doesn't exist, create it and run migrations
+	exists, err := db.migrationsTableExists()
+	if err != nil {
+		return err
 	}
-	if err = db.createAlbumsTable(); err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	if err = db.createVideosTable(); err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	if err = db.createArtistsTable(); err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	if err = db.createPlaylistsTable(); err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	if err = db.createUsersTable(); err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	if err = db.createOAuthProvidersTable(); err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	if err = db.createBlacklistedTokensTable(); err != nil {
-		return normalizePostgreSQLError(err)
+	if !exists {
+		if err := db.createMigrationsTable(); err != nil {
+			return err
+		}
+		if err := db.MigrateUp(-1); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (db *PostgreSQLDatabase) createTracksTable() error {
+func (db *PostgreSQLDatabase) migrationsTableExists() (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(context.Background(), `
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.tables 
+			WHERE table_name = 'schema_migrations'
+		);
+	`).Scan(&exists)
+	return exists, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQLDatabase) createMigrationsTable() error {
 	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS tracks (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  isrc TEXT,
-		  title TEXT,
-		  artist_ids TEXT[],
-		  album_ids TEXT[],
-		  primary_album_id TEXT,
-		  track_number INT,
-		  duration INT,
-		  description TEXT,
-		  release_date TEXT,
-		  lyrics jsonb,
-		  listen_count INT,
-		  favorite_count INT,
-		  addition_date BIGINT,
-		  tags TEXT[],
-		  additional_meta jsonb,
-		  permissions jsonb,
-		  linked_item_ids TEXT[],
-		  content_source TEXT,
-		  metadata_source TEXT,
-		  lyric_sources jsonb
-	  );
-	`)
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version BIGINT PRIMARY KEY,
+            dirty BOOLEAN
+        );
+    `)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) createAlbumsTable() error {
+func (db *PostgreSQLDatabase) getCurrentVersion() (uint64, bool, error) {
+	var version uint64
+	var dirty bool
+	err := db.pool.QueryRow(context.Background(), `
+        SELECT version, dirty FROM schema_migrations 
+        ORDER BY version DESC LIMIT 1;
+    `).Scan(&version, &dirty)
+	if err != nil {
+		return 0, false, normalizePostgreSQLError(err)
+	}
+
+	return version, dirty, nil
+}
+
+func (db *PostgreSQLDatabase) setVersion(version uint64, dirty bool) error {
 	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS albums (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  upc TEXT,
-		  title TEXT,
-		  artist_ids TEXT[],
-		  track_ids TEXT[],
-		  description TEXT,
-		  release_date TEXT,
-		  listen_count INT,
-		  favorite_count INT,
-		  addition_date BIGINT,
-		  tags TEXT[],
-		  additional_meta jsonb,
-		  permissions jsonb,
-		  linked_item_ids TEXT[],
-		  metadata_source TEXT
-	  );
-	`)
+        DELETE FROM schema_migrations;
+        INSERT INTO schema_migrations (version, dirty) VALUES ($1, $2);
+    `, version, dirty)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) createVideosTable() error {
-	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS videos (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  title TEXT,
-		  artist_ids TEXT[],
-		  duration INT,
-		  description TEXT,
-		  release_date TEXT,
-		  subtitles jsonb,
-		  watch_count INT,
-		  favorite_count INT,
-		  addition_date BIGINT,
-		  tags TEXT[],
-		  additional_meta jsonb,
-		  permissions jsonb,
-		  linked_item_ids TEXT[],
-		  content_source TEXT,
-		  metadata_source TEXT,
-		  lyric_sources jsonb
-	  );
-	`)
-	return normalizePostgreSQLError(err)
+func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
+	if err := db.createMigrationsTable(); err != nil {
+		return err
+	}
+
+	currentVersion, dirty, err := db.getCurrentVersion()
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if dirty {
+		return fmt.Errorf("database is in dirty state")
+	}
+
+	entries, err := migrationsFS.ReadDir("migrations/postgresql")
+	if err != nil {
+		return err
+	}
+	files := GetOrderedMigrationFiles(entries, true)
+
+	appliedCount := 0
+	for _, file := range files {
+		versionStr := strings.Split(file, "_")[0]
+		version, err := strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if version <= currentVersion {
+			continue
+		}
+
+		if steps >= 0 && appliedCount >= steps {
+			break
+		}
+
+		// Set dirty flag before applying migration
+		if err := db.setVersion(version, true); err != nil {
+			return err
+		}
+
+		// Read and execute migration
+		content, err := migrationsFS.ReadFile(filepath.Join("migrations/postgresql", file))
+		if err != nil {
+			return err
+		}
+
+		_, err = db.pool.Exec(context.Background(), string(content))
+		if err != nil {
+			return normalizePostgreSQLError(err)
+		}
+
+		// Clear dirty flag after successful migration
+		if err := db.setVersion(version, false); err != nil {
+			return err
+		}
+
+		appliedCount++
+	}
+
+	return nil
 }
 
-func (db *PostgreSQLDatabase) createArtistsTable() error {
-	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS artists (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  name TEXT,
-		  album_ids TEXT[],
-		  track_ids TEXT[],
-		  description TEXT,
-		  creation_date TEXT,
-		  listen_count INT,
-		  favorite_count INT,
-		  addition_date BIGINT,
-		  tags TEXT[],
-		  additional_meta jsonb,
-		  permissions jsonb,
-		  linked_item_ids TEXT[],
-		  metadata_source TEXT
-	  );
-	`)
-	return normalizePostgreSQLError(err)
-}
+func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
+	if err := db.createMigrationsTable(); err != nil {
+		return err
+	}
 
-func (db *PostgreSQLDatabase) createPlaylistsTable() error {
-	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS playlists (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  title TEXT,
-		  track_ids TEXT[],
-		  listen_count INT,
-		  favorite_count INT,
-		  description TEXT,
-		  creation_date TEXT,
-		  addition_date BIGINT,
-		  tags TEXT[],
-		  additional_meta jsonb,
-		  permissions jsonb,
-		  metadata_source TEXT
-	  );
-	`)
-	return normalizePostgreSQLError(err)
-}
+	currentVersion, dirty, err := db.getCurrentVersion()
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if dirty {
+		return fmt.Errorf("database is in dirty state")
+	}
 
-func (db *PostgreSQLDatabase) createUsersTable() error {
-	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS users (
-		  id TEXT PRIMARY KEY,
-		  username TEXT NOT NULL,
-		  email TEXT NOT NULL,
-		  password_hash TEXT NOT NULL,
-		  display_name TEXT,
-		  description TEXT,
-		  listened_to jsonb,
-		  favorites TEXT[],
-		  public_view_count INT,
-		  creation_date BIGINT,
-		  permissions jsonb,
-		  linked_artist_id TEXT,
-		  linked_sources jsonb
-	  );
-	`)
-	return normalizePostgreSQLError(err)
-}
+	entries, err := migrationsFS.ReadDir("migrations/postgresql")
+	if err != nil {
+		return err
+	}
+	files := GetOrderedMigrationFiles(entries, false)
 
-func (db *PostgreSQLDatabase) createOAuthProvidersTable() error {
-	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS oauth_providers (
-          id TEXT PRIMARY KEY,
-          user_id TEXT,
-          provider TEXT,
-          provider_user_id TEXT,
-          UNIQUE(user_id, provider)
-      );
-	`)
-	return normalizePostgreSQLError(err)
-}
+	appliedCount := 0
+	for _, file := range files {
+		versionStr := strings.Split(file, "_")[0]
+		version, err := strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			return err
+		}
 
-func (db *PostgreSQLDatabase) createBlacklistedTokensTable() error {
-	_, err := db.pool.Exec(context.Background(), `
-	  CREATE TABLE IF NOT EXISTS blacklisted_tokens (
-		  token TEXT PRIMARY KEY,
-		  expiration TIMESTAMP
-	  );
-	`)
-	return normalizePostgreSQLError(err)
+		if version > currentVersion {
+			continue
+		}
+
+		if steps >= 0 && appliedCount >= steps {
+			break
+		}
+
+		// Set dirty flag before applying migration
+		if err := db.setVersion(version, true); err != nil {
+			return err
+		}
+
+		// Read and execute migration
+		content, err := migrationsFS.ReadFile(filepath.Join("migrations/postgresql", file))
+		if err != nil {
+			return err
+		}
+
+		_, err = db.pool.Exec(context.Background(), string(content))
+		if err != nil {
+			return normalizePostgreSQLError(err)
+		}
+
+		// Set version to previous migration and clear dirty flag
+		prevVersion := uint64(0)
+		if appliedCount < len(files)-1 {
+			prevVersionStr := strings.Split(files[appliedCount+1], "_")[0]
+			prevVersion, err = strconv.ParseUint(prevVersionStr, 10, 64)
+			if err != nil {
+				return err
+			}
+		}
+		if err := db.setVersion(prevVersion, false); err != nil {
+			return err
+		}
+
+		appliedCount++
+	}
+
+	return nil
 }
 
 func (db *PostgreSQLDatabase) Close() error {
@@ -243,60 +237,6 @@ func (db *PostgreSQLDatabase) Close() error {
 
 func (*PostgreSQLDatabase) EngineName() string {
 	return "PostgreSQL"
-}
-
-func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
-	d, err := iofs.New(migrationsFS, "migrations/postgresql")
-	if err != nil {
-		return normalizePostgreSQLError(err)
-	}
-
-	stddb := stdlib.OpenDBFromPool(db.pool)
-	driver, err := pgxmigrate.WithInstance(stddb, &pgxmigrate.Config{})
-	if err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	m, err := migrate.NewWithInstance("iofs", d, "postgresql", driver)
-	if err != nil {
-		return normalizePostgreSQLError(err)
-	}
-
-	if steps <= 0 {
-		err = m.Up()
-	} else {
-		err = m.Steps(steps)
-	}
-	if errors.Is(err, migrate.ErrNoChange) {
-		return nil
-	}
-	return normalizePostgreSQLError(err)
-}
-
-func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
-	d, err := iofs.New(migrationsFS, "migrations/postgresql")
-	if err != nil {
-		return normalizePostgreSQLError(err)
-	}
-
-	stddb := stdlib.OpenDBFromPool(db.pool)
-	driver, err := pgxmigrate.WithInstance(stddb, &pgxmigrate.Config{})
-	if err != nil {
-		return normalizePostgreSQLError(err)
-	}
-	m, err := migrate.NewWithInstance("iofs", d, "postgresql", driver)
-	if err != nil {
-		return normalizePostgreSQLError(err)
-	}
-
-	if steps <= 0 {
-		err = m.Down()
-	} else {
-		err = m.Steps(-steps)
-	}
-	if errors.Is(err, migrate.ErrNoChange) {
-		return nil
-	}
-	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetAllTracks() ([]types.Track, error) {

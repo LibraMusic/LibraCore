@@ -1,11 +1,12 @@
 package db
 
-// TODO: Custom golang-migrate driver for SQLite with zombiezen's go-sqlite package
-
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -40,240 +41,21 @@ func (db *SQLiteDatabase) Connect() error {
 		return err
 	}
 
-	if err = db.createTracksTable(); err != nil {
+	// If the migrations table doesn't exist, create it and run migrations
+	exists, err := db.migrationsTableExists()
+	if err != nil {
 		return err
 	}
-	if err = db.createAlbumsTable(); err != nil {
-		return err
-	}
-	if err = db.createVideosTable(); err != nil {
-		return err
-	}
-	if err = db.createArtistsTable(); err != nil {
-		return err
-	}
-	if err = db.createPlaylistsTable(); err != nil {
-		return err
-	}
-	if err = db.createUsersTable(); err != nil {
-		return err
-	}
-	if err = db.createOAuthProvidersTable(); err != nil {
-		return err
-	}
-	if err = db.createBlacklistedTokensTable(); err != nil {
-		return err
+	if !exists {
+		if err := db.createMigrationsTable(); err != nil {
+			return err
+		}
+		if err := db.MigrateUp(-1); err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-func (db *SQLiteDatabase) createTracksTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-    CREATE TABLE IF NOT EXISTS tracks (
-      id TEXT PRIMARY KEY,
-      user_id TEXT,
-      isrc TEXT,
-      title TEXT,
-      artist_ids TEXT, -- JSON (json array)
-      album_ids TEXT, -- JSON (json array)
-      primary_album_id TEXT,
-      track_number INTEGER,
-      duration INTEGER,
-      description TEXT,
-      release_date TEXT,
-      lyrics TEXT, -- JSON
-      listen_count INTEGER,
-      favorite_count INTEGER,
-      addition_date INTEGER,
-      tags TEXT, -- JSON (json array)
-      additional_meta BLOB, -- JSONB (json object)
-      permissions BLOB, -- JSONB (json object)
-      linked_item_ids TEXT, -- JSON (json array)
-      content_source TEXT,
-      metadata_source TEXT,
-      lyric_sources BLOB -- JSONB (json object)
-    );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createAlbumsTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS albums (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  upc TEXT,
-		  title TEXT,
-		  artist_ids TEXT, -- JSON (json array)
-		  track_ids TEXT, -- JSON (json array)
-		  description TEXT,
-		  release_date TEXT,
-		  listen_count INTEGER,
-		  favorite_count INTEGER,
-		  addition_date INTEGER,
-		  tags TEXT, -- JSON (json array)
-		  additional_meta BLOB, -- JSONB (json object)
-		  permissions BLOB, -- JSONB (json object)
-		  linked_item_ids TEXT, -- JSON (json array)
-		  metadata_source TEXT
-	  );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createVideosTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS videos (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  title TEXT,
-		  artist_ids TEXT, -- JSON (json array)
-		  duration INTEGER,
-		  description TEXT,
-		  release_date TEXT,
-		  subtitles BLOB, -- JSONB (json object)
-		  watch_count INTEGER,
-		  favorite_count INTEGER,
-		  addition_date INTEGER,
-		  tags TEXT, -- JSON (json array)
-		  additional_meta BLOB, -- JSONB (json object)
-		  permissions BLOB, -- JSONB (json object)
-		  linked_item_ids TEXT, -- JSON (json array)
-		  content_source TEXT,
-		  metadata_source TEXT,
-		  lyric_sources BLOB -- JSONB (json object)
-	  );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createArtistsTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS artists (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  name TEXT,
-		  album_ids TEXT, -- JSON (json array)
-		  track_ids TEXT, -- JSON (json array)
-		  description TEXT,
-		  creation_date TEXT,
-		  listen_count INTEGER,
-		  favorite_count INTEGER,
-		  addition_date INTEGER,
-		  tags TEXT, -- JSON (json array)
-		  additional_meta BLOB, -- JSONB (json object)
-		  permissions BLOB, -- JSONB (json object)
-		  linked_item_ids TEXT, -- JSON (json array)
-		  metadata_source TEXT
-	  );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createPlaylistsTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS playlists (
-		  id TEXT PRIMARY KEY,
-		  user_id TEXT,
-		  title TEXT,
-		  track_ids TEXT, -- JSON (json array)
-		  listen_count INTEGER,
-		  favorite_count INTEGER,
-		  description TEXT,
-		  creation_date TEXT,
-		  addition_date INTEGER,
-		  tags TEXT, -- JSON (json array)
-		  additional_meta BLOB, -- JSONB (json object)
-		  permissions BLOB, -- JSONB (json object)
-		  metadata_source TEXT
-	  );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createUsersTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS users (
-		  id TEXT PRIMARY KEY,
-		  username TEXT NOT NULL,
-		  email TEXT NOT NULL,
-		  password_hash TEXT NOT NULL,
-		  display_name TEXT,
-		  description TEXT,
-		  listened_to BLOB, -- JSONB (json object)
-		  favorites TEXT, -- JSON (json array)
-		  public_view_count INTEGER,
-		  creation_date INTEGER,
-		  permissions BLOB, -- JSONB (json object)
-		  linked_artist_id TEXT,
-		  linked_sources BLOB -- JSONB (json object)
-	  );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createOAuthProvidersTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS oauth_providers (
-          id TEXT PRIMARY KEY,
-          user_id TEXT,
-          provider TEXT,
-          provider_user_id TEXT,
-          UNIQUE(user_id, provider)
-      );`, nil)
-	return err
-}
-
-func (db *SQLiteDatabase) createBlacklistedTokensTable() error {
-	conn, err := db.pool.Take(context.Background())
-	if err != nil {
-		return err
-	}
-	defer db.pool.Put(conn)
-
-	err = sqlitex.Execute(conn, `
-	  CREATE TABLE IF NOT EXISTS blacklisted_tokens (
-		  token TEXT PRIMARY KEY,
-		  expiration TEXT
-	  );`, nil)
-	return err
 }
 
 func (db *SQLiteDatabase) Close() error {
@@ -286,68 +68,230 @@ func (*SQLiteDatabase) EngineName() string {
 	return "SQLite"
 }
 
-func (db *SQLiteDatabase) MigrateUp(steps int) error {
+func (db *SQLiteDatabase) migrationsTableExists() (bool, error) {
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return false, err
+	}
+	defer db.pool.Put(conn)
+
+	var exists bool
+	err = sqlitex.Execute(conn, `
+		SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations';`, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			exists = true
+			return nil
+		},
+	})
+	return exists, err
+}
+
+func (db *SQLiteDatabase) createMigrationsTable() error {
 	conn, err := db.pool.Take(context.Background())
 	if err != nil {
 		return err
 	}
 	defer db.pool.Put(conn)
 
-	/*d, err := iofs.New(migrationsFS, "migrations/sqlite")
-	if err != nil {
-		return err
-	}
-
-	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
-	if err != nil {
-		return err
-	}
-	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
-	if err != nil {
-		return err
-	}
-
-	if steps <= 0 {
-		err = m.Up()
-	} else {
-		err = m.Steps(steps)
-	}
-	if errors.Is(err, migrate.ErrNoChange) {
-		return nil
-	}*/
+	err = sqlitex.Execute(conn, `
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version BIGINT PRIMARY KEY,
+            dirty BOOLEAN
+        );`, nil)
 	return err
 }
 
-func (db *SQLiteDatabase) MigrateDown(steps int) error {
+func (db *SQLiteDatabase) getCurrentVersion() (uint64, bool, error) {
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return 0, false, err
+	}
+	defer db.pool.Put(conn)
+
+	var version uint64
+	var dirty bool
+	found := false
+
+	err = sqlitex.Execute(conn, `
+        SELECT version, dirty FROM schema_migrations 
+        ORDER BY version DESC LIMIT 1;`, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			version = uint64(stmt.ColumnInt64(0))
+			dirty = stmt.ColumnBool(1)
+			found = true
+			return nil
+		},
+	})
+	if err != nil {
+		return 0, false, err
+	}
+
+	if !found {
+		return 0, false, ErrNotFound
+	}
+
+	return version, dirty, nil
+}
+
+func (db *SQLiteDatabase) setVersion(version uint64, dirty bool) error {
 	conn, err := db.pool.Take(context.Background())
 	if err != nil {
 		return err
 	}
 	defer db.pool.Put(conn)
 
-	/*d, err := iofs.New(migrationsFS, "migrations/sqlite")
+	err = sqlitex.Execute(conn, "DELETE FROM schema_migrations;", nil)
 	if err != nil {
 		return err
 	}
 
-	driver, err := sqlite3.WithInstance(db.sqlDB, &sqlite3.Config{})
-	if err != nil {
-		return err
-	}
-	m, err := migrate.NewWithInstance("iofs", d, "sqlite", driver)
-	if err != nil {
-		return err
-	}
-
-	if steps <= 0 {
-		err = m.Down()
-	} else {
-		err = m.Steps(-steps)
-	}
-	if errors.Is(err, migrate.ErrNoChange) {
-		return nil
-	}*/
+	err = sqlitex.Execute(conn, `
+        INSERT INTO schema_migrations (version, dirty) VALUES (?, ?);`, &sqlitex.ExecOptions{
+		Args: []any{version, dirty},
+	})
 	return err
+}
+
+func (db *SQLiteDatabase) MigrateUp(steps int) error {
+	if err := db.createMigrationsTable(); err != nil {
+		return err
+	}
+
+	currentVersion, dirty, err := db.getCurrentVersion()
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if dirty {
+		return fmt.Errorf("database is in dirty state")
+	}
+
+	entries, err := migrationsFS.ReadDir("migrations/sqlite")
+	if err != nil {
+		return err
+	}
+	files := GetOrderedMigrationFiles(entries, true)
+
+	appliedCount := 0
+	for _, file := range files {
+		versionStr := strings.Split(file, "_")[0]
+		version, err := strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if version <= currentVersion {
+			continue
+		}
+
+		if steps >= 0 && appliedCount >= steps {
+			break
+		}
+
+		// Set dirty flag before applying migration
+		if err := db.setVersion(version, true); err != nil {
+			return err
+		}
+
+		// Read and execute migration
+		content, err := migrationsFS.ReadFile(filepath.Join("migrations/sqlite", file))
+		if err != nil {
+			return err
+		}
+
+		conn, err := db.pool.Take(context.Background())
+		if err != nil {
+			return err
+		}
+		err = sqlitex.ExecuteScript(conn, string(content), nil)
+		db.pool.Put(conn)
+		if err != nil {
+			return err
+		}
+
+		// Clear dirty flag after successful migration
+		if err := db.setVersion(version, false); err != nil {
+			return err
+		}
+
+		appliedCount++
+	}
+
+	return nil
+}
+
+func (db *SQLiteDatabase) MigrateDown(steps int) error {
+	if err := db.createMigrationsTable(); err != nil {
+		return err
+	}
+
+	currentVersion, dirty, err := db.getCurrentVersion()
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if dirty {
+		return fmt.Errorf("database is in dirty state")
+	}
+
+	entries, err := migrationsFS.ReadDir("migrations/sqlite")
+	if err != nil {
+		return err
+	}
+	files := GetOrderedMigrationFiles(entries, false)
+
+	appliedCount := 0
+	for _, file := range files {
+		versionStr := strings.Split(file, "_")[0]
+		version, err := strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if version > currentVersion {
+			continue
+		}
+
+		if steps >= 0 && appliedCount >= steps {
+			break
+		}
+
+		// Set dirty flag before applying migration
+		if err := db.setVersion(version, true); err != nil {
+			return err
+		}
+
+		// Read and execute migration
+		content, err := migrationsFS.ReadFile(filepath.Join("migrations/sqlite", file))
+		if err != nil {
+			return err
+		}
+
+		conn, err := db.pool.Take(context.Background())
+		if err != nil {
+			return err
+		}
+		err = sqlitex.ExecuteScript(conn, string(content), nil)
+		db.pool.Put(conn)
+		if err != nil {
+			return err
+		}
+
+		// Set version to previous migration and clear dirty flag
+		prevVersion := uint64(0)
+		if appliedCount < len(files)-1 {
+			prevVersionStr := strings.Split(files[appliedCount+1], "_")[0]
+			prevVersion, err = strconv.ParseUint(prevVersionStr, 10, 64)
+			if err != nil {
+				return err
+			}
+		}
+		if err := db.setVersion(prevVersion, false); err != nil {
+			return err
+		}
+
+		appliedCount++
+	}
+
+	return nil
 }
 
 func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
