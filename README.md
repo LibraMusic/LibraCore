@@ -36,5 +36,5 @@ Dependencies:
 
 ## Development
 
-To run all unit tests, run `make test`.
-To run the integration tests, run `make test_integration`
+To run all unit tests, run `mage test` or `mage test:unit`.
+To run the integration tests, run `mage test:integration`
