@@ -30,8 +30,8 @@ const EnvPrefix = "LIBRA"
 var DataDir string
 
 type ApplicationConfig struct {
-	PublicURL  string   `yaml:"public_url"`
 	Port       int      `yaml:"port"`
+	PublicURL  string   `yaml:"public_url"`
 	SourceID   string   `yaml:"source_id"`
 	SourceName string   `yaml:"source_name"`
 	MediaTypes []string `yaml:"media_types"`
