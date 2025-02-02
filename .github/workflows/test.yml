@@ -19,14 +19,17 @@ jobs:
           go-version: "1.23.x"
           cache: true
 
+      - name: Install Mage
+        run: go install github.com/magefile/mage@latest
+
       - name: Install dependencies
-        run: go mod download
+        run: mage deps
 
       - name: Build
-        run: make build
+        run: mage build
 
       - name: Run unit tests
-        run: make test
+        run: mage test
 
       - name: Run integration tests
-        run: make test_integration
+        run: mage testIntegration
