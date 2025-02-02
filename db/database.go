@@ -105,6 +105,7 @@ func ConnectDatabase() error {
 	if err != nil {
 		return fmt.Errorf("error connecting to database: %w", err)
 	}
+	log.Info("Connected to database")
 	return nil
 }
 

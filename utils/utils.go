@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"fmt"
+	"errors"
 	"math/rand/v2"
 	"os/exec"
 )
@@ -19,7 +19,7 @@ func GenerateID(length int) string {
 
 func ExecCommand(command []string) ([]byte, error) {
 	if len(command) == 0 {
-		return nil, fmt.Errorf("no command provided")
+		return nil, errors.New("no command provided")
 	} else if len(command) == 1 {
 		return exec.Command(command[0]).Output()
 	}

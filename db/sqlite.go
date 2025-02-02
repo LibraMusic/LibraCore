@@ -32,8 +32,8 @@ func ConnectSQLite() (*SQLiteDatabase, error) {
 func (db *SQLiteDatabase) Connect() error {
 	log.Info("Connecting to SQLite...")
 	dbPath := config.Conf.Database.SQLite.Path
-	if !filepath.IsAbs(dbPath) && utils.DataDir != "" {
-		dbPath = filepath.Join(utils.DataDir, dbPath)
+	if !filepath.IsAbs(dbPath) && config.DataDir != "" {
+		dbPath = filepath.Join(config.DataDir, dbPath)
 	}
 	pool, err := sqlitex.NewPool(dbPath, sqlitex.PoolOptions{})
 	db.pool = pool
@@ -47,10 +47,10 @@ func (db *SQLiteDatabase) Connect() error {
 		return err
 	}
 	if !exists {
-		if err := db.createMigrationsTable(); err != nil {
+		if err = db.createMigrationsTable(); err != nil {
 			return err
 		}
-		if err := db.MigrateUp(-1); err != nil {
+		if err = db.MigrateUp(-1); err != nil {
 			return err
 		}
 	}
@@ -78,7 +78,7 @@ func (db *SQLiteDatabase) migrationsTableExists() (bool, error) {
 	var exists bool
 	err = sqlitex.Execute(conn, `
 		SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations';`, &sqlitex.ExecOptions{
-		ResultFunc: func(stmt *sqlite.Stmt) error {
+		ResultFunc: func(_ *sqlite.Stmt) error {
 			exists = true
 			return nil
 		},
@@ -162,7 +162,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 		return err
 	}
 	if dirty {
-		return fmt.Errorf("database is in dirty state")
+		return errors.New("database is in dirty state")
 	}
 
 	entries, err := migrationsFS.ReadDir("migrations/sqlite")
@@ -188,7 +188,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 		}
 
 		// Set dirty flag before applying migration
-		if err := db.setVersion(version, true); err != nil {
+		if err = db.setVersion(version, true); err != nil {
 			return err
 		}
 
@@ -209,7 +209,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 		}
 
 		// Clear dirty flag after successful migration
-		if err := db.setVersion(version, false); err != nil {
+		if err = db.setVersion(version, false); err != nil {
 			return err
 		}
 
@@ -229,7 +229,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 		return err
 	}
 	if dirty {
-		return fmt.Errorf("database is in dirty state")
+		return errors.New("database is in dirty state")
 	}
 
 	entries, err := migrationsFS.ReadDir("migrations/sqlite")
@@ -255,7 +255,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 		}
 
 		// Set dirty flag before applying migration
-		if err := db.setVersion(version, true); err != nil {
+		if err = db.setVersion(version, true); err != nil {
 			return err
 		}
 
@@ -284,7 +284,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 				return err
 			}
 		}
-		if err := db.setVersion(prevVersion, false); err != nil {
+		if err = db.setVersion(prevVersion, false); err != nil {
 			return err
 		}
 
@@ -311,10 +311,10 @@ func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 			track.UserID = stmt.ColumnText(1)
 			track.ISRC = stmt.ColumnText(2)
 			track.Title = stmt.ColumnText(3)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
 				return fmt.Errorf("failed to parse album_ids: %w", err)
 			}
 			track.PrimaryAlbumID = stmt.ColumnText(6)
@@ -322,27 +322,27 @@ func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 			track.Duration = stmt.ColumnInt(8)
 			track.Description = stmt.ColumnText(9)
 			track.ReleaseDate = stmt.ColumnText(10)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
 				return fmt.Errorf("failed to parse lyrics: %w", err)
 			}
 			track.ListenCount = stmt.ColumnInt(12)
 			track.FavoriteCount = stmt.ColumnInt(13)
 			track.AdditionDate = stmt.ColumnInt64(14)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
 			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
 			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
-			if err := json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
 
@@ -372,10 +372,10 @@ func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 			track.UserID = stmt.ColumnText(1)
 			track.ISRC = stmt.ColumnText(2)
 			track.Title = stmt.ColumnText(3)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
 				return fmt.Errorf("failed to parse album_ids: %w", err)
 			}
 			track.PrimaryAlbumID = stmt.ColumnText(6)
@@ -383,27 +383,27 @@ func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 			track.Duration = stmt.ColumnInt(8)
 			track.Description = stmt.ColumnText(9)
 			track.ReleaseDate = stmt.ColumnText(10)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
 				return fmt.Errorf("failed to parse lyrics: %w", err)
 			}
 			track.ListenCount = stmt.ColumnInt(12)
 			track.FavoriteCount = stmt.ColumnInt(13)
 			track.AdditionDate = stmt.ColumnInt64(14)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
 			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
 			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
-			if err := json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
 
@@ -438,10 +438,10 @@ func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
 			track.UserID = stmt.ColumnText(1)
 			track.ISRC = stmt.ColumnText(2)
 			track.Title = stmt.ColumnText(3)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &track.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &track.AlbumIDs); err != nil {
 				return fmt.Errorf("failed to parse album_ids: %w", err)
 			}
 			track.PrimaryAlbumID = stmt.ColumnText(6)
@@ -449,27 +449,27 @@ func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
 			track.Duration = stmt.ColumnInt(8)
 			track.Description = stmt.ColumnText(9)
 			track.ReleaseDate = stmt.ColumnText(10)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &track.Lyrics); err != nil {
 				return fmt.Errorf("failed to parse lyrics: %w", err)
 			}
 			track.ListenCount = stmt.ColumnInt(12)
 			track.FavoriteCount = stmt.ColumnInt(13)
 			track.AdditionDate = stmt.ColumnInt64(14)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(15)), &track.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(16)), &track.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(17)), &track.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
 			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
 			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
-			if err := json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
 
@@ -638,10 +638,10 @@ func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 			album.UserID = stmt.ColumnText(1)
 			album.UPC = stmt.ColumnText(2)
 			album.Title = stmt.ColumnText(3)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
 				return fmt.Errorf("failed to parse track_ids: %w", err)
 			}
 			album.Description = stmt.ColumnText(6)
@@ -649,16 +649,16 @@ func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 			album.ListenCount = stmt.ColumnInt(8)
 			album.FavoriteCount = stmt.ColumnInt(9)
 			album.AdditionDate = stmt.ColumnInt64(10)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
 			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
@@ -689,10 +689,10 @@ func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 			album.UserID = stmt.ColumnText(1)
 			album.UPC = stmt.ColumnText(2)
 			album.Title = stmt.ColumnText(3)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
 				return fmt.Errorf("failed to parse track_ids: %w", err)
 			}
 			album.Description = stmt.ColumnText(6)
@@ -700,16 +700,16 @@ func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 			album.ListenCount = stmt.ColumnInt(8)
 			album.FavoriteCount = stmt.ColumnInt(9)
 			album.AdditionDate = stmt.ColumnInt64(10)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
 			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
@@ -745,10 +745,10 @@ func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
 			album.UserID = stmt.ColumnText(1)
 			album.UPC = stmt.ColumnText(2)
 			album.Title = stmt.ColumnText(3)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
 				return fmt.Errorf("failed to parse track_ids: %w", err)
 			}
 			album.Description = stmt.ColumnText(6)
@@ -756,16 +756,16 @@ func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
 			album.ListenCount = stmt.ColumnInt(8)
 			album.FavoriteCount = stmt.ColumnInt(9)
 			album.AdditionDate = stmt.ColumnInt64(10)
-			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
 			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))

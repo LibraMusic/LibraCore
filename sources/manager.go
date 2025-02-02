@@ -54,11 +54,12 @@ func (sm *Manager) EnableSource(sourceStr string) error {
 	case "spotify", "sp":
 		source, err = InitSpotifySource()
 	default:
-		if strings.HasPrefix(sourceStr, "file:") {
+		switch {
+		case strings.HasPrefix(sourceStr, "file:"):
 			source, err = InitLocalFileSource(strings.TrimPrefix(sourceStr, "file:"))
-		} else if utils.IsValidSourceURL(sourceStr) {
+		case utils.IsValidSourceURL(sourceStr):
 			source, err = InitWebSource(sourceStr)
-		} else {
+		default:
 			err = types.InvalidSourceError{SourceID: sourceStr}
 			return err
 		}

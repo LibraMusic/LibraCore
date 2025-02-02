@@ -44,10 +44,10 @@ func InitYouTubeSource() (*YouTubeSource, error) {
 
 func getYouTubeScriptPath() string {
 	path := config.Conf.SourceScripts.YouTubeLocation
-	if !filepath.IsAbs(path) && utils.DataDir != "" {
-		absDataDir, err := filepath.Abs(utils.DataDir)
+	if !filepath.IsAbs(path) && config.DataDir != "" {
+		absDataDir, err := filepath.Abs(config.DataDir)
 		if err != nil {
-			return filepath.Join(utils.DataDir, path)
+			return filepath.Join(config.DataDir, path)
 		}
 		return filepath.Join(absDataDir, path)
 	}
@@ -81,7 +81,7 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 
 	filtersJSON, err := json.Marshal(filters)
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("error encoding filters: %w", err)
 	}
 
 	youtubeLocation := getYouTubeScriptPath()
@@ -95,20 +95,19 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 	}...)
 	out, err := utils.ExecCommand(command)
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("error executing command: %w", err)
 	}
 
 	var output []map[string]interface{}
 	err = json.Unmarshal(out, &output)
 	if err != nil {
-		return results, err
+		return results, fmt.Errorf("error parsing command output: %w", err)
 	}
 
 	for _, v := range output {
 		result, err := s.parseSearchResult(v)
 		if err != nil {
-			fmt.Println(err) // TODO: Remove debug print
-			continue
+			return results, fmt.Errorf("error parsing search result: %w", err)
 		}
 		results = append(results, result)
 	}
@@ -254,27 +253,27 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 			},
 			MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string)),
 		}, nil
-	} else {
-		thumbnails := v["thumbnails"].([]map[string]interface{})
-		thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-		thumbnail, err := utils.DownloadFile(thumbnailURL)
-		if err != nil {
-			return nil, err
-		}
-
-		return types.Video{
-			Title:       v["title"].(string),
-			Duration:    v["duration_seconds"].(int),
-			ReleaseDate: year,
-			AdditionalMeta: map[string]interface{}{
-				"display_artists":   displayArtists,
-				"display_thumbnail": thumbnail,
-				"yt_id":             v["videoId"].(string),
-				"yt_artists":        v["artists"].([]map[string]string),
-			},
-			MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string)),
-		}, nil
 	}
+
+	thumbnails := v["thumbnails"].([]map[string]interface{})
+	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
+	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return types.Video{
+		Title:       v["title"].(string),
+		Duration:    v["duration_seconds"].(int),
+		ReleaseDate: year,
+		AdditionalMeta: map[string]interface{}{
+			"display_artists":   displayArtists,
+			"display_thumbnail": thumbnail,
+			"yt_id":             v["videoId"].(string),
+			"yt_artists":        v["artists"].([]map[string]string),
+		},
+		MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string)),
+	}, nil
 }
 
 func (s *YouTubeSource) parseArtistResult(v map[string]interface{}) (types.SourcePlayable, error) {

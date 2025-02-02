@@ -2,6 +2,7 @@ package cmds
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -33,7 +34,7 @@ var serverCmd = &cobra.Command{
 	Use:     "server",
 	Aliases: []string{"start"},
 	Short:   "Start the server",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		utils.SetupLogger(config.Conf.Logs.Format, config.Conf.Logs.Level)
 
 		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
@@ -59,7 +60,7 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Error loading private key", "err", err)
 		}
 
-		api.InitProviderFactories(config.Conf.Application.PublicURL)
+		api.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
 		for _, provider := range config.Conf.Auth.OAuth.Providers {
 			if provider.ID == "" {
 				log.Fatal("OAuth provider ID cannot be empty")
@@ -67,11 +68,11 @@ var serverCmd = &cobra.Command{
 			if provider.GetName() == "" {
 				log.Fatal("Unsupported OAuth provider", "id", provider.ID)
 			}
-			if p, err := provider.GetProvider(); err != nil {
+			p, err := provider.GetProvider()
+			if err != nil {
 				log.Fatal("Failed to initialize OAuth provider", "id", provider.ID, "err", err)
-			} else {
-				goth.UseProviders(p)
 			}
+			goth.UseProviders(p)
 		}
 
 		if err := db.ConnectDatabase(); err != nil {
@@ -86,18 +87,6 @@ var serverCmd = &cobra.Command{
 
 		sources.InitManager()
 
-		// Test code below (TODO: Remove)
-		s, err := sources.InitYouTubeSource()
-		if err != nil {
-			log.Fatal("Error initializing YouTube source", "err", err)
-		}
-		a, b := s.Search("Lord of Ashes", 5, 0, map[string]interface{}{})
-		fmt.Println(a)
-		fmt.Println(b)
-		// fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=orimodrogvd"))
-		// fmt.Println(s.ContainsURL("https://www.youtube.com/watch?v=uGxcco8Uq6A"))
-		// Test code above (TODO: Remove)
-
 		libraService := echo.Map{
 			"id":           config.Conf.Application.SourceID,
 			"name":         config.Conf.Application.SourceName,
@@ -111,9 +100,12 @@ var serverCmd = &cobra.Command{
 			"database": db.DB.EngineName(),
 		}
 
-		fmt.Println()
-		fmt.Printf("Libra v%s\n", utils.LibraVersion.String())
-		fmt.Printf("Database: %s\n", db.DB.EngineName())
+		//nolint:forbidigo // Basic information on startup
+		{
+			fmt.Println()
+			fmt.Printf("Libra v%s\n", utils.LibraVersion.String())
+			fmt.Printf("Database: %s\n", db.DB.EngineName())
+		}
 
 		v1Spec := api.V1OpenAPI3Spec()
 		v1SpecYAML, err := yaml.Marshal(v1Spec)
@@ -212,7 +204,7 @@ var serverCmd = &cobra.Command{
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
 		go func() {
-			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); err != nil && err != http.ErrServerClosed {
+			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); errors.Is(err, http.ErrServerClosed) {
 				log.Fatal("Error starting server", "err", err)
 			}
 		}()

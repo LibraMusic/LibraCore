@@ -1,15 +1,12 @@
 package cmds
 
 import (
-	"os"
-
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
 
 	"github.com/libramusic/taurus"
 
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/utils"
 )
 
 var rootCmd = &cobra.Command{
@@ -25,11 +22,8 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&utils.DataDir, "dataDir", "", "persistent data directory (usually for containers)")
+	rootCmd.PersistentFlags().StringVar(&config.DataDir, "dataDir", "", "persistent data directory (usually for containers)")
 	_ = rootCmd.MarkFlagDirname("dataDir")
-	if utils.DataDir == "" {
-		utils.DataDir = os.Getenv("LIBRA_DATA_DIR")
-	}
 
 	rootCmd.PersistentFlags().String("logLevel", "", "log level (debug|info|warn|error)")
 	_ = rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
