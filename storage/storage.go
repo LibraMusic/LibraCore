@@ -15,7 +15,6 @@ import (
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/types"
-	"github.com/libramusic/libracore/utils"
 )
 
 const (
@@ -25,8 +24,8 @@ const (
 
 func getStoragePath() (string, error) {
 	path := config.Conf.Storage.Location
-	if !filepath.IsAbs(path) && utils.DataDir != "" {
-		path = filepath.Join(utils.DataDir, path)
+	if !filepath.IsAbs(path) && config.DataDir != "" {
+		path = filepath.Join(config.DataDir, path)
 	}
 	return filepath.Abs(path)
 }

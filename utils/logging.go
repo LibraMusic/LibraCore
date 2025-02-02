@@ -3,13 +3,17 @@ package utils
 import "github.com/charmbracelet/log"
 
 func SetupLogger(logFormat string, logLevel log.Level) {
-	if logFormat == "json" {
+	log.SetLevel(logLevel)
+
+	switch logFormat {
+	case "json":
 		log.SetFormatter(log.JSONFormatter)
-	} else if logFormat == "logfmt" {
+	case "logfmt":
 		log.SetFormatter(log.LogfmtFormatter)
-	} else if logFormat != "text" {
+	case "text":
+		log.SetFormatter(log.TextFormatter)
+	default:
+		log.SetFormatter(log.TextFormatter)
 		log.Warn("Unknown log format, defaulting to text")
 	}
-
-	log.SetLevel(logLevel)
 }

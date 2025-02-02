@@ -27,6 +27,8 @@ var defaultConfig string
 
 const EnvPrefix = "LIBRA"
 
+var DataDir string
+
 type ApplicationConfig struct {
 	PublicURL  string   `yaml:"public_url"`
 	Port       int      `yaml:"port"`
@@ -124,6 +126,10 @@ func LoadConfig() error {
 	taurus.BindEnvAlias("LOGS_FORMAT", "LOG_FORMAT")
 	setupTypes()
 
+	if DataDir == "" {
+		DataDir = os.Getenv(EnvPrefix + "_DATA_DIR")
+	}
+
 	if err := taurus.Load(defaultConfig, &Conf); err != nil {
 		return fmt.Errorf("failed to read default config: %w", err)
 	}
@@ -173,8 +179,8 @@ func setupTypes() {
 }
 
 func getConfigFilePath() (string, error) {
-	if utils.DataDir != "" {
-		configFilePath, err := filepath.Abs(filepath.Join(utils.DataDir, "config.yaml"))
+	if DataDir != "" {
+		configFilePath, err := filepath.Abs(filepath.Join(DataDir, "config.yaml"))
 		if err != nil {
 			log.Warn("Failed to get absolute path for config.yaml in DataDir", "err", err)
 		} else {

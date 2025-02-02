@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -62,6 +61,9 @@ func (db *PostgreSQLDatabase) migrationsTableExists() (bool, error) {
 			WHERE table_name = 'schema_migrations'
 		);
 	`).Scan(&exists)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
 	return exists, normalizePostgreSQLError(err)
 }
 
@@ -107,7 +109,7 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 		return err
 	}
 	if dirty {
-		return fmt.Errorf("database is in dirty state")
+		return errors.New("database is in dirty state")
 	}
 
 	entries, err := migrationsFS.ReadDir("migrations/postgresql")
@@ -169,7 +171,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 		return err
 	}
 	if dirty {
-		return fmt.Errorf("database is in dirty state")
+		return errors.New("database is in dirty state")
 	}
 
 	entries, err := migrationsFS.ReadDir("migrations/postgresql")

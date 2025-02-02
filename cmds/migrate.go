@@ -16,7 +16,7 @@ var migrateCmd = &cobra.Command{
 	Short: "Migrate the database",
 	Long: `Migrate the database. Use 'up' to migrate up, 'down' to migrate down.
 Uses your database connection string from the config file.`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		utils.SetupLogger("text", log.InfoLevel)
 
 		err := db.ConnectDatabase()
@@ -31,13 +31,13 @@ var upCmd = &cobra.Command{
 	Short: "Migrate the database up",
 	Long:  `Migrate the database up. Use 'steps' to specify the number of steps to migrate.`,
 	Args:  cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
 		if len(args) > 0 {
 			var err error
 			steps, err = strconv.Atoi(args[0])
 			if err != nil {
-				fmt.Println("Error: steps must be an integer")
+				fmt.Println("Error: steps must be an integer") //nolint:forbidigo // CLI error message
 				return
 			}
 		}
@@ -45,7 +45,7 @@ var upCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Error migrating database", "err", err)
 		}
-		fmt.Println("Database migration complete")
+		fmt.Println("Database migration complete") //nolint:forbidigo // CLI success message
 	},
 }
 
@@ -54,13 +54,13 @@ var downCmd = &cobra.Command{
 	Short: "Migrate the database down",
 	Long:  `Migrate the database down. Use 'steps' to specify the number of steps to migrate.`,
 	Args:  cobra.MaximumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
 		if len(args) > 0 {
 			var err error
 			steps, err = strconv.Atoi(args[0])
 			if err != nil {
-				fmt.Println("Error: steps must be an integer")
+				fmt.Println("Error: steps must be an integer") //nolint:forbidigo // CLI error message
 				return
 			}
 		}
@@ -68,7 +68,7 @@ var downCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Error migrating database", "err", err)
 		}
-		fmt.Println("Database migration complete")
+		fmt.Println("Database migration complete") //nolint:forbidigo // CLI success message
 	},
 }
 

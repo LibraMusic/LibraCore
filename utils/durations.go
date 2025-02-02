@@ -39,7 +39,7 @@ func ParseHumanDuration(durationStr string) (time.Duration, error) {
 }
 
 // ParseDuration parses a duration string.
-// examples: "10d", "-1.5w" or "3Y4M5d".
+// Examples: "10d", "-1.5w" or "3Y4M5d".
 // Add time units are "d"="D", "w"="W".
 func ParseDuration(s string) (time.Duration, error) {
 	neg := false
@@ -49,7 +49,7 @@ func ParseDuration(s string) (time.Duration, error) {
 	}
 
 	re := regexp.MustCompile(`(\d*\.\d+|\d+)[^\d]*`)
-	unitMap := map[string]time.Duration{
+	unitMap := map[string]int{
 		"d": 24,
 		"D": 24,
 		"w": 7 * 24,
@@ -59,11 +59,11 @@ func ParseDuration(s string) (time.Duration, error) {
 	strs := re.FindAllString(s, -1)
 	var sumDur time.Duration
 	for _, str := range strs {
-		var _hours time.Duration = 1
-		for unit, hours := range unitMap {
+		hours := 1
+		for unit, h := range unitMap {
 			if strings.Contains(str, unit) {
 				str = strings.ReplaceAll(str, unit, "h")
-				_hours = hours
+				hours = h
 				break
 			}
 		}
@@ -73,7 +73,7 @@ func ParseDuration(s string) (time.Duration, error) {
 			return 0, err
 		}
 
-		sumDur += dur * _hours
+		sumDur += dur * time.Duration(hours)
 	}
 
 	if neg {

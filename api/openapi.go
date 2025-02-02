@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/charmbracelet/log"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3gen"
@@ -118,7 +120,7 @@ func V1OpenAPI3Spec() openapi3.T {
 				OperationID: "getAllPlayables",
 				Summary:     "Gets all playables",
 				Responses: openapi3.NewResponses(
-					openapi3.WithStatus(200, &openapi3.ResponseRef{
+					openapi3.WithStatus(http.StatusOK, &openapi3.ResponseRef{
 						Ref: "#/components/responses/PlayableListResponse",
 					}),
 				),
@@ -134,7 +136,7 @@ func V1OpenAPI3Spec() openapi3.T {
 					},
 				},
 				Responses: openapi3.NewResponses(
-					openapi3.WithStatus(200, &openapi3.ResponseRef{
+					openapi3.WithStatus(http.StatusOK, &openapi3.ResponseRef{
 						Ref: "#/components/responses/PlayableListResponse",
 					}),
 				),
