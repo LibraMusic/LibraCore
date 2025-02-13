@@ -48,7 +48,9 @@ func Register(c echo.Context) error {
 		})
 	}
 
-	usernameExists, err := db.DB.UsernameExists(req.Username)
+	ctx := c.Request().Context()
+
+	usernameExists, err := db.DB.UsernameExists(ctx, req.Username)
 	if err != nil {
 		log.Error("error checking if username exists", "err", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -62,7 +64,7 @@ func Register(c echo.Context) error {
 	}
 
 	if req.Email != "" {
-		emailExists, err := db.DB.EmailExists(req.Email)
+		emailExists, err := db.DB.EmailExists(ctx, req.Email)
 		if err != nil {
 			log.Error("error checking if email exists", "err", err)
 			return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -82,7 +84,7 @@ func Register(c echo.Context) error {
 		Email:        req.Email,
 		PasswordHash: utils.GeneratePassword(req.Password),
 	}
-	err = db.DB.CreateUser(user)
+	err = db.DB.CreateUser(ctx, user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -108,7 +110,10 @@ func Login(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	user, err := db.DB.GetUserByUsername(req.Username)
+
+	ctx := c.Request().Context()
+
+	user, err := db.DB.GetUserByUsername(ctx, req.Username)
 	if errors.Is(err, db.ErrNotFound) {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"message": "user not found",
@@ -145,7 +150,10 @@ func Logout(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	err = db.DB.BlacklistToken(user.Raw, expiration.Time)
+
+	ctx := c.Request().Context()
+
+	err = db.DB.BlacklistToken(ctx, user.Raw, expiration.Time)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -166,7 +174,9 @@ func OAuthCallback(c echo.Context) error {
 		return c.String(http.StatusBadRequest, err.Error())
 	}
 
-	existingUser, err := db.DB.GetOAuthUser(user.Provider, user.UserID)
+	ctx := c.Request().Context()
+
+	existingUser, err := db.DB.GetOAuthUser(ctx, user.Provider, user.UserID)
 	if !errors.Is(err, db.ErrNotFound) {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -195,13 +205,13 @@ func OAuthCallback(c echo.Context) error {
 
 	// TODO: Profile picture.
 
-	if err := db.DB.CreateUser(newUser); err != nil {
+	if err := db.DB.CreateUser(ctx, newUser); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})
 	}
 
-	if err := db.DB.LinkOAuthAccount(user.Provider, newUser.ID, user.UserID); err != nil {
+	if err := db.DB.LinkOAuthAccount(ctx, user.Provider, newUser.ID, user.UserID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})

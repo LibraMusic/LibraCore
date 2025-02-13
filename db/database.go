@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -33,57 +34,57 @@ type Database interface {
 	MigrateUp(steps int) error
 	MigrateDown(steps int) error
 
-	GetAllTracks() ([]types.Track, error)
-	GetTracks(userID string) ([]types.Track, error)
-	GetTrack(id string) (types.Track, error)
-	AddTrack(track types.Track) error
-	UpdateTrack(track types.Track) error
-	DeleteTrack(id string) error
+	GetAllTracks(ctx context.Context) ([]types.Track, error)
+	GetTracks(ctx context.Context, userID string) ([]types.Track, error)
+	GetTrack(ctx context.Context, id string) (types.Track, error)
+	AddTrack(ctx context.Context, track types.Track) error
+	UpdateTrack(ctx context.Context, track types.Track) error
+	DeleteTrack(ctx context.Context, id string) error
 
-	GetAllAlbums() ([]types.Album, error)
-	GetAlbums(userID string) ([]types.Album, error)
-	GetAlbum(id string) (types.Album, error)
-	AddAlbum(album types.Album) error
-	UpdateAlbum(album types.Album) error
-	DeleteAlbum(id string) error
+	GetAllAlbums(ctx context.Context) ([]types.Album, error)
+	GetAlbums(ctx context.Context, userID string) ([]types.Album, error)
+	GetAlbum(ctx context.Context, id string) (types.Album, error)
+	AddAlbum(ctx context.Context, album types.Album) error
+	UpdateAlbum(ctx context.Context, album types.Album) error
+	DeleteAlbum(ctx context.Context, id string) error
 
-	GetAllVideos() ([]types.Video, error)
-	GetVideos(userID string) ([]types.Video, error)
-	GetVideo(id string) (types.Video, error)
-	AddVideo(video types.Video) error
-	UpdateVideo(video types.Video) error
-	DeleteVideo(id string) error
+	GetAllVideos(ctx context.Context) ([]types.Video, error)
+	GetVideos(ctx context.Context, userID string) ([]types.Video, error)
+	GetVideo(ctx context.Context, id string) (types.Video, error)
+	AddVideo(ctx context.Context, video types.Video) error
+	UpdateVideo(ctx context.Context, video types.Video) error
+	DeleteVideo(ctx context.Context, id string) error
 
-	GetAllArtists() ([]types.Artist, error)
-	GetArtists(userID string) ([]types.Artist, error)
-	GetArtist(id string) (types.Artist, error)
-	AddArtist(artist types.Artist) error
-	UpdateArtist(artist types.Artist) error
-	DeleteArtist(id string) error
+	GetAllArtists(ctx context.Context) ([]types.Artist, error)
+	GetArtists(ctx context.Context, userID string) ([]types.Artist, error)
+	GetArtist(ctx context.Context, id string) (types.Artist, error)
+	AddArtist(ctx context.Context, artist types.Artist) error
+	UpdateArtist(ctx context.Context, artist types.Artist) error
+	DeleteArtist(ctx context.Context, id string) error
 
-	GetAllPlaylists() ([]types.Playlist, error)
-	GetPlaylists(userID string) ([]types.Playlist, error)
-	GetPlaylist(id string) (types.Playlist, error)
-	AddPlaylist(playlist types.Playlist) error
-	UpdatePlaylist(playlist types.Playlist) error
-	DeletePlaylist(id string) error
+	GetAllPlaylists(ctx context.Context) ([]types.Playlist, error)
+	GetPlaylists(ctx context.Context, userID string) ([]types.Playlist, error)
+	GetPlaylist(ctx context.Context, id string) (types.Playlist, error)
+	AddPlaylist(ctx context.Context, playlist types.Playlist) error
+	UpdatePlaylist(ctx context.Context, playlist types.Playlist) error
+	DeletePlaylist(ctx context.Context, id string) error
 
-	GetUsers() ([]types.User, error)
-	GetUser(id string) (types.User, error)
-	GetUserByUsername(username string) (types.User, error)
-	CreateUser(user types.User) error
-	UpdateUser(user types.User) error
-	UsernameExists(username string) (bool, error)
-	EmailExists(email string) (bool, error)
-	DeleteUser(id string) error
+	GetUsers(ctx context.Context) ([]types.User, error)
+	GetUser(ctx context.Context, id string) (types.User, error)
+	GetUserByUsername(ctx context.Context, username string) (types.User, error)
+	CreateUser(ctx context.Context, user types.User) error
+	UpdateUser(ctx context.Context, user types.User) error
+	UsernameExists(ctx context.Context, username string) (bool, error)
+	EmailExists(ctx context.Context, email string) (bool, error)
+	DeleteUser(ctx context.Context, id string) error
 
-	GetOAuthUser(provider string, providerUserID string) (types.User, error)
-	LinkOAuthAccount(provider string, userID string, providerUserID string) error
-	DisconnectOAuthAccount(provider string, userID string) error
+	GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.User, error)
+	LinkOAuthAccount(ctx context.Context, provider string, userID string, providerUserID string) error
+	DisconnectOAuthAccount(ctx context.Context, provider string, userID string) error
 
-	BlacklistToken(token string, expiration time.Time) error
-	CleanExpiredTokens() error
-	IsTokenBlacklisted(token string) (bool, error)
+	BlacklistToken(ctx context.Context, token string, expiration time.Time) error
+	CleanExpiredTokens(ctx context.Context) error
+	IsTokenBlacklisted(ctx context.Context, token string) (bool, error)
 }
 
 func ConnectDatabase() error {
@@ -110,10 +111,10 @@ func ConnectDatabase() error {
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries
-func GetAllPlayables() ([]types.Playable, error) {
+func GetAllPlayables(ctx context.Context) ([]types.Playable, error) {
 	var playables []types.Playable
 
-	tracks, err := DB.GetAllTracks()
+	tracks, err := DB.GetAllTracks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ func GetAllPlayables() ([]types.Playable, error) {
 		playables = append(playables, track)
 	}
 
-	albums, err := DB.GetAllAlbums()
+	albums, err := DB.GetAllAlbums(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +130,7 @@ func GetAllPlayables() ([]types.Playable, error) {
 		playables = append(playables, album)
 	}
 
-	videos, err := DB.GetAllVideos()
+	videos, err := DB.GetAllVideos(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +138,7 @@ func GetAllPlayables() ([]types.Playable, error) {
 		playables = append(playables, video)
 	}
 
-	artists, err := DB.GetAllArtists()
+	artists, err := DB.GetAllArtists(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +146,7 @@ func GetAllPlayables() ([]types.Playable, error) {
 		playables = append(playables, artist)
 	}
 
-	playlists, err := DB.GetAllPlaylists()
+	playlists, err := DB.GetAllPlaylists(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -157,10 +158,10 @@ func GetAllPlayables() ([]types.Playable, error) {
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries
-func GetPlayables(userID string) ([]types.Playable, error) {
+func GetPlayables(ctx context.Context, userID string) ([]types.Playable, error) {
 	var playables []types.Playable
 
-	tracks, err := DB.GetTracks(userID)
+	tracks, err := DB.GetTracks(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +169,7 @@ func GetPlayables(userID string) ([]types.Playable, error) {
 		playables = append(playables, track)
 	}
 
-	albums, err := DB.GetAlbums(userID)
+	albums, err := DB.GetAlbums(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +177,7 @@ func GetPlayables(userID string) ([]types.Playable, error) {
 		playables = append(playables, album)
 	}
 
-	videos, err := DB.GetVideos(userID)
+	videos, err := DB.GetVideos(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,7 @@ func GetPlayables(userID string) ([]types.Playable, error) {
 		playables = append(playables, video)
 	}
 
-	artists, err := DB.GetArtists(userID)
+	artists, err := DB.GetArtists(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +193,7 @@ func GetPlayables(userID string) ([]types.Playable, error) {
 		playables = append(playables, artist)
 	}
 
-	playlists, err := DB.GetPlaylists(userID)
+	playlists, err := DB.GetPlaylists(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

@@ -58,7 +58,7 @@ func UserJWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
 
 func jwtSuccessHandler(c echo.Context) {
 	user := c.Get("jwt").(*jwt.Token)
-	isBlacklisted, err := db.DB.IsTokenBlacklisted(user.Raw)
+	isBlacklisted, err := db.DB.IsTokenBlacklisted(c.Request().Context(), user.Raw)
 	if err != nil {
 		_ = c.JSON(http.StatusInternalServerError, echo.Map{
 			"error": true,

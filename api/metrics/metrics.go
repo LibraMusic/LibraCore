@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"context"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/libramusic/libracore/db"
@@ -37,7 +39,7 @@ func RegisterMetrics() error {
 	if err := prometheus.Register(TrackCount); err != nil {
 		return err
 	}
-	tracks, err := db.DB.GetAllTracks()
+	tracks, err := db.DB.GetAllTracks(context.Background())
 	if err != nil {
 		return err
 	}
@@ -46,7 +48,7 @@ func RegisterMetrics() error {
 	if err := prometheus.Register(AlbumCount); err != nil {
 		return err
 	}
-	albums, err := db.DB.GetAllAlbums()
+	albums, err := db.DB.GetAllAlbums(context.Background())
 	if err != nil {
 		return err
 	}
@@ -55,7 +57,7 @@ func RegisterMetrics() error {
 	if err := prometheus.Register(VideoCount); err != nil {
 		return err
 	}
-	videos, err := db.DB.GetAllVideos()
+	videos, err := db.DB.GetAllVideos(context.Background())
 	if err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func RegisterMetrics() error {
 	if err := prometheus.Register(ArtistCount); err != nil {
 		return err
 	}
-	artists, err := db.DB.GetAllArtists()
+	artists, err := db.DB.GetAllArtists(context.Background())
 	if err != nil {
 		return err
 	}
@@ -73,7 +75,7 @@ func RegisterMetrics() error {
 	if err := prometheus.Register(PlaylistCount); err != nil {
 		return err
 	}
-	playlists, err := db.DB.GetAllPlaylists()
+	playlists, err := db.DB.GetAllPlaylists(context.Background())
 	if err != nil {
 		return err
 	}
@@ -82,7 +84,7 @@ func RegisterMetrics() error {
 	if err := prometheus.Register(UserCount); err != nil {
 		return err
 	}
-	users, err := db.DB.GetUsers()
+	users, err := db.DB.GetUsers(context.Background())
 	if err != nil {
 		return err
 	}

@@ -13,7 +13,7 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/charmbracelet/log"
 
-	"github.com/libramusic/taurus"
+	"github.com/libramusic/taurus/v2"
 
 	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/types"
@@ -162,16 +162,16 @@ func LoadConfig() error {
 }
 
 func setupTypes() {
-	taurus.RegisterCustomMarshaler(func(level log.Level) ([]byte, error) {
+	taurus.RegisterMarshaler(nil, func(level log.Level) ([]byte, error) {
 		return []byte(level.String()), nil
 	})
 
-	taurus.RegisterCustomUnmarshaler(func(level *log.Level, data []byte) error {
+	taurus.RegisterUnmarshaler(nil, func(level *log.Level, data []byte) error {
 		var err error
 		*level, err = log.ParseLevel(string(data))
 		return err
 	})
-	taurus.RegisterCustomUnmarshaler(func(duration *time.Duration, data []byte) error {
+	taurus.RegisterUnmarshaler(nil, func(duration *time.Duration, data []byte) error {
 		var err error
 		*duration, err = utils.ParseHumanDuration(string(data))
 		return err
