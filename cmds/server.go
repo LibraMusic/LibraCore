@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-yaml"
 	openapidocs "github.com/kohkimakimoto/echo-openapidocs"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 	"github.com/markbates/goth"
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ import (
 	"github.com/libramusic/taurus"
 
 	"github.com/libramusic/libracore/api"
+	"github.com/libramusic/libracore/api/metrics"
 	"github.com/libramusic/libracore/api/middleware"
 	"github.com/libramusic/libracore/api/routes"
 	"github.com/libramusic/libracore/config"
@@ -87,6 +89,10 @@ var serverCmd = &cobra.Command{
 
 		sources.InitManager()
 
+		if err := metrics.RegisterMetrics(); err != nil {
+			log.Fatal("Failed to update custom metrics", "err", err)
+		}
+
 		libraService := echo.Map{
 			"id":           config.Conf.Application.SourceID,
 			"name":         config.Conf.Application.SourceName,
@@ -116,6 +122,8 @@ var serverCmd = &cobra.Command{
 		e := echo.New()
 		e.JSONSerializer = &api.GoJSONSerializer{}
 
+		e.Use(echoprometheus.NewMiddleware("libra"))
+
 		e.GET("/", func(c echo.Context) error {
 			accept := c.Request().Header.Get(echo.HeaderAccept)
 			if accept == echo.MIMEApplicationJSON {
@@ -140,6 +148,8 @@ var serverCmd = &cobra.Command{
 			// TODO: Implement
 			return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 		})
+
+		e.GET("/metrics", echoprometheus.NewHandler())
 
 		api := e.Group("/api")
 
