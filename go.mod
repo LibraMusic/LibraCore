@@ -16,7 +16,7 @@ require (
 	github.com/labstack/echo-contrib v0.17.2
 	github.com/labstack/echo-jwt/v4 v4.3.0
 	github.com/labstack/echo/v4 v4.13.3
-	github.com/libramusic/taurus v1.2.0
+	github.com/libramusic/taurus/v2 v2.0.1
 	github.com/magefile/mage v1.15.0
 	github.com/markbates/goth v1.80.0
 	github.com/muesli/mango-cobra v1.2.0
@@ -84,7 +84,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/u2takey/go-utils v0.3.1 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect

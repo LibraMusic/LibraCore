@@ -19,7 +19,7 @@ import (
 	"github.com/markbates/goth"
 	"github.com/spf13/cobra"
 
-	"github.com/libramusic/taurus"
+	"github.com/libramusic/taurus/v2"
 
 	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/api/metrics"
@@ -81,11 +81,11 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Error connecting to database", "err", err)
 		}
 
-		if err := db.DB.CleanExpiredTokens(); err != nil {
+		if err := db.DB.CleanExpiredTokens(context.Background()); err != nil {
 			log.Error("Error cleaning expired tokens", "err", err)
 		}
 
-		storage.CleanOverfilledStorage()
+		storage.CleanOverfilledStorage(context.Background())
 
 		sources.InitManager()
 

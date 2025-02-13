@@ -13,18 +13,24 @@ import (
 // mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 
 func V1Playables(c echo.Context) error {
-	playables, err := db.GetAllPlayables()
+	ctx := c.Request().Context()
+
+	playables, err := db.GetAllPlayables(ctx)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
 	}
 	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
 }
 
 func V1PlayablesUser(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	userID := c.Param("id")
-	playables, err := db.GetPlayables(userID)
+	playables, err := db.GetPlayables(ctx, userID)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
 	}
 	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
 }
@@ -37,10 +43,13 @@ func V1Search(c echo.Context) error {
 // START TO REFACTOR
 
 func V1Track(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	trackID := c.Param("id")
-	track, err := db.DB.GetTrack(trackID)
+	track, err := db.DB.GetTrack(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
 	}
 	return c.JSON(http.StatusOK, track)
 }
@@ -61,19 +70,25 @@ func V1TrackCover(c echo.Context) error {
 }
 
 func V1TrackLyrics(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	trackID := c.Param("id")
-	track, err := db.DB.GetTrack(trackID)
+	track, err := db.DB.GetTrack(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
 	}
 	return c.JSON(http.StatusOK, track.Lyrics)
 }
 
 func V1TrackLyricsLang(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	trackID := c.Param("id")
-	track, err := db.DB.GetTrack(trackID)
+	track, err := db.DB.GetTrack(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
 	}
 
 	lang := c.Param("lang")
@@ -99,10 +114,13 @@ func V1AlbumTracks(c echo.Context) error {
 }
 
 func V1Video(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	videoID := c.Param("id")
-	video, err := db.DB.GetVideo(videoID)
+	video, err := db.DB.GetVideo(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
 	}
 	return c.JSON(http.StatusOK, video)
 }
@@ -123,19 +141,25 @@ func V1VideoCover(c echo.Context) error {
 }
 
 func V1VideoSubtitles(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	videoID := c.Param("id")
-	video, err := db.DB.GetVideo(videoID)
+	video, err := db.DB.GetVideo(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
 	}
 	return c.JSON(http.StatusOK, video.Subtitles)
 }
 
 func V1VideoSubtitlesLang(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	videoID := c.Param("id")
-	video, err := db.DB.GetVideo(videoID)
+	video, err := db.DB.GetVideo(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
+		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
 	}
 	lang := c.Param("lang")
 	if subtitles, ok := video.Subtitles[lang]; ok {

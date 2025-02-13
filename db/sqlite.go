@@ -42,12 +42,12 @@ func (db *SQLiteDatabase) Connect() error {
 	}
 
 	// If the migrations table doesn't exist, create it and run migrations
-	exists, err := db.migrationsTableExists()
+	exists, err := db.migrationsTableExists(context.Background())
 	if err != nil {
 		return err
 	}
 	if !exists {
-		if err = db.createMigrationsTable(); err != nil {
+		if err = db.createMigrationsTable(context.Background()); err != nil {
 			return err
 		}
 		if err = db.MigrateUp(-1); err != nil {
@@ -68,8 +68,8 @@ func (*SQLiteDatabase) EngineName() string {
 	return "SQLite"
 }
 
-func (db *SQLiteDatabase) migrationsTableExists() (bool, error) {
-	conn, err := db.pool.Take(context.Background())
+func (db *SQLiteDatabase) migrationsTableExists(ctx context.Context) (bool, error) {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -86,8 +86,8 @@ func (db *SQLiteDatabase) migrationsTableExists() (bool, error) {
 	return exists, err
 }
 
-func (db *SQLiteDatabase) createMigrationsTable() error {
-	conn, err := db.pool.Take(context.Background())
+func (db *SQLiteDatabase) createMigrationsTable(ctx context.Context) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -101,8 +101,8 @@ func (db *SQLiteDatabase) createMigrationsTable() error {
 	return err
 }
 
-func (db *SQLiteDatabase) getCurrentVersion() (uint64, bool, error) {
-	conn, err := db.pool.Take(context.Background())
+func (db *SQLiteDatabase) getCurrentVersion(ctx context.Context) (uint64, bool, error) {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return 0, false, err
 	}
@@ -133,8 +133,8 @@ func (db *SQLiteDatabase) getCurrentVersion() (uint64, bool, error) {
 	return version, dirty, nil
 }
 
-func (db *SQLiteDatabase) setVersion(version uint64, dirty bool) error {
-	conn, err := db.pool.Take(context.Background())
+func (db *SQLiteDatabase) setVersion(ctx context.Context, version uint64, dirty bool) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -153,11 +153,11 @@ func (db *SQLiteDatabase) setVersion(version uint64, dirty bool) error {
 }
 
 func (db *SQLiteDatabase) MigrateUp(steps int) error {
-	if err := db.createMigrationsTable(); err != nil {
+	if err := db.createMigrationsTable(context.Background()); err != nil {
 		return err
 	}
 
-	currentVersion, dirty, err := db.getCurrentVersion()
+	currentVersion, dirty, err := db.getCurrentVersion(context.Background())
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -188,7 +188,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 		}
 
 		// Set dirty flag before applying migration
-		if err = db.setVersion(version, true); err != nil {
+		if err = db.setVersion(context.Background(), version, true); err != nil {
 			return err
 		}
 
@@ -209,7 +209,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 		}
 
 		// Clear dirty flag after successful migration
-		if err = db.setVersion(version, false); err != nil {
+		if err = db.setVersion(context.Background(), version, false); err != nil {
 			return err
 		}
 
@@ -220,11 +220,11 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 }
 
 func (db *SQLiteDatabase) MigrateDown(steps int) error {
-	if err := db.createMigrationsTable(); err != nil {
+	if err := db.createMigrationsTable(context.Background()); err != nil {
 		return err
 	}
 
-	currentVersion, dirty, err := db.getCurrentVersion()
+	currentVersion, dirty, err := db.getCurrentVersion(context.Background())
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -255,7 +255,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 		}
 
 		// Set dirty flag before applying migration
-		if err = db.setVersion(version, true); err != nil {
+		if err = db.setVersion(context.Background(), version, true); err != nil {
 			return err
 		}
 
@@ -284,7 +284,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 				return err
 			}
 		}
-		if err = db.setVersion(prevVersion, false); err != nil {
+		if err = db.setVersion(context.Background(), prevVersion, false); err != nil {
 			return err
 		}
 
@@ -294,10 +294,10 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	return nil
 }
 
-func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
+func (db *SQLiteDatabase) GetAllTracks(ctx context.Context) ([]types.Track, error) {
 	var tracks []types.Track
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return tracks, err
 	}
@@ -355,10 +355,10 @@ func (db *SQLiteDatabase) GetAllTracks() ([]types.Track, error) {
 	return tracks, err
 }
 
-func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
+func (db *SQLiteDatabase) GetTracks(ctx context.Context, userID string) ([]types.Track, error) {
 	var tracks []types.Track
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return tracks, err
 	}
@@ -417,10 +417,10 @@ func (db *SQLiteDatabase) GetTracks(userID string) ([]types.Track, error) {
 	return tracks, err
 }
 
-func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
+func (db *SQLiteDatabase) GetTrack(ctx context.Context, id string) (types.Track, error) {
 	track := types.Track{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return track, err
 	}
@@ -487,7 +487,7 @@ func (db *SQLiteDatabase) GetTrack(id string) (types.Track, error) {
 	return track, nil
 }
 
-func (db *SQLiteDatabase) AddTrack(track types.Track) error {
+func (db *SQLiteDatabase) AddTrack(ctx context.Context, track types.Track) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
@@ -522,7 +522,7 @@ func (db *SQLiteDatabase) AddTrack(track types.Track) error {
 		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -546,7 +546,7 @@ func (db *SQLiteDatabase) AddTrack(track types.Track) error {
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
+func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track types.Track) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
@@ -581,7 +581,7 @@ func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
 		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -608,8 +608,8 @@ func (db *SQLiteDatabase) UpdateTrack(track types.Track) error {
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteTrack(id string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DeleteTrack(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -621,10 +621,10 @@ func (db *SQLiteDatabase) DeleteTrack(id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
+func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, error) {
 	var albums []types.Album
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return albums, err
 	}
@@ -672,10 +672,10 @@ func (db *SQLiteDatabase) GetAllAlbums() ([]types.Album, error) {
 	return albums, err
 }
 
-func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
+func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]types.Album, error) {
 	var albums []types.Album
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return albums, err
 	}
@@ -724,10 +724,10 @@ func (db *SQLiteDatabase) GetAlbums(userID string) ([]types.Album, error) {
 	return albums, err
 }
 
-func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
+func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (types.Album, error) {
 	album := types.Album{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return album, err
 	}
@@ -784,7 +784,7 @@ func (db *SQLiteDatabase) GetAlbum(id string) (types.Album, error) {
 	return album, nil
 }
 
-func (db *SQLiteDatabase) AddAlbum(album types.Album) error {
+func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album types.Album) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
@@ -811,7 +811,7 @@ func (db *SQLiteDatabase) AddAlbum(album types.Album) error {
 		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -834,7 +834,7 @@ func (db *SQLiteDatabase) AddAlbum(album types.Album) error {
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
+func (db *SQLiteDatabase) UpdateAlbum(ctx context.Context, album types.Album) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
@@ -861,7 +861,7 @@ func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
 		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -884,8 +884,8 @@ func (db *SQLiteDatabase) UpdateAlbum(album types.Album) error {
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteAlbum(id string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DeleteAlbum(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -897,10 +897,10 @@ func (db *SQLiteDatabase) DeleteAlbum(id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllVideos() ([]types.Video, error) {
+func (db *SQLiteDatabase) GetAllVideos(ctx context.Context) ([]types.Video, error) {
 	var videos []types.Video
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return videos, err
 	}
@@ -952,10 +952,10 @@ func (db *SQLiteDatabase) GetAllVideos() ([]types.Video, error) {
 	return videos, err
 }
 
-func (db *SQLiteDatabase) GetVideos(userID string) ([]types.Video, error) {
+func (db *SQLiteDatabase) GetVideos(ctx context.Context, userID string) ([]types.Video, error) {
 	var videos []types.Video
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return videos, err
 	}
@@ -1008,10 +1008,10 @@ func (db *SQLiteDatabase) GetVideos(userID string) ([]types.Video, error) {
 	return videos, err
 }
 
-func (db *SQLiteDatabase) GetVideo(id string) (types.Video, error) {
+func (db *SQLiteDatabase) GetVideo(ctx context.Context, id string) (types.Video, error) {
 	video := types.Video{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return video, err
 	}
@@ -1072,7 +1072,7 @@ func (db *SQLiteDatabase) GetVideo(id string) (types.Video, error) {
 	return video, nil
 }
 
-func (db *SQLiteDatabase) AddVideo(video types.Video) error {
+func (db *SQLiteDatabase) AddVideo(ctx context.Context, video types.Video) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
@@ -1103,7 +1103,7 @@ func (db *SQLiteDatabase) AddVideo(video types.Video) error {
 		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1127,7 +1127,7 @@ func (db *SQLiteDatabase) AddVideo(video types.Video) error {
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
+func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video types.Video) error {
 	// Convert JSON fields to strings
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
@@ -1158,7 +1158,7 @@ func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
 		return fmt.Errorf("failed to marshal lyric_sources: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1183,8 +1183,8 @@ func (db *SQLiteDatabase) UpdateVideo(video types.Video) error {
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteVideo(id string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DeleteVideo(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1196,10 +1196,10 @@ func (db *SQLiteDatabase) DeleteVideo(id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
+func (db *SQLiteDatabase) GetAllArtists(ctx context.Context) ([]types.Artist, error) {
 	var artists []types.Artist
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return artists, err
 	}
@@ -1246,10 +1246,10 @@ func (db *SQLiteDatabase) GetAllArtists() ([]types.Artist, error) {
 	return artists, err
 }
 
-func (db *SQLiteDatabase) GetArtists(userID string) ([]types.Artist, error) {
+func (db *SQLiteDatabase) GetArtists(ctx context.Context, userID string) ([]types.Artist, error) {
 	var artists []types.Artist
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return artists, err
 	}
@@ -1297,10 +1297,10 @@ func (db *SQLiteDatabase) GetArtists(userID string) ([]types.Artist, error) {
 	return artists, err
 }
 
-func (db *SQLiteDatabase) GetArtist(id string) (types.Artist, error) {
+func (db *SQLiteDatabase) GetArtist(ctx context.Context, id string) (types.Artist, error) {
 	artist := types.Artist{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return artist, err
 	}
@@ -1356,7 +1356,7 @@ func (db *SQLiteDatabase) GetArtist(id string) (types.Artist, error) {
 	return artist, nil
 }
 
-func (db *SQLiteDatabase) AddArtist(artist types.Artist) error {
+func (db *SQLiteDatabase) AddArtist(ctx context.Context, artist types.Artist) error {
 	// Convert JSON fields to strings
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
@@ -1383,7 +1383,7 @@ func (db *SQLiteDatabase) AddArtist(artist types.Artist) error {
 		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1406,7 +1406,7 @@ func (db *SQLiteDatabase) AddArtist(artist types.Artist) error {
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
+func (db *SQLiteDatabase) UpdateArtist(ctx context.Context, artist types.Artist) error {
 	// Convert JSON fields to strings
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
@@ -1433,7 +1433,7 @@ func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
 		return fmt.Errorf("failed to marshal linked_item_ids: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1456,8 +1456,8 @@ func (db *SQLiteDatabase) UpdateArtist(artist types.Artist) error {
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteArtist(id string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DeleteArtist(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1469,10 +1469,10 @@ func (db *SQLiteDatabase) DeleteArtist(id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllPlaylists() ([]types.Playlist, error) {
+func (db *SQLiteDatabase) GetAllPlaylists(ctx context.Context) ([]types.Playlist, error) {
 	var playlists []types.Playlist
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return playlists, err
 	}
@@ -1513,10 +1513,10 @@ func (db *SQLiteDatabase) GetAllPlaylists() ([]types.Playlist, error) {
 	return playlists, err
 }
 
-func (db *SQLiteDatabase) GetPlaylists(userID string) ([]types.Playlist, error) {
+func (db *SQLiteDatabase) GetPlaylists(ctx context.Context, userID string) ([]types.Playlist, error) {
 	var playlists []types.Playlist
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return playlists, err
 	}
@@ -1558,10 +1558,10 @@ func (db *SQLiteDatabase) GetPlaylists(userID string) ([]types.Playlist, error) 
 	return playlists, err
 }
 
-func (db *SQLiteDatabase) GetPlaylist(id string) (types.Playlist, error) {
+func (db *SQLiteDatabase) GetPlaylist(ctx context.Context, id string) (types.Playlist, error) {
 	playlist := types.Playlist{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return playlist, err
 	}
@@ -1611,7 +1611,7 @@ func (db *SQLiteDatabase) GetPlaylist(id string) (types.Playlist, error) {
 	return playlist, nil
 }
 
-func (db *SQLiteDatabase) AddPlaylist(playlist types.Playlist) error {
+func (db *SQLiteDatabase) AddPlaylist(ctx context.Context, playlist types.Playlist) error {
 	// Convert JSON fields to strings
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
@@ -1630,7 +1630,7 @@ func (db *SQLiteDatabase) AddPlaylist(playlist types.Playlist) error {
 		return fmt.Errorf("failed to marshal permissions: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1654,7 +1654,7 @@ func (db *SQLiteDatabase) AddPlaylist(playlist types.Playlist) error {
 	return err
 }
 
-func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
+func (db *SQLiteDatabase) UpdatePlaylist(ctx context.Context, playlist types.Playlist) error {
 	// Convert JSON fields to strings
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
@@ -1673,7 +1673,7 @@ func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
 		return fmt.Errorf("failed to marshal permissions: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1697,8 +1697,8 @@ func (db *SQLiteDatabase) UpdatePlaylist(playlist types.Playlist) error {
 	return err
 }
 
-func (db *SQLiteDatabase) DeletePlaylist(id string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DeletePlaylist(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1710,10 +1710,10 @@ func (db *SQLiteDatabase) DeletePlaylist(id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
+func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]types.User, error) {
 	var users []types.User
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return users, err
 	}
@@ -1754,10 +1754,10 @@ func (db *SQLiteDatabase) GetUsers() ([]types.User, error) {
 	return users, err
 }
 
-func (db *SQLiteDatabase) GetUser(id string) (types.User, error) {
+func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (types.User, error) {
 	user := types.User{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return user, err
 	}
@@ -1807,10 +1807,10 @@ func (db *SQLiteDatabase) GetUser(id string) (types.User, error) {
 	return user, nil
 }
 
-func (db *SQLiteDatabase) GetUserByUsername(username string) (types.User, error) {
+func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string) (types.User, error) {
 	user := types.User{}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return user, err
 	}
@@ -1860,7 +1860,7 @@ func (db *SQLiteDatabase) GetUserByUsername(username string) (types.User, error)
 	return user, nil
 }
 
-func (db *SQLiteDatabase) CreateUser(user types.User) error {
+func (db *SQLiteDatabase) CreateUser(ctx context.Context, user types.User) error {
 	// Convert JSON fields to strings
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
@@ -1879,7 +1879,7 @@ func (db *SQLiteDatabase) CreateUser(user types.User) error {
 		return fmt.Errorf("failed to marshal linked_sources: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1903,7 +1903,7 @@ func (db *SQLiteDatabase) CreateUser(user types.User) error {
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateUser(user types.User) error {
+func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user types.User) error {
 	// Convert JSON fields to strings
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
@@ -1922,7 +1922,7 @@ func (db *SQLiteDatabase) UpdateUser(user types.User) error {
 		return fmt.Errorf("failed to marshal linked_sources: %w", err)
 	}
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1944,8 +1944,8 @@ func (db *SQLiteDatabase) UpdateUser(user types.User) error {
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteUser(id string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -1957,10 +1957,10 @@ func (db *SQLiteDatabase) DeleteUser(id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetOAuthUser(provider string, providerUserID string) (types.User, error) {
+func (db *SQLiteDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.User, error) {
 	var user types.User
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return user, err
 	}
@@ -2013,8 +2013,8 @@ func (db *SQLiteDatabase) GetOAuthUser(provider string, providerUserID string) (
 	return user, nil
 }
 
-func (db *SQLiteDatabase) LinkOAuthAccount(provider string, userID string, providerUserID string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) LinkOAuthAccount(ctx context.Context, provider string, userID string, providerUserID string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -2029,8 +2029,8 @@ func (db *SQLiteDatabase) LinkOAuthAccount(provider string, userID string, provi
 	return err
 }
 
-func (db *SQLiteDatabase) DisconnectOAuthAccount(provider string, userID string) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) DisconnectOAuthAccount(ctx context.Context, provider string, userID string) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -2044,10 +2044,10 @@ func (db *SQLiteDatabase) DisconnectOAuthAccount(provider string, userID string)
 	return err
 }
 
-func (db *SQLiteDatabase) UsernameExists(username string) (bool, error) {
+func (db *SQLiteDatabase) UsernameExists(ctx context.Context, username string) (bool, error) {
 	var exists bool
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return exists, err
 	}
@@ -2065,10 +2065,10 @@ func (db *SQLiteDatabase) UsernameExists(username string) (bool, error) {
 	return exists, err
 }
 
-func (db *SQLiteDatabase) EmailExists(email string) (bool, error) {
+func (db *SQLiteDatabase) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return exists, err
 	}
@@ -2086,8 +2086,8 @@ func (db *SQLiteDatabase) EmailExists(email string) (bool, error) {
 	return exists, err
 }
 
-func (db *SQLiteDatabase) BlacklistToken(token string, expiration time.Time) error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -2100,8 +2100,8 @@ func (db *SQLiteDatabase) BlacklistToken(token string, expiration time.Time) err
 	return err
 }
 
-func (db *SQLiteDatabase) CleanExpiredTokens() error {
-	conn, err := db.pool.Take(context.TODO())
+func (db *SQLiteDatabase) CleanExpiredTokens(ctx context.Context) error {
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
 	}
@@ -2112,10 +2112,10 @@ func (db *SQLiteDatabase) CleanExpiredTokens() error {
 	return err
 }
 
-func (db *SQLiteDatabase) IsTokenBlacklisted(token string) (bool, error) {
+func (db *SQLiteDatabase) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
 	var exists bool
 
-	conn, err := db.pool.Take(context.TODO())
+	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return exists, err
 	}

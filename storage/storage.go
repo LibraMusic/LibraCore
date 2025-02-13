@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -30,7 +31,7 @@ func getStoragePath() (string, error) {
 	return filepath.Abs(path)
 }
 
-func CleanOverfilledStorage() {
+func CleanOverfilledStorage(ctx context.Context) {
 	path, err := getStoragePath()
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
@@ -47,7 +48,7 @@ func CleanOverfilledStorage() {
 
 	dirs := getDirectories(files)
 	contentFiles := getContentFiles(path, dirs)
-	playables := getPlayables(contentFiles)
+	playables := getPlayables(ctx, contentFiles)
 
 	sort.Slice(playables, func(i, j int) bool {
 		return playables[i].GetViewCount() >= playables[j].GetViewCount()
@@ -126,10 +127,10 @@ func getContentFiles(path string, dirs []os.FileInfo) []string {
 	return contentFiles
 }
 
-func getPlayables(contentFiles []string) []types.SourcePlayable {
+func getPlayables(ctx context.Context, contentFiles []string) []types.SourcePlayable {
 	var playables []types.SourcePlayable
 
-	tracks, err := db.DB.GetAllTracks()
+	tracks, err := db.DB.GetAllTracks(ctx)
 	if err != nil {
 		log.Error("Error getting all tracks from database", "err", err)
 	}
@@ -142,7 +143,7 @@ func getPlayables(contentFiles []string) []types.SourcePlayable {
 		}
 	}
 
-	videos, err := db.DB.GetAllVideos()
+	videos, err := db.DB.GetAllVideos(ctx)
 	if err != nil {
 		log.Error("Error getting all videos from database", "err", err)
 	}
