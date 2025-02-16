@@ -1,28 +1,28 @@
 package types
 
 type Track struct {
-	ID             string                  `json:"id"`
-	UserID         string                  `json:"user_id"`
-	ISRC           string                  `json:"isrc"`
-	Title          string                  `json:"title"`
-	ArtistIDs      []string                `json:"artist_ids"`
-	AlbumIDs       []string                `json:"album_ids"`
-	PrimaryAlbumID string                  `json:"primary_album_id"`
-	TrackNumber    int                     `json:"track_number"`
-	Duration       int                     `json:"duration"`
-	Description    string                  `json:"description"`
-	ReleaseDate    string                  `json:"release_date"`
-	Lyrics         map[string]string       `json:"lyrics"`
-	ListenCount    int                     `json:"listen_count"`
-	FavoriteCount  int                     `json:"favorite_count"`
-	AdditionDate   int64                   `json:"addition_date"`
-	Tags           []string                `json:"tags"`
-	AdditionalMeta map[string]interface{}  `json:"additional_meta"`
-	Permissions    map[string]string       `json:"permissions"`
-	LinkedItemIDs  []string                `json:"linked_item_ids"`
-	ContentSource  LinkedSource            `json:"content_source"`
-	MetadataSource LinkedSource            `json:"metadata_source"`
-	LyricSources   map[string]LinkedSource `json:"lyric_sources"`
+	ID             string                 `json:"id"`
+	UserID         string                 `json:"user_id"`
+	ISRC           string                 `json:"isrc"`
+	Title          string                 `json:"title"`
+	ArtistIDs      []string               `json:"artist_ids"`
+	AlbumIDs       []string               `json:"album_ids"`
+	PrimaryAlbumID string                 `json:"primary_album_id"`
+	TrackNumber    int                    `json:"track_number"`
+	Duration       int                    `json:"duration"`
+	Description    string                 `json:"description"`
+	ReleaseDate    string                 `json:"release_date"`
+	Lyrics         map[string]string      `json:"lyrics"`
+	ListenCount    int                    `json:"listen_count"`
+	FavoriteCount  int                    `json:"favorite_count"`
+	AdditionDate   int64                  `json:"addition_date"`
+	Tags           []string               `json:"tags"`
+	AdditionalMeta map[string]interface{} `json:"additional_meta"`
+	Permissions    map[string]string      `json:"permissions"`
+	LinkedItemIDs  []string               `json:"linked_item_ids"`
+	ContentSource  string                 `json:"content_source"`
+	MetadataSource string                 `json:"metadata_source"`
+	LyricSources   map[string]string      `json:"lyric_sources"`
 }
 
 func (Track) GetType() string {
@@ -77,7 +77,7 @@ func (t Track) GetViewCount() int {
 	return t.ListenCount
 }
 
-func (t Track) GetMetadataSource() LinkedSource {
+func (t Track) GetMetadataSource() string {
 	return t.MetadataSource
 }
 
@@ -85,6 +85,6 @@ func (t Track) GetLyrics() map[string]string {
 	return t.Lyrics
 }
 
-func (t Track) GetLyricSources() map[string]LinkedSource {
+func (t Track) GetLyricSources() map[string]string {
 	return t.LyricSources
 }

@@ -16,7 +16,7 @@ type Album struct {
 	AdditionalMeta map[string]interface{} `json:"additional_meta"`
 	Permissions    map[string]string      `json:"permissions"`
 	LinkedItemIDs  []string               `json:"linked_item_ids"`
-	MetadataSource LinkedSource           `json:"metadata_source"`
+	MetadataSource string                 `json:"metadata_source"`
 }
 
 func (Album) GetType() string {
@@ -71,6 +71,6 @@ func (a Album) GetViewCount() int {
 	return a.ListenCount
 }
 
-func (a Album) GetMetadataSource() LinkedSource {
+func (a Album) GetMetadataSource() string {
 	return a.MetadataSource
 }

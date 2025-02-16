@@ -169,7 +169,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourceP
 			"yt_artists":        v["artists"].([]map[string]string),
 			"yt_album":          v["album"].(map[string]string),
 		},
-		MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string)),
+		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
 	}, nil
 }
 
@@ -202,7 +202,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]interface{}) (types.Source
 			"yt_id":             v["browseId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 		},
-		MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://music.youtube.com/browse/" + v["browseId"].(string)),
+		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/browse/" + v["browseId"].(string),
 	}, nil
 }
 
@@ -251,7 +251,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 				"yt_artists":        v["artists"].([]map[string]string),
 				"yt_album":          album,
 			},
-			MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string)),
+			MetadataSource: s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
 		}, nil
 	}
 
@@ -272,7 +272,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 			"yt_id":             v["videoId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 		},
-		MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string)),
+		MetadataSource: s.GetID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string),
 	}, nil
 }
 
@@ -290,7 +290,7 @@ func (s *YouTubeSource) parseArtistResult(v map[string]interface{}) (types.Sourc
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
 		},
-		MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://music.youtube.com/channel/" + v["browseId"].(string)),
+		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/channel/" + v["browseId"].(string),
 	}, nil
 }
 
@@ -315,7 +315,7 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]interface{}) (types.Sou
 			"yt_id":             v["browseId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 		},
-		MetadataSource: types.LinkedSource(s.GetID() + "::" + "https://music.youtube.com/playlist?list=" + v["browseId"].(string)),
+		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/playlist?list=" + v["browseId"].(string),
 	}, nil
 }
 

@@ -1,24 +1,24 @@
 package types
 
 type Video struct {
-	ID             string                  `json:"id"`
-	UserID         string                  `json:"user_id"`
-	Title          string                  `json:"title"`
-	ArtistIDs      []string                `json:"artist_ids"`
-	Duration       int                     `json:"duration"`
-	Description    string                  `json:"description"`
-	ReleaseDate    string                  `json:"release_date"`
-	Subtitles      map[string]string       `json:"subtitles"`
-	WatchCount     int                     `json:"watch_count"`
-	FavoriteCount  int                     `json:"favorite_count"`
-	AdditionDate   int64                   `json:"addition_date"`
-	Tags           []string                `json:"tags"`
-	AdditionalMeta map[string]interface{}  `json:"additional_meta"`
-	Permissions    map[string]string       `json:"permissions"`
-	LinkedItemIDs  []string                `json:"linked_item_ids"`
-	ContentSource  LinkedSource            `json:"content_source"`
-	MetadataSource LinkedSource            `json:"metadata_source"`
-	LyricSources   map[string]LinkedSource `json:"lyric_sources"`
+	ID             string                 `json:"id"`
+	UserID         string                 `json:"user_id"`
+	Title          string                 `json:"title"`
+	ArtistIDs      []string               `json:"artist_ids"`
+	Duration       int                    `json:"duration"`
+	Description    string                 `json:"description"`
+	ReleaseDate    string                 `json:"release_date"`
+	Subtitles      map[string]string      `json:"subtitles"`
+	WatchCount     int                    `json:"watch_count"`
+	FavoriteCount  int                    `json:"favorite_count"`
+	AdditionDate   int64                  `json:"addition_date"`
+	Tags           []string               `json:"tags"`
+	AdditionalMeta map[string]interface{} `json:"additional_meta"`
+	Permissions    map[string]string      `json:"permissions"`
+	LinkedItemIDs  []string               `json:"linked_item_ids"`
+	ContentSource  string                 `json:"content_source"`
+	MetadataSource string                 `json:"metadata_source"`
+	LyricSources   map[string]string      `json:"lyric_sources"`
 }
 
 func (Video) GetType() string {
@@ -73,7 +73,7 @@ func (v Video) GetViewCount() int {
 	return v.WatchCount
 }
 
-func (v Video) GetMetadataSource() LinkedSource {
+func (v Video) GetMetadataSource() string {
 	return v.MetadataSource
 }
 
@@ -81,6 +81,6 @@ func (v Video) GetLyrics() map[string]string {
 	return v.Subtitles
 }
 
-func (v Video) GetLyricSources() map[string]LinkedSource {
+func (v Video) GetLyricSources() map[string]string {
 	return v.LyricSources
 }
