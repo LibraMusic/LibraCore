@@ -13,7 +13,7 @@ type Playlist struct {
 	Tags           []string               `json:"tags"`
 	AdditionalMeta map[string]interface{} `json:"additional_meta"`
 	Permissions    map[string]string      `json:"permissions"`
-	MetadataSource LinkedSource           `json:"metadata_source"`
+	MetadataSource string                 `json:"metadata_source"`
 }
 
 func (Playlist) GetType() string {
@@ -64,6 +64,6 @@ func (p Playlist) GetViewCount() int {
 	return p.ListenCount
 }
 
-func (p Playlist) GetMetadataSource() LinkedSource {
+func (p Playlist) GetMetadataSource() string {
 	return p.MetadataSource
 }

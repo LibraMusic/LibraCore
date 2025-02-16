@@ -340,8 +340,8 @@ func (db *SQLiteDatabase) GetAllTracks(ctx context.Context) ([]types.Track, erro
 			if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
-			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
+			track.ContentSource = stmt.ColumnText(19)
+			track.MetadataSource = stmt.ColumnText(20)
 			if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
@@ -401,8 +401,8 @@ func (db *SQLiteDatabase) GetTracks(ctx context.Context, userID string) ([]types
 			if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
-			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
+			track.ContentSource = stmt.ColumnText(19)
+			track.MetadataSource = stmt.ColumnText(20)
 			if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
@@ -467,8 +467,8 @@ func (db *SQLiteDatabase) GetTrack(ctx context.Context, id string) (types.Track,
 			if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			track.ContentSource = types.LinkedSource(stmt.ColumnText(19))
-			track.MetadataSource = types.LinkedSource(stmt.ColumnText(20))
+			track.ContentSource = stmt.ColumnText(19)
+			track.MetadataSource = stmt.ColumnText(20)
 			if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
@@ -661,7 +661,7 @@ func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, erro
 			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
+			album.MetadataSource = stmt.ColumnText(15)
 
 			albums = append(albums, album)
 
@@ -712,7 +712,7 @@ func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]types
 			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
+			album.MetadataSource = stmt.ColumnText(15)
 
 			albums = append(albums, album)
 
@@ -768,7 +768,7 @@ func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (types.Album,
 			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			album.MetadataSource = types.LinkedSource(stmt.ColumnText(15))
+			album.MetadataSource = stmt.ColumnText(15)
 
 			return nil
 		},
@@ -937,8 +937,8 @@ func (db *SQLiteDatabase) GetAllVideos(ctx context.Context) ([]types.Video, erro
 			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			video.ContentSource = types.LinkedSource(stmt.ColumnText(15))
-			video.MetadataSource = types.LinkedSource(stmt.ColumnText(16))
+			video.ContentSource = stmt.ColumnText(15)
+			video.MetadataSource = stmt.ColumnText(16)
 			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
@@ -992,8 +992,8 @@ func (db *SQLiteDatabase) GetVideos(ctx context.Context, userID string) ([]types
 			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			video.ContentSource = types.LinkedSource(stmt.ColumnText(15))
-			video.MetadataSource = types.LinkedSource(stmt.ColumnText(16))
+			video.ContentSource = stmt.ColumnText(15)
+			video.MetadataSource = stmt.ColumnText(16)
 			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
@@ -1052,8 +1052,8 @@ func (db *SQLiteDatabase) GetVideo(ctx context.Context, id string) (types.Video,
 			if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			video.ContentSource = types.LinkedSource(stmt.ColumnText(15))
-			video.MetadataSource = types.LinkedSource(stmt.ColumnText(16))
+			video.ContentSource = stmt.ColumnText(15)
+			video.MetadataSource = stmt.ColumnText(16)
 			if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
 				return fmt.Errorf("failed to parse lyric_sources: %w", err)
 			}
@@ -1235,7 +1235,7 @@ func (db *SQLiteDatabase) GetAllArtists(ctx context.Context) ([]types.Artist, er
 			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &artist.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			artist.MetadataSource = types.LinkedSource(stmt.ColumnText(14))
+			artist.MetadataSource = stmt.ColumnText(14)
 
 			artists = append(artists, artist)
 
@@ -1285,7 +1285,7 @@ func (db *SQLiteDatabase) GetArtists(ctx context.Context, userID string) ([]type
 			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &artist.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			artist.MetadataSource = types.LinkedSource(stmt.ColumnText(14))
+			artist.MetadataSource = stmt.ColumnText(14)
 
 			artists = append(artists, artist)
 
@@ -1340,7 +1340,7 @@ func (db *SQLiteDatabase) GetArtist(ctx context.Context, id string) (types.Artis
 			if err := json.Unmarshal([]byte(stmt.ColumnText(13)), &artist.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			artist.MetadataSource = types.LinkedSource(stmt.ColumnText(14))
+			artist.MetadataSource = stmt.ColumnText(14)
 
 			return nil
 		},
@@ -1502,7 +1502,7 @@ func (db *SQLiteDatabase) GetAllPlaylists(ctx context.Context) ([]types.Playlist
 			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &playlist.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			playlist.MetadataSource = types.LinkedSource(stmt.ColumnText(12))
+			playlist.MetadataSource = stmt.ColumnText(12)
 
 			playlists = append(playlists, playlist)
 
@@ -1546,7 +1546,7 @@ func (db *SQLiteDatabase) GetPlaylists(ctx context.Context, userID string) ([]ty
 			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &playlist.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			playlist.MetadataSource = types.LinkedSource(stmt.ColumnText(12))
+			playlist.MetadataSource = stmt.ColumnText(12)
 
 			playlists = append(playlists, playlist)
 
@@ -1595,7 +1595,7 @@ func (db *SQLiteDatabase) GetPlaylist(ctx context.Context, id string) (types.Pla
 			if err := json.Unmarshal([]byte(stmt.ColumnText(11)), &playlist.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			playlist.MetadataSource = types.LinkedSource(stmt.ColumnText(12))
+			playlist.MetadataSource = stmt.ColumnText(12)
 
 			return nil
 		},

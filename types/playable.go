@@ -24,12 +24,12 @@ type SourcePlayable interface {
 	Playable
 
 	GetViewCount() int
-	GetMetadataSource() LinkedSource
+	GetMetadataSource() string
 }
 
 type LyricsPlayable interface {
 	SourcePlayable
 
 	GetLyrics() map[string]string
-	GetLyricSources() map[string]LinkedSource
+	GetLyricSources() map[string]string
 }

@@ -103,7 +103,7 @@ func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]inte
 				"display_artists": displayArtists,
 				"display_album":   output["format"].(map[string]interface{})["tags"].(map[string]interface{})["album"].(string),
 			},
-			MetadataSource: types.LinkedSource(s.GetID() + "::" + filepath.Base(s.Path)),
+			MetadataSource: s.GetID() + "::" + filepath.Base(s.Path),
 		}
 
 		results = append(results, result)
