@@ -21,10 +21,10 @@ require (
 	github.com/markbates/goth v1.80.0
 	github.com/muesli/mango-cobra v1.2.0
 	github.com/muesli/roff v0.1.0
-	github.com/prometheus/client_golang v1.20.5
-	github.com/spf13/cobra v1.9.0
+	github.com/prometheus/client_golang v1.21.0
+	github.com/spf13/cobra v1.9.1
 	github.com/u2takey/ffmpeg-go v0.5.0
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.34.0
 	zombiezen.com/go/sqlite v1.4.0
 )
 
