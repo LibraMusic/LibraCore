@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -33,6 +34,10 @@ var serverCmd = &cobra.Command{
 	Short:   "Start the server",
 	Run: func(_ *cobra.Command, _ []string) {
 		utils.SetupLogger(config.Conf.Logs.Format, config.Conf.Logs.Level)
+
+		if _, err := url.ParseRequestURI(config.Conf.Application.PublicURL); err != nil {
+			log.Fatal("Invalid public URL", "url", config.Conf.Application.PublicURL)
+		}
 
 		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
