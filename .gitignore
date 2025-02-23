@@ -34,3 +34,4 @@ go.work
 # Python files
 **/**/__pycache__/
 **/**/.pyc
+.ruff_cache/
