@@ -31,7 +31,7 @@ var DataDir string
 
 type ApplicationConfig struct {
 	Port       int      `yaml:"port"`
-	Host       string   `yaml:"host"`
+	PublicURL  string   `yaml:"public_url"`
 	SourceID   string   `yaml:"source_id"`
 	SourceName string   `yaml:"source_name"`
 	MediaTypes []string `yaml:"media_types"`

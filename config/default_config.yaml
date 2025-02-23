@@ -1,6 +1,6 @@
 application:
   port: 8080
-  host: http://127.0.0.1:8080 # Currently used for OAuth redirects and OpenAPI.
+  public_url: http://127.0.0.1:8080 # Currently used for OAuth redirects.
   source_id: libra
   source_name: Libra
   media_types:

@@ -57,7 +57,7 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Error loading private key", "err", err)
 		}
 
-		api.RegisterBuiltInProviders(config.Conf.Application.Host)
+		api.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
 		for _, provider := range config.Conf.Auth.OAuth.Providers {
 			if provider.ID == "" {
 				log.Fatal("OAuth provider ID cannot be empty")
