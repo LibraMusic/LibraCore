@@ -24,7 +24,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/swaggo/swag/v2 v2.0.0-rc4
 	github.com/u2takey/ffmpeg-go v0.5.0
-	golang.org/x/crypto v0.34.0
+	golang.org/x/crypto v0.35.0
 	zombiezen.com/go/sqlite v1.4.0
 )
 
