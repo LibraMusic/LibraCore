@@ -164,7 +164,7 @@ func Logout(c echo.Context) error {
 }
 
 func OAuthLogout(c echo.Context) error {
-	// TODO: Implement OAuth logout
+	// TODO: Implement OAuth logout.
 	return c.NoContent(http.StatusNotImplemented)
 }
 

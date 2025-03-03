@@ -36,7 +36,7 @@ func (db *PostgreSQLDatabase) Connect() error {
 		return normalizePostgreSQLError(err)
 	}
 
-	// If the migrations table doesn't exist, create it and run migrations
+	// If the migrations table doesn't exist, create it and run migrations.
 	exists, err := db.migrationsTableExists(context.Background())
 	if err != nil {
 		return err
@@ -134,12 +134,12 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 			break
 		}
 
-		// Set dirty flag before applying migration
+		// Set dirty flag before applying migration.
 		if err := db.setVersion(context.Background(), version, true); err != nil {
 			return err
 		}
 
-		// Read and execute migration
+		// Read and execute migration.
 		content, err := migrationsFS.ReadFile(filepath.Join("migrations/postgresql", file))
 		if err != nil {
 			return err
@@ -150,7 +150,7 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 			return normalizePostgreSQLError(err)
 		}
 
-		// Clear dirty flag after successful migration
+		// Clear dirty flag after successful migration.
 		if err := db.setVersion(context.Background(), version, false); err != nil {
 			return err
 		}
@@ -196,12 +196,12 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 			break
 		}
 
-		// Set dirty flag before applying migration
+		// Set dirty flag before applying migration.
 		if err := db.setVersion(context.Background(), version, true); err != nil {
 			return err
 		}
 
-		// Read and execute migration
+		// Read and execute migration.
 		content, err := migrationsFS.ReadFile(filepath.Join("migrations/postgresql", file))
 		if err != nil {
 			return err
@@ -212,7 +212,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 			return normalizePostgreSQLError(err)
 		}
 
-		// Set version to previous migration and clear dirty flag
+		// Set version to previous migration and clear dirty flag.
 		prevVersion := uint64(0)
 		if appliedCount < len(files)-1 {
 			prevVersionStr := strings.Split(files[appliedCount+1], "_")[0]

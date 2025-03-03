@@ -18,6 +18,20 @@ import (
 	"github.com/libramusic/libracore/utils"
 )
 
+//go:generate go tool swag init -g server.go -d ./,../routes/,../../types/ -o . --ot go -v3.1
+
+//	@title			Libra API
+//	@version		0.1.0-DEV
+//	@description	Libra Core API providing music streaming and management capabilities.
+
+//	@contact.name	Libra Team
+//	@contact.url	https://github.com/LibraMusic/LibraCore
+
+//	@license.name	MIT
+//	@license.url	https://opensource.org/licenses/MIT
+
+//	@servers.url	http://localhost:8080/api/v1
+
 func InitServer() *echo.Echo {
 	libraService := echo.Map{
 		"id":           config.Conf.Application.SourceID,
@@ -39,12 +53,6 @@ func InitServer() *echo.Echo {
 		fmt.Printf("Database: %s\n", db.DB.EngineName())
 	}
 
-	v1Spec := api.V1OpenAPI3Spec()
-	v1SpecYAML, err := yaml.Marshal(v1Spec)
-	if err != nil {
-		log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
-	}
-
 	e := echo.New()
 	e.JSONSerializer = &api.GoJSONSerializer{}
 
@@ -55,7 +63,7 @@ func InitServer() *echo.Echo {
 		if accept == echo.MIMEApplicationJSON {
 			return c.JSON(http.StatusOK, &libraService)
 		} else if accept == echo.MIMETextHTML {
-			// TODO: Implement
+			// TODO: Implement.
 			return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 		}
 
@@ -71,7 +79,7 @@ func InitServer() *echo.Echo {
 	})
 
 	e.GET("/app", func(c echo.Context) error {
-		// TODO: Implement
+		// TODO: Implement.
 		return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 	})
 
@@ -95,7 +103,9 @@ func InitServer() *echo.Echo {
 	})
 
 	v1Group.GET("/playables", routes.V1Playables)
-	routes.CreateFeedRoutes(v1Group, "/playables")
+	routes.CreateFeedRoutes(v1Group, "/playables", "{} feed for all playables")
+	v1Group.GET("/playables/:id", routes.V1UserPlayables)
+	routes.CreateFeedRoutes(v1Group, "/playables/:id", "{} feed for user's playables")
 	v1Group.GET("/search", routes.V1Search, middleware.GlobalJWTProtected)
 
 	// START TO REFRACTOR
@@ -128,6 +138,12 @@ func InitServer() *echo.Echo {
 	v1Group.GET("/artist/:id/albums", routes.V1ArtistAlbums, middleware.GlobalJWTProtected)
 	v1Group.GET("/artist/:id/tracks", routes.V1ArtistTracks, middleware.GlobalJWTProtected)
 	// END TO REFRACTOR
+
+	v1Spec := GetOpenAPISpec()
+	v1SpecYAML, err := yaml.Marshal(v1Spec)
+	if err != nil {
+		log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
+	}
 
 	v1Group.GET("/openapi.json", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, v1Spec)

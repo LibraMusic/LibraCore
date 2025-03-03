@@ -12,6 +12,29 @@ import (
 
 // mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 
+// fakePlayable is a stand-in for the Playable interface.
+// It's schema will be replaced with one for the actual Playable interface during initialization.
+type fakePlayable struct{}
+
+var _ fakePlayable
+
+// The fake route has all the implementations of Playable as possible responses so their schemas will be generated.
+
+//	@Success	200	{object}	types.Track
+//	@Success	200	{object}	types.Album
+//	@Success	200	{object}	types.Video
+//	@Success	200	{object}	types.Playlist
+//	@Success	200	{object}	types.Artist
+//	@Success	200	{object}	types.User
+//	@Router		/fake [get]
+func _() {}
+
+//	@Summary	Get all playables
+//	@ID			getAllPlayables
+//	@Success	200	{array}	fakePlayable
+//	@Success	200	"Returns a list of all playables"
+//	@Failure	500	{object}	interface{}
+//	@Router		/playables [get]
 func V1Playables(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -23,7 +46,14 @@ func V1Playables(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
 }
 
-func V1PlayablesUser(c echo.Context) error {
+//	@Summary	Get user's playables
+//	@ID			getUserPlayables
+//	@Param		id	path	string	true	"User ID"
+//	@Success	200	{array}	fakePlayable
+//	@Success	200	"Returns a list of user's playables"
+//	@Failure	500	{object}	interface{}
+//	@Router		/playables/{id} [get]
+func V1UserPlayables(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	userID := c.Param("id")
@@ -35,6 +65,13 @@ func V1PlayablesUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
 }
 
+//	@Summary	Search for playables by query
+//	@ID			searchPlayables
+//	@Param		q	query	string	true	"Search query"
+//	@Success	200	{array}	fakePlayable
+//	@Success	200	"Returns a list of playables matching the search query"
+//	@Failure	500	{object}	interface{}
+//	@Router		/search [get]
 func V1Search(c echo.Context) error {
 	log.Error("unimplemented")
 	return c.JSON(http.StatusOK, echo.Map{})

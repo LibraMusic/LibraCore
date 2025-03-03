@@ -31,8 +31,17 @@ var Aliases = map[string]interface{}{
 
 func Build() error {
 	mg.Deps(Deps)
+	mg.Deps(Generate)
 	fmt.Println("Building...")
 	return sh.Run("go", "build", "-v", "-o", binaryName)
+}
+
+func Generate() error {
+	fmt.Println("Running code generation...")
+	if err := sh.Run("go", "generate", "./..."); err != nil {
+		return err
+	}
+	return nil
 }
 
 type Test mg.Namespace
@@ -61,26 +70,30 @@ func Deps() error {
 func Lint() error {
 	fmt.Println("Linting...")
 
-	if _, err := sh.Output("golangci-lint", "version"); err != nil {
+	if err := sh.Run("golangci-lint", "version"); err != nil {
 		fmt.Println("golangci-lint is not installed. Please install it from https://golangci-lint.run/welcome/install/")
 	} else {
-		if err = sh.Run("golangci-lint", "run"); err != nil {
+		if err = sh.RunV("golangci-lint", "run"); err != nil {
 			return err
 		}
 	}
 
-	if _, err := sh.Output("ruff", "version"); err != nil {
+	if err := sh.RunV("go", "tool", "swag", "fmt", "-g", "api/server/server.go"); err != nil {
+		return err
+	}
+
+	if err := sh.Run("ruff", "version"); err != nil {
 		fmt.Println("ruff is not installed. Please install it from https://docs.astral.sh/ruff/installation/")
 	} else {
-		if err = sh.Run("ruff", "check", "--fix"); err != nil {
+		if err = sh.RunV("ruff", "check", "--fix"); err != nil {
 			return err
 		}
-		if err = sh.Run("ruff", "format"); err != nil {
+		if err = sh.RunV("ruff", "format"); err != nil {
 			return err
 		}
 	}
 
-	if _, err := sh.Output("shellcheck", "--version"); err != nil {
+	if err := sh.Run("shellcheck", "--version"); err != nil {
 		fmt.Println("shellcheck is not installed. Please install it from https://github.com/koalaman/shellcheck#installing")
 	} else {
 		if err = sh.RunV("find", ".", "-type", "f", "-name", "*.sh", "-exec", "shellcheck", "{}", "+"); err != nil {

@@ -47,7 +47,7 @@ func (u User) GetAdditionDate() int64 {
 }
 
 func (User) GetTags() []string {
-	// Returns an empty array because users do not have tags
+	// Returns an empty array because users do not have tags.
 	return []string{}
 }
 
@@ -60,7 +60,7 @@ func (u User) GetPermissions() map[string]string {
 }
 
 func (User) IsTemporary() bool {
-	// Returns false because the only way a playable can be temporary is if it is a search result from a source, which a user cannot be
+	// Returns false because the only way a playable can be temporary is if it is a search result from a source, which a user cannot be.
 	return false
 }
 

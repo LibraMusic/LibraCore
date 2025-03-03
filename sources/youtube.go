@@ -77,7 +77,7 @@ func (*YouTubeSource) GetMediaTypes() []string {
 func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[string]interface{}) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
-	// TODO: Implement pagination if possible
+	// TODO: Implement pagination if possible.
 
 	filtersJSON, err := json.Marshal(filters)
 	if err != nil {

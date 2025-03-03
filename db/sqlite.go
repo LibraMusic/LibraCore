@@ -41,7 +41,7 @@ func (db *SQLiteDatabase) Connect() error {
 		return err
 	}
 
-	// If the migrations table doesn't exist, create it and run migrations
+	// If the migrations table doesn't exist, create it and run migrations.
 	exists, err := db.migrationsTableExists(context.Background())
 	if err != nil {
 		return err
@@ -187,12 +187,12 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 			break
 		}
 
-		// Set dirty flag before applying migration
+		// Set dirty flag before applying migration.
 		if err = db.setVersion(context.Background(), version, true); err != nil {
 			return err
 		}
 
-		// Read and execute migration
+		// Read and execute migration.
 		content, err := migrationsFS.ReadFile(filepath.Join("migrations/sqlite", file))
 		if err != nil {
 			return err
@@ -208,7 +208,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 			return err
 		}
 
-		// Clear dirty flag after successful migration
+		// Clear dirty flag after successful migration.
 		if err = db.setVersion(context.Background(), version, false); err != nil {
 			return err
 		}
@@ -254,12 +254,12 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 			break
 		}
 
-		// Set dirty flag before applying migration
+		// Set dirty flag before applying migration.
 		if err = db.setVersion(context.Background(), version, true); err != nil {
 			return err
 		}
 
-		// Read and execute migration
+		// Read and execute migration.
 		content, err := migrationsFS.ReadFile(filepath.Join("migrations/sqlite", file))
 		if err != nil {
 			return err
@@ -275,7 +275,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 			return err
 		}
 
-		// Set version to previous migration and clear dirty flag
+		// Set version to previous migration and clear dirty flag.
 		prevVersion := uint64(0)
 		if appliedCount < len(files)-1 {
 			prevVersionStr := strings.Split(files[appliedCount+1], "_")[0]
@@ -488,7 +488,7 @@ func (db *SQLiteDatabase) GetTrack(ctx context.Context, id string) (types.Track,
 }
 
 func (db *SQLiteDatabase) AddTrack(ctx context.Context, track types.Track) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal artist_ids: %w", err)
@@ -547,7 +547,7 @@ func (db *SQLiteDatabase) AddTrack(ctx context.Context, track types.Track) error
 }
 
 func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track types.Track) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal artist_ids: %w", err)
@@ -785,7 +785,7 @@ func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (types.Album,
 }
 
 func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album types.Album) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal artist_ids: %w", err)
@@ -835,7 +835,7 @@ func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album types.Album) error
 }
 
 func (db *SQLiteDatabase) UpdateAlbum(ctx context.Context, album types.Album) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal artist_ids: %w", err)
@@ -1073,7 +1073,7 @@ func (db *SQLiteDatabase) GetVideo(ctx context.Context, id string) (types.Video,
 }
 
 func (db *SQLiteDatabase) AddVideo(ctx context.Context, video types.Video) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal artist_ids: %w", err)
@@ -1128,7 +1128,7 @@ func (db *SQLiteDatabase) AddVideo(ctx context.Context, video types.Video) error
 }
 
 func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video types.Video) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal artist_ids: %w", err)
@@ -1357,7 +1357,7 @@ func (db *SQLiteDatabase) GetArtist(ctx context.Context, id string) (types.Artis
 }
 
 func (db *SQLiteDatabase) AddArtist(ctx context.Context, artist types.Artist) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal album_ids: %w", err)
@@ -1407,7 +1407,7 @@ func (db *SQLiteDatabase) AddArtist(ctx context.Context, artist types.Artist) er
 }
 
 func (db *SQLiteDatabase) UpdateArtist(ctx context.Context, artist types.Artist) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal album_ids: %w", err)
@@ -1612,7 +1612,7 @@ func (db *SQLiteDatabase) GetPlaylist(ctx context.Context, id string) (types.Pla
 }
 
 func (db *SQLiteDatabase) AddPlaylist(ctx context.Context, playlist types.Playlist) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal track_ids: %w", err)
@@ -1655,7 +1655,7 @@ func (db *SQLiteDatabase) AddPlaylist(ctx context.Context, playlist types.Playli
 }
 
 func (db *SQLiteDatabase) UpdatePlaylist(ctx context.Context, playlist types.Playlist) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
 		return fmt.Errorf("failed to marshal track_ids: %w", err)
@@ -1861,7 +1861,7 @@ func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string
 }
 
 func (db *SQLiteDatabase) CreateUser(ctx context.Context, user types.User) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal listened_to: %w", err)
@@ -1904,7 +1904,7 @@ func (db *SQLiteDatabase) CreateUser(ctx context.Context, user types.User) error
 }
 
 func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user types.User) error {
-	// Convert JSON fields to strings
+	// Convert JSON fields to strings.
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
 		return fmt.Errorf("failed to marshal listened_to: %w", err)

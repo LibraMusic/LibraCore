@@ -110,7 +110,7 @@ func ConnectDatabase() error {
 	return nil
 }
 
-// TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries
+// TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.
 func GetAllPlayables(ctx context.Context) ([]types.Playable, error) {
 	var playables []types.Playable
 
@@ -157,7 +157,7 @@ func GetAllPlayables(ctx context.Context) ([]types.Playable, error) {
 	return playables, nil
 }
 
-// TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries
+// TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.
 func GetPlayables(ctx context.Context, userID string) ([]types.Playable, error) {
 	var playables []types.Playable
 
@@ -219,7 +219,7 @@ func GetOrderedMigrationFiles(entries []fs.DirEntry, up bool) []string {
 
 	slices.Sort(files)
 	if !up {
-		// Down migrations are applied in reverse order
+		// Down migrations are applied in reverse order.
 		slices.Reverse(files)
 	}
 	return files

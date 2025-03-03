@@ -1,6 +1,6 @@
 application:
   port: 8080
-  public_url: http://127.0.0.1:8080 # Currently used for OAuth redirects.
+  public_url: http://127.0.0.1:8080 # Currently used for OAuth redirects and OpenAPI.
   source_id: libra
   source_name: Libra
   media_types:
@@ -37,6 +37,7 @@ general:
   enabled_sources:
     - spotify
     - youtube
+  document_feed_routes: true # Whether to include feed routes in OpenAPI documentation.
 source_scripts:
   python_command: python3
   youtube_location: source_scripts/youtube.py # Where youtube.py will be downladed to as well as what will be run.

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -9,42 +10,87 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func CreateFeedRoutes(e *echo.Group, basePath string, handlers ...echo.MiddlewareFunc) {
-	e.GET(basePath+"/feed", func(c echo.Context) error {
+// FeedRouteDoc definition for dynamic OpenAPI documentation.
+type FeedRouteDoc struct {
+	BasePath string
+	Path     string
+	Summary  string
+	Type     string
+}
+
+var FeedRoutesDoc []FeedRouteDoc
+
+func ConvertPathFormat(path string) string {
+	// convert from echo format to openapi format
+	// e.g. /path/:param -> /path/{param}
+	result := ""
+	parts := strings.Split(path, "/")
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+
+		split := strings.Split(part, ":")
+		if len(split) > 1 {
+			result += "/" + "{" + split[1] + "}"
+			for i := 2; i < len(split); i++ {
+				result += split[i]
+			}
+		} else {
+			result += "/" + part
+		}
+	}
+	return result
+}
+
+func CreateFeedRoutes(e *echo.Group, basePath string, baseSummary string, handlers ...echo.MiddlewareFunc) {
+	// Define a helper to add route and docs.
+	addRoute := func(path string, feedType string, h echo.HandlerFunc) {
+		fullPath := basePath + path
+		FeedRoutesDoc = append(FeedRoutesDoc, FeedRouteDoc{
+			BasePath: ConvertPathFormat(basePath),
+			Path:     ConvertPathFormat(fullPath),
+			Summary:  strings.ReplaceAll(baseSummary, "{}", feedType),
+			Type:     feedType,
+		})
+		e.GET(fullPath, h, handlers...)
+	}
+
+	addRoute("/feed", "RSS", func(c echo.Context) error {
 		rss, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToRss()
 		if err != nil {
 			log.Error("Error creating RSS feed", "err", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
 		return c.XMLBlob(http.StatusOK, []byte(rss))
-	}, handlers...)
+	})
 
-	e.GET(basePath+"/feed/rss", func(c echo.Context) error {
+	addRoute("/feed/rss", "RSS", func(c echo.Context) error {
 		rss, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToRss()
 		if err != nil {
 			log.Error("Error creating RSS feed", "err", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
 		return c.XMLBlob(http.StatusOK, []byte(rss))
-	}, handlers...)
+	})
 
-	e.GET(basePath+"/feed/atom", func(c echo.Context) error {
+	addRoute("/feed/atom", "Atom", func(c echo.Context) error {
 		atom, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToAtom()
 		if err != nil {
 			log.Error("Error creating Atom feed", "err", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
 		return c.XMLBlob(http.StatusOK, []byte(atom))
-	}, handlers...)
+	})
 
-	e.GET(basePath+"/feed/json", func(c echo.Context) error {
+	addRoute("/feed/json", "JSON", func(c echo.Context) error {
 		json, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToJSON()
 		if err != nil {
 			log.Error("Error creating JSON feed", "err", err)
 			return c.NoContent(http.StatusInternalServerError)
 		}
 		return c.JSONBlob(http.StatusOK, []byte(json))
-	}, handlers...)
+	})
 }
 
 func CreateFeed(baseURL string, routePath string) *feeds.Feed {

@@ -71,6 +71,7 @@ type GeneralConfig struct {
 	ReserveDisplayNames       bool                              `yaml:"reserve_display_names"`
 	AdminPermissions          map[string]types.AdminPermissions `yaml:"admin_permissions"`
 	EnabledSources            []string                          `yaml:"enabled_sources"`
+	DocumentFeedRoutes        bool                              `yaml:"document_feed_routes"`
 }
 
 type SourceScriptsConfig struct {
