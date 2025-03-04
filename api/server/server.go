@@ -33,7 +33,7 @@ import (
 //	@servers.url	http://localhost:8080/api/v1
 
 func InitServer() *echo.Echo {
-	libraService := echo.Map{
+	libraSource := echo.Map{
 		"id":           config.Conf.Application.SourceID,
 		"name":         config.Conf.Application.SourceName,
 		"version":      utils.LibraVersion.String(),
@@ -61,7 +61,7 @@ func InitServer() *echo.Echo {
 	e.GET("/", func(c echo.Context) error {
 		accept := c.Request().Header.Get(echo.HeaderAccept)
 		if accept == echo.MIMEApplicationJSON {
-			return c.JSON(http.StatusOK, &libraService)
+			return c.JSON(http.StatusOK, &libraSource)
 		} else if accept == echo.MIMETextHTML {
 			// TODO: Implement.
 			return c.HTML(http.StatusOK, "<h1>Libra</h1>")
@@ -74,8 +74,8 @@ func InitServer() *echo.Echo {
 		return c.JSON(http.StatusOK, &libraMeta)
 	})
 
-	e.GET("/service", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, &libraService)
+	e.GET("/source", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, &libraSource)
 	})
 
 	e.GET("/app", func(c echo.Context) error {
