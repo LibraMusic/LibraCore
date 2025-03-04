@@ -70,12 +70,12 @@ func InitServer() *echo.Echo {
 		return c.NoContent(http.StatusNotAcceptable)
 	})
 
-	e.GET("/meta", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, &libraMeta)
-	})
-
 	e.GET("/source", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, &libraSource)
+	})
+
+	e.GET("/meta", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, &libraMeta)
 	})
 
 	e.GET("/app", func(c echo.Context) error {
