@@ -637,31 +637,32 @@ func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, erro
 			album.ID = stmt.ColumnText(0)
 			album.UserID = stmt.ColumnText(1)
 			album.UPC = stmt.ColumnText(2)
-			album.Title = stmt.ColumnText(3)
-			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+			album.EAN = stmt.ColumnText(3)
+			album.Title = stmt.ColumnText(4)
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(6)), &album.TrackIDs); err != nil {
 				return fmt.Errorf("failed to parse track_ids: %w", err)
 			}
-			album.Description = stmt.ColumnText(6)
-			album.ReleaseDate = stmt.ColumnText(7)
-			album.ListenCount = stmt.ColumnInt(8)
-			album.FavoriteCount = stmt.ColumnInt(9)
-			album.AdditionDate = stmt.ColumnInt64(10)
-			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+			album.Description = stmt.ColumnText(7)
+			album.ReleaseDate = stmt.ColumnText(8)
+			album.ListenCount = stmt.ColumnInt(9)
+			album.FavoriteCount = stmt.ColumnInt(10)
+			album.AdditionDate = stmt.ColumnInt64(11)
+			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(15)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			album.MetadataSource = stmt.ColumnText(15)
+			album.MetadataSource = stmt.ColumnText(16)
 
 			albums = append(albums, album)
 
@@ -688,31 +689,32 @@ func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]types
 			album.ID = stmt.ColumnText(0)
 			album.UserID = stmt.ColumnText(1)
 			album.UPC = stmt.ColumnText(2)
-			album.Title = stmt.ColumnText(3)
-			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+			album.EAN = stmt.ColumnText(3)
+			album.Title = stmt.ColumnText(4)
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(6)), &album.TrackIDs); err != nil {
 				return fmt.Errorf("failed to parse track_ids: %w", err)
 			}
-			album.Description = stmt.ColumnText(6)
-			album.ReleaseDate = stmt.ColumnText(7)
-			album.ListenCount = stmt.ColumnInt(8)
-			album.FavoriteCount = stmt.ColumnInt(9)
-			album.AdditionDate = stmt.ColumnInt64(10)
-			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+			album.Description = stmt.ColumnText(7)
+			album.ReleaseDate = stmt.ColumnText(8)
+			album.ListenCount = stmt.ColumnInt(9)
+			album.FavoriteCount = stmt.ColumnInt(10)
+			album.AdditionDate = stmt.ColumnInt64(11)
+			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(15)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			album.MetadataSource = stmt.ColumnText(15)
+			album.MetadataSource = stmt.ColumnText(16)
 
 			albums = append(albums, album)
 
@@ -744,31 +746,32 @@ func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (types.Album,
 			album.ID = stmt.ColumnText(0)
 			album.UserID = stmt.ColumnText(1)
 			album.UPC = stmt.ColumnText(2)
-			album.Title = stmt.ColumnText(3)
-			if err = json.Unmarshal([]byte(stmt.ColumnText(4)), &album.ArtistIDs); err != nil {
+			album.EAN = stmt.ColumnText(3)
+			album.Title = stmt.ColumnText(4)
+			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.ArtistIDs); err != nil {
 				return fmt.Errorf("failed to parse artist_ids: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(5)), &album.TrackIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(6)), &album.TrackIDs); err != nil {
 				return fmt.Errorf("failed to parse track_ids: %w", err)
 			}
-			album.Description = stmt.ColumnText(6)
-			album.ReleaseDate = stmt.ColumnText(7)
-			album.ListenCount = stmt.ColumnInt(8)
-			album.FavoriteCount = stmt.ColumnInt(9)
-			album.AdditionDate = stmt.ColumnInt64(10)
-			if err = json.Unmarshal([]byte(stmt.ColumnText(11)), &album.Tags); err != nil {
+			album.Description = stmt.ColumnText(7)
+			album.ReleaseDate = stmt.ColumnText(8)
+			album.ListenCount = stmt.ColumnInt(9)
+			album.FavoriteCount = stmt.ColumnInt(10)
+			album.AdditionDate = stmt.ColumnInt64(11)
+			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.Tags); err != nil {
 				return fmt.Errorf("failed to parse tags: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(12)), &album.AdditionalMeta); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.AdditionalMeta); err != nil {
 				return fmt.Errorf("failed to parse additional_meta: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(13)), &album.Permissions); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.Permissions); err != nil {
 				return fmt.Errorf("failed to parse permissions: %w", err)
 			}
-			if err = json.Unmarshal([]byte(stmt.ColumnText(14)), &album.LinkedItemIDs); err != nil {
+			if err = json.Unmarshal([]byte(stmt.ColumnText(15)), &album.LinkedItemIDs); err != nil {
 				return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 			}
-			album.MetadataSource = stmt.ColumnText(15)
+			album.MetadataSource = stmt.ColumnText(16)
 
 			return nil
 		},
@@ -819,12 +822,12 @@ func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album types.Album) error
 
 	err = sqlitex.Execute(conn, `
 	  INSERT INTO albums (
-	    id, user_id, upc, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
+	    id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
 	  ) VALUES (
-	    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+	    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 	  );`, &sqlitex.ExecOptions{
 		Args: []any{
-			album.ID, album.UserID, album.UPC, album.Title, string(artistIDs), string(trackIDs),
+			album.ID, album.UserID, album.UPC, album.EAN, album.Title, string(artistIDs), string(trackIDs),
 			album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
 			album.AdditionDate, string(tags), string(additionalMeta), string(permissions),
 			string(linkedItemIDs), album.MetadataSource,
@@ -869,12 +872,12 @@ func (db *SQLiteDatabase) UpdateAlbum(ctx context.Context, album types.Album) er
 
 	err = sqlitex.Execute(conn, `
 	  UPDATE albums
-	  SET user_id=?, upc=?, title=?, artist_ids=?, track_ids=?, description=?, 
+	  SET user_id=?, upc=?, ean=?, title=?, artist_ids=?, track_ids=?, description=?, 
 	      release_date=?, listen_count=?, favorite_count=?, addition_date=?, tags=?, 
 	      additional_meta=?, permissions=?, linked_item_ids=?, metadata_source=?
 	  WHERE id=?;`, &sqlitex.ExecOptions{
 		Args: []any{
-			album.UserID, album.UPC, album.Title, string(artistIDs), string(trackIDs),
+			album.UserID, album.UPC, album.EAN, album.Title, string(artistIDs), string(trackIDs),
 			album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
 			album.AdditionDate, string(tags), string(additionalMeta), string(permissions),
 			string(linkedItemIDs), album.MetadataSource, album.ID,

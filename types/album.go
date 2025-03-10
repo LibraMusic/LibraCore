@@ -4,6 +4,7 @@ type Album struct {
 	ID             string                 `json:"id"              example:"BhRpYVlrMo8"`
 	UserID         string                 `json:"user_id"         example:"TPkrKcIZRRq"`
 	UPC            string                 `json:"upc"             example:"012345678905"`
+	EAN            string                 `json:"ean"             example:"0012345678905"`
 	Title          string                 `json:"title"           example:"Lorem Ipsum"`
 	ArtistIDs      []string               `json:"artist_ids"      example:"h3r3VpPvSq8,R2QTLKbHamW"`
 	TrackIDs       []string               `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`

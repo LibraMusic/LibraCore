@@ -319,7 +319,7 @@ func (db *PostgreSQLDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, 
 	defer rows.Close()
 	for rows.Next() {
 		album := types.Album{}
-		err = rows.Scan(&album.ID, &album.UserID, &album.UPC, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
+		err = rows.Scan(&album.ID, &album.UserID, &album.UPC, &album.EAN, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
 		if err != nil {
 			return albums, normalizePostgreSQLError(err)
 		}
@@ -337,7 +337,7 @@ func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]t
 	defer rows.Close()
 	for rows.Next() {
 		album := types.Album{}
-		err = rows.Scan(&album.ID, &album.UserID, &album.UPC, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
+		err = rows.Scan(&album.ID, &album.UserID, &album.UPC, &album.EAN, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
 		if err != nil {
 			return albums, normalizePostgreSQLError(err)
 		}
@@ -349,27 +349,27 @@ func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]t
 func (db *PostgreSQLDatabase) GetAlbum(ctx context.Context, id string) (types.Album, error) {
 	album := types.Album{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM albums WHERE id=$1;", id)
-	err := row.Scan(&album.ID, &album.UserID, &album.UPC, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
+	err := row.Scan(&album.ID, &album.UserID, &album.UPC, &album.EAN, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
 	return album, normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) AddAlbum(ctx context.Context, album types.Album) error {
 	_, err := db.pool.Exec(ctx, `
 	  INSERT INTO albums (
-	    id, user_id, upc, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
+	    id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
 	  ) VALUES (
-	    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+	    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
 	  );
-  `, album.ID, album.UserID, album.UPC, album.Title, album.ArtistIDs, album.TrackIDs, album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount, album.AdditionDate, album.Tags, album.AdditionalMeta, album.Permissions, album.LinkedItemIDs, album.MetadataSource)
+  `, album.ID, album.UserID, album.UPC, album.EAN, album.Title, album.ArtistIDs, album.TrackIDs, album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount, album.AdditionDate, album.Tags, album.AdditionalMeta, album.Permissions, album.LinkedItemIDs, album.MetadataSource)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) UpdateAlbum(ctx context.Context, album types.Album) error {
 	_, err := db.pool.Exec(ctx, `
 	  UPDATE albums
-	  SET user_id=$2, upc=$3, title=$4, artist_ids=$5, track_ids=$6, description=$7, release_date=$8, listen_count=$9, favorite_count=$10, addition_date=$11, tags=$12, additional_meta=$13, permissions=$14, linked_item_ids=$15, metadata_source=$16
+	  SET user_id=$2, upc=$3, ean=$4, title=$5, artist_ids=$6, track_ids=$7, description=$8, release_date=$9, listen_count=$10, favorite_count=$11, addition_date=$12, tags=$13, additional_meta=$14, permissions=$15, linked_item_ids=$16, metadata_source=$17
 	  WHERE id=$1;
-  `, album.ID, album.UserID, album.UPC, album.Title, album.ArtistIDs, album.TrackIDs, album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount, album.AdditionDate, album.Tags, album.AdditionalMeta, album.Permissions, album.LinkedItemIDs, album.MetadataSource)
+  `, album.ID, album.UserID, album.UPC, album.EAN, album.Title, album.ArtistIDs, album.TrackIDs, album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount, album.AdditionDate, album.Tags, album.AdditionalMeta, album.Permissions, album.LinkedItemIDs, album.MetadataSource)
 	return normalizePostgreSQLError(err)
 }
 
