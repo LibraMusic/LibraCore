@@ -1713,8 +1713,8 @@ func (db *SQLiteDatabase) DeletePlaylist(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]types.User, error) {
-	var users []types.User
+func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUser, error) {
+	var users []types.DatabaseUser
 
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
@@ -1724,7 +1724,7 @@ func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]types.User, error) {
 
 	err = sqlitex.Execute(conn, "SELECT * FROM users;", &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
-			user := types.User{}
+			user := types.DatabaseUser{}
 
 			user.ID = stmt.ColumnText(0)
 			user.Username = stmt.ColumnText(1)
@@ -1757,8 +1757,8 @@ func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]types.User, error) {
 	return users, err
 }
 
-func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (types.User, error) {
-	user := types.User{}
+func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (types.DatabaseUser, error) {
+	user := types.DatabaseUser{}
 
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
@@ -1810,8 +1810,8 @@ func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (types.User, e
 	return user, nil
 }
 
-func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string) (types.User, error) {
-	user := types.User{}
+func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string) (types.DatabaseUser, error) {
+	user := types.DatabaseUser{}
 
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
@@ -1863,7 +1863,7 @@ func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string
 	return user, nil
 }
 
-func (db *SQLiteDatabase) CreateUser(ctx context.Context, user types.User) error {
+func (db *SQLiteDatabase) CreateUser(ctx context.Context, user types.DatabaseUser) error {
 	// Convert JSON fields to strings.
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
@@ -1906,7 +1906,7 @@ func (db *SQLiteDatabase) CreateUser(ctx context.Context, user types.User) error
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user types.User) error {
+func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user types.DatabaseUser) error {
 	// Convert JSON fields to strings.
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
@@ -1960,8 +1960,8 @@ func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.User, error) {
-	var user types.User
+func (db *SQLiteDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.DatabaseUser, error) {
+	var user types.DatabaseUser
 
 	conn, err := db.pool.Take(ctx)
 	if err != nil {

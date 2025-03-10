@@ -78,7 +78,7 @@ func Register(c echo.Context) error {
 		}
 	}
 
-	user := types.User{
+	user := types.DatabaseUser{
 		ID:           utils.GenerateID(config.Conf.General.IDLength),
 		Username:     req.Username,
 		Email:        req.Email,
@@ -196,7 +196,7 @@ func OAuthCallback(c echo.Context) error {
 
 	// TODO: Check for existing user (not OAuth).
 
-	newUser := types.User{
+	newUser := types.DatabaseUser{
 		ID:          utils.GenerateID(config.Conf.General.IDLength),
 		Username:    user.NickName,
 		Email:       user.Email,

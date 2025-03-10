@@ -583,15 +583,15 @@ func (db *PostgreSQLDatabase) DeletePlaylist(ctx context.Context, id string) err
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.User, error) {
-	var users []types.User
+func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUser, error) {
+	var users []types.DatabaseUser
 	rows, err := db.pool.Query(ctx, "SELECT * FROM users;")
 	if err != nil {
 		return users, normalizePostgreSQLError(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		user := types.User{}
+		user := types.DatabaseUser{}
 		err = rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
 		if err != nil {
 			return users, normalizePostgreSQLError(err)
@@ -601,21 +601,21 @@ func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.User, error
 	return users, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (types.User, error) {
-	user := types.User{}
+func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (types.DatabaseUser, error) {
+	user := types.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM users WHERE id=$1;", id)
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetUserByUsername(ctx context.Context, username string) (types.User, error) {
-	user := types.User{}
+func (db *PostgreSQLDatabase) GetUserByUsername(ctx context.Context, username string) (types.DatabaseUser, error) {
+	user := types.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM users WHERE username=$1 OR email=$1;", strings.ToLower(username))
 	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) CreateUser(ctx context.Context, user types.User) error {
+func (db *PostgreSQLDatabase) CreateUser(ctx context.Context, user types.DatabaseUser) error {
 	_, err := db.pool.Exec(ctx, `
 	  INSERT INTO users (
 	    id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
@@ -626,7 +626,7 @@ func (db *PostgreSQLDatabase) CreateUser(ctx context.Context, user types.User) e
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdateUser(ctx context.Context, user types.User) error {
+func (db *PostgreSQLDatabase) UpdateUser(ctx context.Context, user types.DatabaseUser) error {
 	_, err := db.pool.Exec(ctx, `
 	  UPDATE users
 	  SET username=$2, email=$3, password_hash=$4, display_name=$5, description=$6, listened_to=$7, favorites=$8, public_view_count=$9, creation_date=$10, permissions=$11, linked_artist_id=$12, linked_sources=$13
@@ -640,8 +640,8 @@ func (db *PostgreSQLDatabase) DeleteUser(ctx context.Context, id string) error {
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.User, error) {
-	var user types.User
+func (db *PostgreSQLDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.DatabaseUser, error) {
+	var user types.DatabaseUser
 	row := db.pool.QueryRow(ctx, `
         SELECT u.* FROM users u
         JOIN oauth_providers o ON u.id = o.user_id

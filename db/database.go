@@ -69,16 +69,16 @@ type Database interface {
 	UpdatePlaylist(ctx context.Context, playlist types.Playlist) error
 	DeletePlaylist(ctx context.Context, id string) error
 
-	GetUsers(ctx context.Context) ([]types.User, error)
-	GetUser(ctx context.Context, id string) (types.User, error)
-	GetUserByUsername(ctx context.Context, username string) (types.User, error)
-	CreateUser(ctx context.Context, user types.User) error
-	UpdateUser(ctx context.Context, user types.User) error
+	GetUsers(ctx context.Context) ([]types.DatabaseUser, error)
+	GetUser(ctx context.Context, id string) (types.DatabaseUser, error)
+	GetUserByUsername(ctx context.Context, username string) (types.DatabaseUser, error)
+	CreateUser(ctx context.Context, user types.DatabaseUser) error
+	UpdateUser(ctx context.Context, user types.DatabaseUser) error
 	UsernameExists(ctx context.Context, username string) (bool, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
 	DeleteUser(ctx context.Context, id string) error
 
-	GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.User, error)
+	GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.DatabaseUser, error)
 	LinkOAuthAccount(ctx context.Context, provider string, userID string, providerUserID string) error
 	DisconnectOAuthAccount(ctx context.Context, provider string, userID string) error
 
