@@ -1,21 +1,21 @@
 package types
 
 type Track struct {
-	ID             string                 `json:"id"`
-	UserID         string                 `json:"user_id"`
-	ISRC           string                 `json:"isrc"`
-	Title          string                 `json:"title"`
-	ArtistIDs      []string               `json:"artist_ids"`
-	AlbumIDs       []string               `json:"album_ids"`
-	PrimaryAlbumID string                 `json:"primary_album_id"`
-	TrackNumber    int                    `json:"track_number"`
-	Duration       int                    `json:"duration"`
-	Description    string                 `json:"description"`
-	ReleaseDate    string                 `json:"release_date"`
+	ID             string                 `json:"id"               example:"7nTwkcl51u4"`
+	UserID         string                 `json:"user_id"          example:"TPkrKcIZRRq"`
+	ISRC           string                 `json:"isrc"             example:"USSKG1912345"`
+	Title          string                 `json:"title"            example:"Lorem"`
+	ArtistIDs      []string               `json:"artist_ids"       example:"h3r3VpPvSq8,R2QTLKbHamW"`
+	AlbumIDs       []string               `json:"album_ids"        example:"BhRpYVlrMo8,poFEUbgBuwJ"`
+	PrimaryAlbumID string                 `json:"primary_album_id" example:"BhRpYVlrMo8"`
+	TrackNumber    int                    `json:"track_number"     example:"1"`
+	Duration       int                    `json:"duration"         example:"300"`
+	Description    string                 `json:"description"      example:"Lorem ipsum dolor sit amet."`
+	ReleaseDate    string                 `json:"release_date"     example:"2023-10-01"`
 	Lyrics         map[string]string      `json:"lyrics"`
-	ListenCount    int                    `json:"listen_count"`
-	FavoriteCount  int                    `json:"favorite_count"`
-	AdditionDate   int64                  `json:"addition_date"`
+	ListenCount    int                    `json:"listen_count"     example:"150"`
+	FavoriteCount  int                    `json:"favorite_count"   example:"5"`
+	AdditionDate   int64                  `json:"addition_date"    example:"1634296980"`
 	Tags           []string               `json:"tags"`
 	AdditionalMeta map[string]interface{} `json:"additional_meta"`
 	Permissions    map[string]string      `json:"permissions"`

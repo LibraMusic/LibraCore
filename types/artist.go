@@ -1,16 +1,16 @@
 package types
 
 type Artist struct {
-	ID             string                 `json:"id"`
-	UserID         string                 `json:"user_id"`
-	Name           string                 `json:"name"`
-	AlbumIDs       []string               `json:"album_ids"`
-	TrackIDs       []string               `json:"track_ids"`
-	Description    string                 `json:"description"`
-	CreationDate   string                 `json:"creation_date"`
-	ListenCount    int                    `json:"listen_count"`
-	FavoriteCount  int                    `json:"favorite_count"`
-	AdditionDate   int64                  `json:"addition_date"`
+	ID             string                 `json:"id"              example:"h3r3VpPvSq8"`
+	UserID         string                 `json:"user_id"         example:"TPkrKcIZRRq"`
+	Name           string                 `json:"name"            example:"John Doe"`
+	AlbumIDs       []string               `json:"album_ids"       example:"BhRpYVlrMo8,poFEUbgBuwJ"`
+	TrackIDs       []string               `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`
+	Description    string                 `json:"description"     example:"Artist description here."`
+	CreationDate   string                 `json:"creation_date"   example:"2023-10-01"`
+	ListenCount    int                    `json:"listen_count"    example:"150"`
+	FavoriteCount  int                    `json:"favorite_count"  example:"5"`
+	AdditionDate   int64                  `json:"addition_date"   example:"1634296980"`
 	Tags           []string               `json:"tags"`
 	AdditionalMeta map[string]interface{} `json:"additional_meta"`
 	Permissions    map[string]string      `json:"permissions"`

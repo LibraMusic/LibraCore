@@ -3,18 +3,18 @@ package types
 import "strconv"
 
 type User struct {
-	ID              string            `json:"id"`
-	Username        string            `json:"username"`
-	Email           string            `json:"email"`
+	ID              string            `json:"id"                example:"TPkrKcIZRRq"`
+	Username        string            `json:"username"          example:"JohnDoe"`
+	Email           string            `json:"email"             example:"john.doe@example.com"`
 	PasswordHash    string            `json:"password_hash"`
-	DisplayName     string            `json:"display_name"`
-	Description     string            `json:"description"`
+	DisplayName     string            `json:"display_name"      example:"John Doe"`
+	Description     string            `json:"description"       example:"I am a person."`
 	ListenedTo      map[string]int    `json:"listened_to"`
 	Favorites       []string          `json:"favorites"`
-	PublicViewCount int               `json:"public_view_count"`
+	PublicViewCount int               `json:"public_view_count" example:"519"`
 	CreationDate    int64             `json:"creation_date"`
 	Permissions     map[string]string `json:"permissions"`
-	LinkedArtistID  string            `json:"linked_artist_id"`
+	LinkedArtistID  string            `json:"linked_artist_id"  example:"h3r3VpPvSq8"`
 	LinkedSources   map[string]string `json:"linked_sources"`
 }
 

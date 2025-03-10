@@ -1,17 +1,17 @@
 package types
 
 type Album struct {
-	ID             string                 `json:"id"`
-	UserID         string                 `json:"user_id"`
-	UPC            string                 `json:"upc"`
-	Title          string                 `json:"title"`
-	ArtistIDs      []string               `json:"artist_ids"`
-	TrackIDs       []string               `json:"track_ids"`
-	Description    string                 `json:"description"`
-	ReleaseDate    string                 `json:"release_date"`
-	ListenCount    int                    `json:"listen_count"`
-	FavoriteCount  int                    `json:"favorite_count"`
-	AdditionDate   int64                  `json:"addition_date"`
+	ID             string                 `json:"id"              example:"BhRpYVlrMo8"`
+	UserID         string                 `json:"user_id"         example:"TPkrKcIZRRq"`
+	UPC            string                 `json:"upc"             example:"012345678905"`
+	Title          string                 `json:"title"           example:"Lorem Ipsum"`
+	ArtistIDs      []string               `json:"artist_ids"      example:"h3r3VpPvSq8,R2QTLKbHamW"`
+	TrackIDs       []string               `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`
+	Description    string                 `json:"description"     example:"Lorem ipsum dolor sit amet."`
+	ReleaseDate    string                 `json:"release_date"    example:"2023-10-01"`
+	ListenCount    int                    `json:"listen_count"    example:"150"`
+	FavoriteCount  int                    `json:"favorite_count"  example:"5"`
+	AdditionDate   int64                  `json:"addition_date"   example:"1634296980"`
 	Tags           []string               `json:"tags"`
 	AdditionalMeta map[string]interface{} `json:"additional_meta"`
 	Permissions    map[string]string      `json:"permissions"`
