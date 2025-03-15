@@ -34,7 +34,7 @@ jobs:
 
       - name: Run ShellCheck
         run: |
-          [ ! -n "$(find . -type f -name "*.sh")" ] || shellcheck **/**.sh
+          find . -type f -name "*.sh" -exec shellcheck {} +
 
       - name: Commit & Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
