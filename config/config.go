@@ -182,16 +182,15 @@ func setupTypes() {
 func getConfigFilePath() (string, error) {
 	if DataDir != "" {
 		configFilePath, err := filepath.Abs(filepath.Join(DataDir, "config.yaml"))
-		if err != nil {
-			log.Warn("Failed to get absolute path for config.yaml in DataDir", "err", err)
-		} else {
-			err := os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
+		if err == nil {
+			err = os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
 			if err != nil {
 				log.Warn("Failed to create directories for config.yaml in DataDir", "err", err)
 				return "", err
 			}
 			return configFilePath, nil
 		}
+		log.Warn("Failed to get absolute path for config.yaml in DataDir", "err", err)
 	}
 
 	configFilePath, err := filepath.Abs("config.yaml")

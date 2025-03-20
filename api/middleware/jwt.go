@@ -14,7 +14,7 @@ import (
 
 func JWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var key interface{}
+		var key any
 		switch config.Conf.Auth.JWT.SigningMethod {
 		case "HS256", "HS384", "HS512":
 			key = []byte(config.Conf.Auth.JWT.SigningKey)

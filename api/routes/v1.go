@@ -16,7 +16,7 @@ import (
 //	@ID			getAllPlayables
 //	@Success	200	{array}	fakePlayable
 //	@Success	200	"Returns a list of all playables"
-//	@Failure	500	{object}	interface{}
+//	@Failure	500	{object}	any
 //	@Router		/playables [get]
 func V1Playables(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -34,7 +34,7 @@ func V1Playables(c echo.Context) error {
 //	@Param		id	path	string	true	"User ID"
 //	@Success	200	{array}	fakePlayable
 //	@Success	200	"Returns a list of user's playables"
-//	@Failure	500	{object}	interface{}
+//	@Failure	500	{object}	any
 //	@Router		/playables/{id} [get]
 func V1UserPlayables(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -53,7 +53,7 @@ func V1UserPlayables(c echo.Context) error {
 //	@Param		q	query	string	true	"Search query"
 //	@Success	200	{array}	fakePlayable
 //	@Success	200	"Returns a list of playables matching the search query"
-//	@Failure	500	{object}	interface{}
+//	@Failure	500	{object}	any
 //	@Router		/search [get]
 func V1Search(c echo.Context) error {
 	log.Error("unimplemented")

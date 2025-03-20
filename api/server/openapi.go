@@ -35,8 +35,8 @@ func loadBaseOpenAPISpec() echo.Map {
 	}
 
 	// Update server URL
-	servers := v1Spec["servers"].([]interface{})
-	server := servers[0].(map[string]interface{})
+	servers := v1Spec["servers"].([]any)
+	server := servers[0].(map[string]any)
 	server["url"] = strings.ReplaceAll(
 		server["url"].(string),
 		"http://localhost:8080",
@@ -48,7 +48,7 @@ func loadBaseOpenAPISpec() echo.Map {
 
 // processSchemas cleans up schema references and creates a proper Playable interface schema.
 func processSchemas(v1Spec echo.Map) {
-	schemas := v1Spec["components"].(map[string]interface{})["schemas"].(map[string]interface{})
+	schemas := v1Spec["components"].(map[string]any)["schemas"].(map[string]any)
 
 	// Remove "types." prefix from schema names
 	for key := range schemas {
@@ -60,14 +60,14 @@ func processSchemas(v1Spec echo.Map) {
 	}
 
 	// Replace the fakePlayable schema with the actual Playable interface schema
-	playableSchema := map[string]interface{}{
-		"oneOf": []interface{}{
-			map[string]interface{}{"$ref": "#/components/schemas/Track"},
-			map[string]interface{}{"$ref": "#/components/schemas/Album"},
-			map[string]interface{}{"$ref": "#/components/schemas/Video"},
-			map[string]interface{}{"$ref": "#/components/schemas/Playlist"},
-			map[string]interface{}{"$ref": "#/components/schemas/Artist"},
-			map[string]interface{}{"$ref": "#/components/schemas/User"},
+	playableSchema := map[string]any{
+		"oneOf": []any{
+			map[string]any{"$ref": "#/components/schemas/Track"},
+			map[string]any{"$ref": "#/components/schemas/Album"},
+			map[string]any{"$ref": "#/components/schemas/Video"},
+			map[string]any{"$ref": "#/components/schemas/Playlist"},
+			map[string]any{"$ref": "#/components/schemas/Artist"},
+			map[string]any{"$ref": "#/components/schemas/User"},
 		},
 	}
 	schemas["Playable"] = playableSchema
@@ -76,11 +76,11 @@ func processSchemas(v1Spec echo.Map) {
 
 // processPaths removes placeholder paths and standardizes path definitions.
 func processPaths(v1Spec echo.Map) {
-	paths := v1Spec["paths"].(map[string]interface{})
+	paths := v1Spec["paths"].(map[string]any)
 	delete(paths, "/fake")
 
 	for _, pathObj := range paths {
-		objMap, ok := pathObj.(map[string]interface{})
+		objMap, ok := pathObj.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -89,13 +89,13 @@ func processPaths(v1Spec echo.Map) {
 }
 
 // processPathOperations updates response schema references in API operations.
-func processPathOperations(pathObj map[string]interface{}) {
+func processPathOperations(pathObj map[string]any) {
 	for _, op := range pathObj {
-		opMap, ok := op.(map[string]interface{})
+		opMap, ok := op.(map[string]any)
 		if !ok {
 			continue
 		}
-		responses, ok := opMap["responses"].(map[string]interface{})
+		responses, ok := opMap["responses"].(map[string]any)
 		if !ok {
 			continue
 		}
@@ -107,23 +107,23 @@ func processPathOperations(pathObj map[string]interface{}) {
 }
 
 // processResponseObject updates schema references in JSON response content.
-func processResponseObject(response interface{}) {
-	resp, ok := response.(map[string]interface{})
+func processResponseObject(response any) {
+	resp, ok := response.(map[string]any)
 	if !ok {
 		return
 	}
 
-	content, ok := resp["content"].(map[string]interface{})
+	content, ok := resp["content"].(map[string]any)
 	if !ok {
 		return
 	}
 
-	jsonContent, ok := content["application/json"].(map[string]interface{})
+	jsonContent, ok := content["application/json"].(map[string]any)
 	if !ok {
 		return
 	}
 
-	schema, ok := jsonContent["schema"].(map[string]interface{})
+	schema, ok := jsonContent["schema"].(map[string]any)
 	if !ok {
 		return
 	}
@@ -132,10 +132,10 @@ func processResponseObject(response interface{}) {
 }
 
 // processSchema normalizes references in schema objects, oneOf lists, and array items.
-func processSchema(schema map[string]interface{}) {
+func processSchema(schema map[string]any) {
 	if ref, ok := schema["$ref"].(string); ok {
 		schema["$ref"] = updateReference(ref)
-	} else if oneOf, ok := schema["oneOf"].([]interface{}); ok {
+	} else if oneOf, ok := schema["oneOf"].([]any); ok {
 		for i, item := range oneOf {
 			itemRef, ok := item.(string)
 			if !ok {
@@ -143,7 +143,7 @@ func processSchema(schema map[string]interface{}) {
 			}
 			oneOf[i] = updateReference(itemRef)
 		}
-	} else if items, ok := schema["items"].(map[string]interface{}); ok {
+	} else if items, ok := schema["items"].(map[string]any); ok {
 		if ref, ok := items["$ref"].(string); ok {
 			items["$ref"] = updateReference(ref)
 		}
@@ -165,17 +165,17 @@ func updateReference(ref string) string {
 
 // addFeedRoutesDocumentation adds feed endpoints (RSS, Atom, JSON) to the API spec.
 func addFeedRoutesDocumentation(v1Spec echo.Map) {
-	paths := v1Spec["paths"].(map[string]interface{})
+	paths := v1Spec["paths"].(map[string]any)
 
 	for _, feedRoute := range routes.FeedRoutesDoc {
 		content := createFeedRouteContent(feedRoute.Type)
 		description := createFeedRouteDescription(feedRoute.Type)
 
-		path := map[string]interface{}{
-			"get": map[string]interface{}{
+		path := map[string]any{
+			"get": map[string]any{
 				"summary": feedRoute.Summary,
-				"responses": map[string]interface{}{
-					"200": map[string]interface{}{
+				"responses": map[string]any{
+					"200": map[string]any{
 						"description": description,
 						"content":     content,
 					},
@@ -189,26 +189,26 @@ func addFeedRoutesDocumentation(v1Spec echo.Map) {
 }
 
 // createFeedRouteContent generates content type and schema for feed routes.
-func createFeedRouteContent(feedType string) map[string]interface{} {
+func createFeedRouteContent(feedType string) map[string]any {
 	var contentType, description string
-	var schema map[string]interface{}
+	var schema map[string]any
 
 	if feedType == "JSON" {
 		contentType = "application/json"
 		description = "JSON feed response"
-		schema = map[string]interface{}{
+		schema = map[string]any{
 			"type": "object",
 		}
 	} else {
 		contentType = "application/xml"
 		description = feedType + " XML feed response"
-		schema = map[string]interface{}{
+		schema = map[string]any{
 			"type": "string",
 		}
 	}
 
-	return map[string]interface{}{
-		contentType: map[string]interface{}{
+	return map[string]any{
+		contentType: map[string]any{
 			"schema":      schema,
 			"description": description,
 		},
@@ -224,25 +224,25 @@ func createFeedRouteDescription(feedType string) string {
 }
 
 // copyBasePathInfo inherits parameters and error responses from a base path.
-func copyBasePathInfo(paths map[string]interface{}, basePath string, targetPath map[string]interface{}) {
-	basePathObj, ok := paths[basePath].(map[string]interface{})
+func copyBasePathInfo(paths map[string]any, basePath string, targetPath map[string]any) {
+	basePathObj, ok := paths[basePath].(map[string]any)
 	if !ok {
 		return
 	}
 
-	baseRouteGet, ok := basePathObj["get"].(map[string]interface{})
+	baseRouteGet, ok := basePathObj["get"].(map[string]any)
 	if !ok {
 		return
 	}
 
 	// Copy parameters
-	if parameters, ok := baseRouteGet["parameters"].([]interface{}); ok {
-		targetPath["get"].(map[string]interface{})["parameters"] = parameters
+	if parameters, ok := baseRouteGet["parameters"].([]any); ok {
+		targetPath["get"].(map[string]any)["parameters"] = parameters
 	}
 
 	// Copy non-200 responses
-	if responses, ok := baseRouteGet["responses"].(map[string]interface{}); ok {
-		targetResponses := targetPath["get"].(map[string]interface{})["responses"].(map[string]interface{})
+	if responses, ok := baseRouteGet["responses"].(map[string]any); ok {
+		targetResponses := targetPath["get"].(map[string]any)["responses"].(map[string]any)
 		for key, value := range responses {
 			if key == "200" {
 				continue

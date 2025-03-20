@@ -77,8 +77,8 @@ import (
 
 type OAuthProvider struct {
 	ID                string            `yaml:"id"`
-	Key               string            `yaml:"key,alias:client_id"`
-	Secret            string            `yaml:"secret,alias:client_secret"`
+	Key               string            `yaml:"key,alias=client_id"`
+	Secret            string            `yaml:"secret,alias=client_secret"`
 	AdditionalDetails map[string]string `yaml:",inline"`
 }
 

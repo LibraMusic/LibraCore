@@ -1,21 +1,21 @@
 package types
 
 type Artist struct {
-	ID             string                 `json:"id"              example:"h3r3VpPvSq8"`
-	UserID         string                 `json:"user_id"         example:"TPkrKcIZRRq"`
-	Name           string                 `json:"name"            example:"John Doe"`
-	AlbumIDs       []string               `json:"album_ids"       example:"BhRpYVlrMo8,poFEUbgBuwJ"`
-	TrackIDs       []string               `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`
-	Description    string                 `json:"description"     example:"Artist description here."`
-	CreationDate   string                 `json:"creation_date"   example:"2023-10-01"`
-	ListenCount    int                    `json:"listen_count"    example:"150"`
-	FavoriteCount  int                    `json:"favorite_count"  example:"5"`
-	AdditionDate   int64                  `json:"addition_date"   example:"1634296980"`
-	Tags           []string               `json:"tags"`
-	AdditionalMeta map[string]interface{} `json:"additional_meta"`
-	Permissions    map[string]string      `json:"permissions"`
-	LinkedItemIDs  []string               `json:"linked_item_ids"`
-	MetadataSource string                 `json:"metadata_source"`
+	ID             string            `json:"id"              example:"h3r3VpPvSq8"`
+	UserID         string            `json:"user_id"         example:"TPkrKcIZRRq"`
+	Name           string            `json:"name"            example:"John Doe"`
+	AlbumIDs       []string          `json:"album_ids"       example:"BhRpYVlrMo8,poFEUbgBuwJ"`
+	TrackIDs       []string          `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`
+	Description    string            `json:"description"     example:"Artist description here."`
+	CreationDate   string            `json:"creation_date"   example:"2023-10-01"`
+	ListenCount    int               `json:"listen_count"    example:"150"`
+	FavoriteCount  int               `json:"favorite_count"  example:"5"`
+	AdditionDate   int64             `json:"addition_date"   example:"1634296980"`
+	Tags           []string          `json:"tags"`
+	AdditionalMeta map[string]any    `json:"additional_meta"`
+	Permissions    map[string]string `json:"permissions"`
+	LinkedItemIDs  []string          `json:"linked_item_ids"`
+	MetadataSource string            `json:"metadata_source"`
 }
 
 func (Artist) GetType() string {
@@ -50,7 +50,7 @@ func (a Artist) GetTags() []string {
 	return a.Tags
 }
 
-func (a Artist) GetAdditionalMeta() map[string]interface{} {
+func (a Artist) GetAdditionalMeta() map[string]any {
 	return a.AdditionalMeta
 }
 

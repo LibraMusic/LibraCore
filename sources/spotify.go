@@ -34,7 +34,7 @@ func (*SpotifySource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (*SpotifySource) Search(_ string, _ int, _ int, _ map[string]interface{}) ([]types.SourcePlayable, error) {
+func (*SpotifySource) Search(_ string, _ int, _ int, _ map[string]any) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	log.Error("unimplemented")

@@ -83,7 +83,7 @@ func (sm *Manager) EnableSource(sourceStr string) error {
 
 // TODO: Implement CompleteMetadata
 
-/*func (sm *Manager) GetImage(searchResult types.SearchResult) ([]byte, error) {
+/* func (sm *Manager) GetImage(searchResult types.SearchResult) ([]byte, error) {
 	if _, ok := sm.sources[searchResult.ServiceID]; ok {
 		return sm.sources[searchResult.ServiceID].GetImage(searchResult)
 	}
@@ -95,4 +95,4 @@ func (sm *Manager) GetContent(searchResult types.SearchResult) ([]byte, error) {
 		return sm.sources[searchResult.ServiceID].GetContent(searchResult)
 	}
 	return []byte{}, nil
-}*/
+} */

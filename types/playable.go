@@ -9,7 +9,7 @@ type Playable interface {
 	GetReleaseDate() string
 	GetAdditionDate() int64
 	GetTags() []string
-	GetAdditionalMeta() map[string]interface{}
+	GetAdditionalMeta() map[string]any
 	GetPermissions() map[string]string
 	IsTemporary() bool
 }

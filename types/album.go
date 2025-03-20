@@ -1,23 +1,23 @@
 package types
 
 type Album struct {
-	ID             string                 `json:"id"              example:"BhRpYVlrMo8"`
-	UserID         string                 `json:"user_id"         example:"TPkrKcIZRRq"`
-	UPC            string                 `json:"upc"             example:"012345678905"`
-	EAN            string                 `json:"ean"             example:"0012345678905"`
-	Title          string                 `json:"title"           example:"Lorem Ipsum"`
-	ArtistIDs      []string               `json:"artist_ids"      example:"h3r3VpPvSq8,R2QTLKbHamW"`
-	TrackIDs       []string               `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`
-	Description    string                 `json:"description"     example:"Lorem ipsum dolor sit amet."`
-	ReleaseDate    string                 `json:"release_date"    example:"2023-10-01"`
-	ListenCount    int                    `json:"listen_count"    example:"150"`
-	FavoriteCount  int                    `json:"favorite_count"  example:"5"`
-	AdditionDate   int64                  `json:"addition_date"   example:"1634296980"`
-	Tags           []string               `json:"tags"`
-	AdditionalMeta map[string]interface{} `json:"additional_meta"`
-	Permissions    map[string]string      `json:"permissions"`
-	LinkedItemIDs  []string               `json:"linked_item_ids"`
-	MetadataSource string                 `json:"metadata_source"`
+	ID             string            `json:"id"              example:"BhRpYVlrMo8"`
+	UserID         string            `json:"user_id"         example:"TPkrKcIZRRq"`
+	UPC            string            `json:"upc"             example:"012345678905"`
+	EAN            string            `json:"ean"             example:"0012345678905"`
+	Title          string            `json:"title"           example:"Lorem Ipsum"`
+	ArtistIDs      []string          `json:"artist_ids"      example:"h3r3VpPvSq8,R2QTLKbHamW"`
+	TrackIDs       []string          `json:"track_ids"       example:"7nTwkcl51u4,OBTwkAXODLd"`
+	Description    string            `json:"description"     example:"Lorem ipsum dolor sit amet."`
+	ReleaseDate    string            `json:"release_date"    example:"2023-10-01"`
+	ListenCount    int               `json:"listen_count"    example:"150"`
+	FavoriteCount  int               `json:"favorite_count"  example:"5"`
+	AdditionDate   int64             `json:"addition_date"   example:"1634296980"`
+	Tags           []string          `json:"tags"`
+	AdditionalMeta map[string]any    `json:"additional_meta"`
+	Permissions    map[string]string `json:"permissions"`
+	LinkedItemIDs  []string          `json:"linked_item_ids"`
+	MetadataSource string            `json:"metadata_source"`
 }
 
 func (Album) GetType() string {
@@ -52,7 +52,7 @@ func (a Album) GetTags() []string {
 	return a.Tags
 }
 
-func (a Album) GetAdditionalMeta() map[string]interface{} {
+func (a Album) GetAdditionalMeta() map[string]any {
 	return a.AdditionalMeta
 }
 

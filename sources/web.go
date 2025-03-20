@@ -45,7 +45,7 @@ func (*WebSource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (*WebSource) Search(_ string, _ int, _ int, _ map[string]interface{}) ([]types.SourcePlayable, error) {
+func (*WebSource) Search(_ string, _ int, _ int, _ map[string]any) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	log.Error("unimplemented")

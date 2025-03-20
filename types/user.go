@@ -101,8 +101,8 @@ func (User) GetTags() []string {
 	return []string{}
 }
 
-func (User) GetAdditionalMeta() map[string]interface{} {
-	return map[string]interface{}{}
+func (User) GetAdditionalMeta() map[string]any {
+	return map[string]any{}
 }
 
 func (u User) GetPermissions() map[string]string {

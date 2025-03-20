@@ -20,9 +20,9 @@ type LocalFileSource struct {
 	Path string
 }
 
-func InitLocalFileSource(filepath string) (*LocalFileSource, error) {
+func InitLocalFileSource(path string) (*LocalFileSource, error) {
 	return &LocalFileSource{
-		Path: filepath,
+		Path: path,
 	}, nil
 }
 
@@ -46,7 +46,7 @@ func (*LocalFileSource) GetMediaTypes() []string {
 	return []string{"music", "video"}
 }
 
-func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]interface{}) ([]types.SourcePlayable, error) {
+func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	fileInfo, err := os.Stat(s.Path)
@@ -83,25 +83,25 @@ func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]inte
 			return nil, err
 		}
 
-		var output map[string]interface{}
+		var output map[string]any
 		err = json.Unmarshal([]byte(out), &output)
 		if err != nil {
 			return nil, err
 		}
 
 		displayArtists := []string{
-			output["format"].(map[string]interface{})["tags"].(map[string]interface{})["artist"].(string),
+			output["format"].(map[string]any)["tags"].(map[string]any)["artist"].(string),
 		}
 
 		log.Error("unimplemented")
 
 		result := types.Track{
-			Title:       output["format"].(map[string]interface{})["tags"].(map[string]interface{})["title"].(string),
-			Duration:    int(output["format"].(map[string]interface{})["duration"].(float64)),
+			Title:       output["format"].(map[string]any)["tags"].(map[string]any)["title"].(string),
+			Duration:    int(output["format"].(map[string]any)["duration"].(float64)),
 			ReleaseDate: "",
-			AdditionalMeta: map[string]interface{}{
+			AdditionalMeta: map[string]any{
 				"display_artists": displayArtists,
-				"display_album":   output["format"].(map[string]interface{})["tags"].(map[string]interface{})["album"].(string),
+				"display_album":   output["format"].(map[string]any)["tags"].(map[string]any)["album"].(string),
 			},
 			MetadataSource: s.GetID() + "::" + filepath.Base(s.Path),
 		}
@@ -144,7 +144,7 @@ func (s *LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types
 		return nil, err
 	}
 
-	var output []map[string]interface{}
+	var output []map[string]any
 	err = json.Unmarshal([]byte(out), &output)
 	if err != nil {
 		return nil, err

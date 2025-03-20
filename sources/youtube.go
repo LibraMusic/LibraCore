@@ -74,7 +74,7 @@ func (*YouTubeSource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[string]interface{}) ([]types.SourcePlayable, error) {
+func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	// TODO: Implement pagination if possible.
@@ -98,7 +98,7 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 		return results, fmt.Errorf("error executing command: %w", err)
 	}
 
-	var output []map[string]interface{}
+	var output []map[string]any
 	err = json.Unmarshal(out, &output)
 	if err != nil {
 		return results, fmt.Errorf("error parsing command output: %w", err)
@@ -115,7 +115,7 @@ func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[strin
 	return results, nil
 }
 
-func (s *YouTubeSource) parseSearchResult(v map[string]interface{}) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseSearchResult(v map[string]any) (types.SourcePlayable, error) {
 	var result types.SourcePlayable
 	var err error
 
@@ -137,7 +137,7 @@ func (s *YouTubeSource) parseSearchResult(v map[string]interface{}) (types.Sourc
 	return result, err
 }
 
-func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseSongResult(v map[string]any) (types.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -150,7 +150,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourceP
 		year = strconv.Itoa(v["year"].(int))
 	}
 
-	thumbnails := v["thumbnails"].([]map[string]interface{})
+	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -161,7 +161,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourceP
 		Title:       v["title"].(string),
 		Duration:    v["duration_seconds"].(int),
 		ReleaseDate: year,
-		AdditionalMeta: map[string]interface{}{
+		AdditionalMeta: map[string]any{
 			"display_artists":   displayArtists,
 			"display_album":     v["album"].(map[string]string)["name"],
 			"display_cover_art": thumbnail,
@@ -173,7 +173,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]interface{}) (types.SourceP
 	}, nil
 }
 
-func (s *YouTubeSource) parseAlbumResult(v map[string]interface{}) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseAlbumResult(v map[string]any) (types.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -186,7 +186,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]interface{}) (types.Source
 		year = strconv.Itoa(v["year"].(int))
 	}
 
-	thumbnails := v["thumbnails"].([]map[string]interface{})
+	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -196,7 +196,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]interface{}) (types.Source
 	return types.Album{
 		Title:       v["title"].(string),
 		ReleaseDate: year,
-		AdditionalMeta: map[string]interface{}{
+		AdditionalMeta: map[string]any{
 			"display_artists":   displayArtists,
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
@@ -206,7 +206,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]interface{}) (types.Source
 	}, nil
 }
 
-func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseVideoResult(v map[string]any) (types.SourcePlayable, error) {
 	if !config.Conf.General.IncludeVideoResults {
 		return nil, types.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
 	}
@@ -231,7 +231,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 			album = v["album"].(map[string]string)["name"]
 		}
 
-		thumbnails := v["thumbnails"].([]map[string]interface{})
+		thumbnails := v["thumbnails"].([]map[string]any)
 		thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 		thumbnail, err := utils.DownloadFile(thumbnailURL)
 		if err != nil {
@@ -242,7 +242,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 			Title:       v["title"].(string),
 			Duration:    v["duration_seconds"].(int),
 			ReleaseDate: year,
-			AdditionalMeta: map[string]interface{}{
+			AdditionalMeta: map[string]any{
 				"display_artists":   displayArtists,
 				"display_album":     album,
 				"display_cover_art": thumbnail,
@@ -255,7 +255,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 		}, nil
 	}
 
-	thumbnails := v["thumbnails"].([]map[string]interface{})
+	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -266,7 +266,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 		Title:       v["title"].(string),
 		Duration:    v["duration_seconds"].(int),
 		ReleaseDate: year,
-		AdditionalMeta: map[string]interface{}{
+		AdditionalMeta: map[string]any{
 			"display_artists":   displayArtists,
 			"display_thumbnail": thumbnail,
 			"yt_id":             v["videoId"].(string),
@@ -276,8 +276,8 @@ func (s *YouTubeSource) parseVideoResult(v map[string]interface{}) (types.Source
 	}, nil
 }
 
-func (s *YouTubeSource) parseArtistResult(v map[string]interface{}) (types.SourcePlayable, error) {
-	thumbnails := v["thumbnails"].([]map[string]interface{})
+func (s *YouTubeSource) parseArtistResult(v map[string]any) (types.SourcePlayable, error) {
+	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -286,7 +286,7 @@ func (s *YouTubeSource) parseArtistResult(v map[string]interface{}) (types.Sourc
 
 	return types.Artist{
 		Name: v["artist"].(string),
-		AdditionalMeta: map[string]interface{}{
+		AdditionalMeta: map[string]any{
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
 		},
@@ -294,13 +294,13 @@ func (s *YouTubeSource) parseArtistResult(v map[string]interface{}) (types.Sourc
 	}, nil
 }
 
-func (s *YouTubeSource) parsePlaylistResult(v map[string]interface{}) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (types.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
 	}
 
-	thumbnails := v["thumbnails"].([]map[string]interface{})
+	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -309,7 +309,7 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]interface{}) (types.Sou
 
 	return types.Playlist{
 		Title: v["title"].(string),
-		AdditionalMeta: map[string]interface{}{
+		AdditionalMeta: map[string]any{
 			"display_artists":   displayArtists,
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
@@ -364,7 +364,7 @@ func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 	var command []string
 	youtubeLocation := getYouTubeScriptPath()
 
-	if playable.GetType() == "video" || playable.GetAdditionalMeta()["is_video"] == true {
+	if playable.GetType() == "video" || playable.GetAdditionalMeta()["is_video"] == true { //revive:disable-line:bool-literal-in-expr Value cannot be used as a boolean
 		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
 			youtubeLocation,
 			`subtitles`,
@@ -409,7 +409,7 @@ func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.S
 		return playable, err
 	}
 
-	var output map[string]interface{}
+	var output map[string]any
 	err = json.Unmarshal(out, &output)
 	if err != nil {
 		return playable, err
@@ -431,10 +431,10 @@ func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.S
 	return playable, nil
 }
 
-func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, output map[string]interface{}) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
 	result := playable.(types.Track)
 
-	lyricsID := output["track"].(map[string]interface{})["lyricsId"]
+	lyricsID := output["track"].(map[string]any)["lyricsId"]
 	if lyricsID != nil {
 		splitLyricsID := strings.Split(lyricsID.(string), "-")
 		trackNumber, err := strconv.Atoi(splitLyricsID[len(splitLyricsID)-1])
@@ -443,9 +443,9 @@ func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, outpu
 		}
 	}
 
-	result.Description = output["video"].(map[string]interface{})["microformat"].(map[string]interface{})["microformatDataRenderer"].(map[string]interface{})["description"].(string)
+	result.Description = output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["description"].(string)
 
-	publishDateObj := output["video"].(map[string]interface{})["microformat"].(map[string]interface{})["microformatDataRenderer"].(map[string]interface{})["publishDate"]
+	publishDateObj := output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["publishDate"]
 	if publishDateObj != nil {
 		publishDateStr := publishDateObj.(string)
 		t, err := time.Parse(time.RFC3339, publishDateStr)
@@ -456,7 +456,7 @@ func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, outpu
 	}
 
 	if config.Conf.General.InheritListenCounts {
-		viewCountObj := output["video"].(map[string]interface{})["microformat"].(map[string]interface{})["microformatDataRenderer"].(map[string]interface{})["viewCount"]
+		viewCountObj := output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["viewCount"]
 		if viewCountObj != nil {
 			viewCountStr := viewCountObj.(string)
 			viewCount, err := strconv.Atoi(viewCountStr)
@@ -467,7 +467,7 @@ func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, outpu
 		}
 	}
 
-	thumbnails := output["track"].(map[string]interface{})["thumbnail"].([]map[string]interface{})
+	thumbnails := output["track"].(map[string]any)["thumbnail"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -478,12 +478,12 @@ func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, outpu
 	return result, nil
 }
 
-func (*YouTubeSource) completeAlbumMetadata(playable types.SourcePlayable, output map[string]interface{}) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeAlbumMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
 	result := playable.(types.Album)
 
 	result.Description = output["description"].(string)
 
-	thumbnails := output["thumbnails"].([]map[string]interface{})
+	thumbnails := output["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -491,19 +491,19 @@ func (*YouTubeSource) completeAlbumMetadata(playable types.SourcePlayable, outpu
 	}
 	result.AdditionalMeta["display_cover_art"] = thumbnail
 
-	result.AdditionalMeta["yt_tracks"] = output["tracks"].([]map[string]interface{})
+	result.AdditionalMeta["yt_tracks"] = output["tracks"].([]map[string]any)
 
 	result.AdditionalMeta["display_track_count"] = output["trackCount"].(int)
 
 	return result, nil
 }
 
-func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, output map[string]interface{}) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
 	result := playable.(types.Video)
 
-	result.Description = output["video"].(map[string]interface{})["microformat"].(map[string]interface{})["microformatDataRenderer"].(map[string]interface{})["description"].(string)
+	result.Description = output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["description"].(string)
 
-	publishDateObj := output["video"].(map[string]interface{})["microformat"].(map[string]interface{})["microformatDataRenderer"].(map[string]interface{})["publishDate"]
+	publishDateObj := output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["publishDate"]
 	if publishDateObj != nil {
 		publishDateStr := publishDateObj.(string)
 		t, err := time.Parse(time.RFC3339, publishDateStr)
@@ -514,7 +514,7 @@ func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, outpu
 	}
 
 	if config.Conf.General.InheritListenCounts {
-		viewCountObj := output["video"].(map[string]interface{})["microformat"].(map[string]interface{})["microformatDataRenderer"].(map[string]interface{})["viewCount"]
+		viewCountObj := output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["viewCount"]
 		if viewCountObj != nil {
 			viewCountStr := viewCountObj.(string)
 			viewCount, err := strconv.Atoi(viewCountStr)
@@ -525,7 +525,7 @@ func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, outpu
 		}
 	}
 
-	thumbnails := output["track"].(map[string]interface{})["thumbnail"].([]map[string]interface{})
+	thumbnails := output["track"].(map[string]any)["thumbnail"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -536,7 +536,7 @@ func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, outpu
 	return result, nil
 }
 
-func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, output map[string]interface{}) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
 	result := playable.(types.Artist)
 
 	result.Description = output["description"].(string)
@@ -556,7 +556,7 @@ func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, outp
 		}
 	}
 
-	thumbnails := output["thumbnails"].([]map[string]interface{})
+	thumbnails := output["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -564,10 +564,10 @@ func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, outp
 	}
 	result.AdditionalMeta["display_cover_art"] = thumbnail
 
-	tracks := output["songs"].(map[string]interface{})["results"].([]map[string]interface{})
-	albums := output["albums"].(map[string]interface{})["results"].([]map[string]interface{})
-	singles := output["singles"].(map[string]interface{})["results"].([]map[string]interface{})
-	videos := output["videos"].(map[string]interface{})["results"].([]map[string]interface{})
+	tracks := output["songs"].(map[string]any)["results"].([]map[string]any)
+	albums := output["albums"].(map[string]any)["results"].([]map[string]any)
+	singles := output["singles"].(map[string]any)["results"].([]map[string]any)
+	videos := output["videos"].(map[string]any)["results"].([]map[string]any)
 	result.AdditionalMeta["yt_tracks"] = tracks
 	result.AdditionalMeta["yt_albums"] = albums
 	result.AdditionalMeta["yt_singles"] = singles
@@ -580,7 +580,7 @@ func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, outp
 	return result, nil
 }
 
-func (*YouTubeSource) completePlaylistMetadata(playable types.SourcePlayable, output map[string]interface{}) (types.SourcePlayable, error) {
+func (*YouTubeSource) completePlaylistMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
 	result := playable.(types.Playlist)
 
 	result.Description = output["description"].(string)
@@ -603,7 +603,7 @@ func (*YouTubeSource) completePlaylistMetadata(playable types.SourcePlayable, ou
 		}
 	}
 
-	thumbnails := output["thumbnails"].([]map[string]interface{})
+	thumbnails := output["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
 	if err != nil {
@@ -611,7 +611,7 @@ func (*YouTubeSource) completePlaylistMetadata(playable types.SourcePlayable, ou
 	}
 	result.AdditionalMeta["display_cover_art"] = thumbnail
 
-	result.AdditionalMeta["yt_tracks"] = output["tracks"].([]map[string]interface{})
+	result.AdditionalMeta["yt_tracks"] = output["tracks"].([]map[string]any)
 
 	result.AdditionalMeta["display_track_count"] = output["trackCount"].(int)
 
