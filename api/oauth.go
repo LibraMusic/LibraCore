@@ -36,6 +36,7 @@ import (
 	"github.com/markbates/goth/providers/instagram"
 	"github.com/markbates/goth/providers/intercom"
 	"github.com/markbates/goth/providers/kakao"
+	"github.com/markbates/goth/providers/lark"
 	"github.com/markbates/goth/providers/lastfm"
 	"github.com/markbates/goth/providers/line"
 	"github.com/markbates/goth/providers/linkedin"
@@ -250,6 +251,9 @@ func RegisterBuiltInProviders(publicURL string) {
 	})
 	RegisterProvider("kakao", func(p OAuthProvider) (goth.Provider, error) {
 		return kakao.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/kakao/callback", publicURL)), nil
+	})
+	RegisterProvider("lark", func(p OAuthProvider) (goth.Provider, error) {
+		return lark.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/lark/callback", publicURL)), nil
 	})
 	RegisterProvider("lastfm", func(p OAuthProvider) (goth.Provider, error) {
 		return lastfm.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/lastfm/callback", publicURL)), nil
@@ -487,6 +491,7 @@ var providerNames = map[string]string{
 	"instagram":       "Instagram",
 	"intercom":        "Intercom",
 	"kakao":           "Kakao",
+	"lark":            "Lark",
 	"lastfm":          "Last.fm",
 	"line":            "LINE",
 	"linkedin":        "LinkedIn",
