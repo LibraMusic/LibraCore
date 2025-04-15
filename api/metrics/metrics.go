@@ -36,59 +36,36 @@ var (
 )
 
 func RegisterMetrics() error {
-	if err := prometheus.Register(TracksTotal); err != nil {
+	if err := registerTotalCounter(TracksTotal, db.DB.GetAllTracks); err != nil {
 		return err
 	}
-	tracks, err := db.DB.GetAllTracks(context.Background())
+	if err := registerTotalCounter(AlbumsTotal, db.DB.GetAllAlbums); err != nil {
+		return err
+	}
+	if err := registerTotalCounter(VideosTotal, db.DB.GetAllVideos); err != nil {
+		return err
+	}
+	if err := registerTotalCounter(ArtistsTotal, db.DB.GetAllArtists); err != nil {
+		return err
+	}
+	if err := registerTotalCounter(PlaylistsTotal, db.DB.GetAllPlaylists); err != nil {
+		return err
+	}
+	if err := registerTotalCounter(UsersTotal, db.DB.GetUsers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func registerTotalCounter[T any](metric prometheus.Counter, fetchFunc func(context.Context) ([]T, error)) error {
+	if err := prometheus.Register(metric); err != nil {
+		return err
+	}
+	items, err := fetchFunc(context.Background())
 	if err != nil {
 		return err
 	}
-	TracksTotal.Add(float64(len(tracks)))
-
-	if err := prometheus.Register(AlbumsTotal); err != nil {
-		return err
-	}
-	albums, err := db.DB.GetAllAlbums(context.Background())
-	if err != nil {
-		return err
-	}
-	AlbumsTotal.Add(float64(len(albums)))
-
-	if err := prometheus.Register(VideosTotal); err != nil {
-		return err
-	}
-	videos, err := db.DB.GetAllVideos(context.Background())
-	if err != nil {
-		return err
-	}
-	VideosTotal.Add(float64(len(videos)))
-
-	if err := prometheus.Register(ArtistsTotal); err != nil {
-		return err
-	}
-	artists, err := db.DB.GetAllArtists(context.Background())
-	if err != nil {
-		return err
-	}
-	ArtistsTotal.Add(float64(len(artists)))
-
-	if err := prometheus.Register(PlaylistsTotal); err != nil {
-		return err
-	}
-	playlists, err := db.DB.GetAllPlaylists(context.Background())
-	if err != nil {
-		return err
-	}
-	PlaylistsTotal.Add(float64(len(playlists)))
-
-	if err := prometheus.Register(UsersTotal); err != nil {
-		return err
-	}
-	users, err := db.DB.GetUsers(context.Background())
-	if err != nil {
-		return err
-	}
-	UsersTotal.Add(float64(len(users)))
-
+	metric.Add(float64(len(items)))
 	return nil
 }
