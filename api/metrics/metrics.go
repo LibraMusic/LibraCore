@@ -51,11 +51,7 @@ func RegisterMetrics() error {
 	if err := registerTotalCounter(PlaylistsTotal, db.DB.GetAllPlaylists); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(UsersTotal, db.DB.GetUsers); err != nil {
-		return err
-	}
-
-	return nil
+	return registerTotalCounter(UsersTotal, db.DB.GetUsers)
 }
 
 func registerTotalCounter[T any](metric prometheus.Counter, fetchFunc func(context.Context) ([]T, error)) error {
