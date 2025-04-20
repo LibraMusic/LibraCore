@@ -29,7 +29,7 @@ func InitManager() {
 	}
 }
 
-func (*Manager) IsHigherPriority(first string, second string) bool {
+func (*Manager) IsHigherPriority(first, second string) bool {
 	firstPriority := slices.Index(config.Conf.General.EnabledSources, first)
 	secondPriority := slices.Index(config.Conf.General.EnabledSources, second)
 	return firstPriority < secondPriority || (firstPriority == -1 && secondPriority != -1) || second == ""

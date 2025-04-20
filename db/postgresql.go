@@ -29,7 +29,9 @@ func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
 
 func (db *PostgreSQLDatabase) Connect() error {
 	log.Info("Connecting to PostgreSQL...")
-	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(config.Conf.Database.PostgreSQL.Port) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=" + config.Conf.Database.PostgreSQL.DBName + " " + config.Conf.Database.PostgreSQL.Params
+	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(
+		config.Conf.Database.PostgreSQL.Port,
+	) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=" + config.Conf.Database.PostgreSQL.DBName + " " + config.Conf.Database.PostgreSQL.Params
 	pool, err := pgxpool.New(context.Background(), connStr)
 	db.pool = pool
 	if err != nil {
@@ -250,7 +252,30 @@ func (db *PostgreSQLDatabase) GetAllTracks(ctx context.Context) ([]types.Track, 
 	defer rows.Close()
 	for rows.Next() {
 		track := types.Track{}
-		err = rows.Scan(&track.ID, &track.UserID, &track.ISRC, &track.Title, &track.ArtistIDs, &track.AlbumIDs, &track.PrimaryAlbumID, &track.TrackNumber, &track.Duration, &track.Description, &track.ReleaseDate, &track.Lyrics, &track.ListenCount, &track.FavoriteCount, &track.AdditionDate, &track.Tags, &track.AdditionalMeta, &track.Permissions, &track.LinkedItemIDs, &track.ContentSource, &track.MetadataSource, &track.LyricSources)
+		err = rows.Scan(
+			&track.ID,
+			&track.UserID,
+			&track.ISRC,
+			&track.Title,
+			&track.ArtistIDs,
+			&track.AlbumIDs,
+			&track.PrimaryAlbumID,
+			&track.TrackNumber,
+			&track.Duration,
+			&track.Description,
+			&track.ReleaseDate,
+			&track.Lyrics,
+			&track.ListenCount,
+			&track.FavoriteCount,
+			&track.AdditionDate,
+			&track.Tags,
+			&track.AdditionalMeta,
+			&track.Permissions,
+			&track.LinkedItemIDs,
+			&track.ContentSource,
+			&track.MetadataSource,
+			&track.LyricSources,
+		)
 		if err != nil {
 			return tracks, normalizePostgreSQLError(err)
 		}
@@ -268,7 +293,30 @@ func (db *PostgreSQLDatabase) GetTracks(ctx context.Context, userID string) ([]t
 	defer rows.Close()
 	for rows.Next() {
 		track := types.Track{}
-		err = rows.Scan(&track.ID, &track.UserID, &track.ISRC, &track.Title, &track.ArtistIDs, &track.AlbumIDs, &track.PrimaryAlbumID, &track.TrackNumber, &track.Duration, &track.Description, &track.ReleaseDate, &track.Lyrics, &track.ListenCount, &track.FavoriteCount, &track.AdditionDate, &track.Tags, &track.AdditionalMeta, &track.Permissions, &track.LinkedItemIDs, &track.ContentSource, &track.MetadataSource, &track.LyricSources)
+		err = rows.Scan(
+			&track.ID,
+			&track.UserID,
+			&track.ISRC,
+			&track.Title,
+			&track.ArtistIDs,
+			&track.AlbumIDs,
+			&track.PrimaryAlbumID,
+			&track.TrackNumber,
+			&track.Duration,
+			&track.Description,
+			&track.ReleaseDate,
+			&track.Lyrics,
+			&track.ListenCount,
+			&track.FavoriteCount,
+			&track.AdditionDate,
+			&track.Tags,
+			&track.AdditionalMeta,
+			&track.Permissions,
+			&track.LinkedItemIDs,
+			&track.ContentSource,
+			&track.MetadataSource,
+			&track.LyricSources,
+		)
 		if err != nil {
 			return tracks, normalizePostgreSQLError(err)
 		}
@@ -280,7 +328,30 @@ func (db *PostgreSQLDatabase) GetTracks(ctx context.Context, userID string) ([]t
 func (db *PostgreSQLDatabase) GetTrack(ctx context.Context, id string) (types.Track, error) {
 	track := types.Track{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM tracks WHERE id=$1;", id)
-	err := row.Scan(&track.ID, &track.UserID, &track.ISRC, &track.Title, &track.ArtistIDs, &track.AlbumIDs, &track.PrimaryAlbumID, &track.TrackNumber, &track.Duration, &track.Description, &track.ReleaseDate, &track.Lyrics, &track.ListenCount, &track.FavoriteCount, &track.AdditionDate, &track.Tags, &track.AdditionalMeta, &track.Permissions, &track.LinkedItemIDs, &track.ContentSource, &track.MetadataSource, &track.LyricSources)
+	err := row.Scan(
+		&track.ID,
+		&track.UserID,
+		&track.ISRC,
+		&track.Title,
+		&track.ArtistIDs,
+		&track.AlbumIDs,
+		&track.PrimaryAlbumID,
+		&track.TrackNumber,
+		&track.Duration,
+		&track.Description,
+		&track.ReleaseDate,
+		&track.Lyrics,
+		&track.ListenCount,
+		&track.FavoriteCount,
+		&track.AdditionDate,
+		&track.Tags,
+		&track.AdditionalMeta,
+		&track.Permissions,
+		&track.LinkedItemIDs,
+		&track.ContentSource,
+		&track.MetadataSource,
+		&track.LyricSources,
+	)
 
 	return track, normalizePostgreSQLError(err)
 }
@@ -319,7 +390,25 @@ func (db *PostgreSQLDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, 
 	defer rows.Close()
 	for rows.Next() {
 		album := types.Album{}
-		err = rows.Scan(&album.ID, &album.UserID, &album.UPC, &album.EAN, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
+		err = rows.Scan(
+			&album.ID,
+			&album.UserID,
+			&album.UPC,
+			&album.EAN,
+			&album.Title,
+			&album.ArtistIDs,
+			&album.TrackIDs,
+			&album.Description,
+			&album.ReleaseDate,
+			&album.ListenCount,
+			&album.FavoriteCount,
+			&album.AdditionDate,
+			&album.Tags,
+			&album.AdditionalMeta,
+			&album.Permissions,
+			&album.LinkedItemIDs,
+			&album.MetadataSource,
+		)
 		if err != nil {
 			return albums, normalizePostgreSQLError(err)
 		}
@@ -337,7 +426,25 @@ func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]t
 	defer rows.Close()
 	for rows.Next() {
 		album := types.Album{}
-		err = rows.Scan(&album.ID, &album.UserID, &album.UPC, &album.EAN, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
+		err = rows.Scan(
+			&album.ID,
+			&album.UserID,
+			&album.UPC,
+			&album.EAN,
+			&album.Title,
+			&album.ArtistIDs,
+			&album.TrackIDs,
+			&album.Description,
+			&album.ReleaseDate,
+			&album.ListenCount,
+			&album.FavoriteCount,
+			&album.AdditionDate,
+			&album.Tags,
+			&album.AdditionalMeta,
+			&album.Permissions,
+			&album.LinkedItemIDs,
+			&album.MetadataSource,
+		)
 		if err != nil {
 			return albums, normalizePostgreSQLError(err)
 		}
@@ -349,7 +456,25 @@ func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]t
 func (db *PostgreSQLDatabase) GetAlbum(ctx context.Context, id string) (types.Album, error) {
 	album := types.Album{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM albums WHERE id=$1;", id)
-	err := row.Scan(&album.ID, &album.UserID, &album.UPC, &album.EAN, &album.Title, &album.ArtistIDs, &album.TrackIDs, &album.Description, &album.ReleaseDate, &album.ListenCount, &album.FavoriteCount, &album.AdditionDate, &album.Tags, &album.AdditionalMeta, &album.Permissions, &album.LinkedItemIDs, &album.MetadataSource)
+	err := row.Scan(
+		&album.ID,
+		&album.UserID,
+		&album.UPC,
+		&album.EAN,
+		&album.Title,
+		&album.ArtistIDs,
+		&album.TrackIDs,
+		&album.Description,
+		&album.ReleaseDate,
+		&album.ListenCount,
+		&album.FavoriteCount,
+		&album.AdditionDate,
+		&album.Tags,
+		&album.AdditionalMeta,
+		&album.Permissions,
+		&album.LinkedItemIDs,
+		&album.MetadataSource,
+	)
 	return album, normalizePostgreSQLError(err)
 }
 
@@ -387,7 +512,26 @@ func (db *PostgreSQLDatabase) GetAllVideos(ctx context.Context) ([]types.Video, 
 	defer rows.Close()
 	for rows.Next() {
 		video := types.Video{}
-		err = rows.Scan(&video.ID, &video.UserID, &video.Title, &video.ArtistIDs, &video.Duration, &video.Description, &video.ReleaseDate, &video.Subtitles, &video.WatchCount, &video.FavoriteCount, &video.AdditionDate, &video.Tags, &video.AdditionalMeta, &video.Permissions, &video.LinkedItemIDs, &video.ContentSource, &video.MetadataSource, &video.LyricSources)
+		err = rows.Scan(
+			&video.ID,
+			&video.UserID,
+			&video.Title,
+			&video.ArtistIDs,
+			&video.Duration,
+			&video.Description,
+			&video.ReleaseDate,
+			&video.Subtitles,
+			&video.WatchCount,
+			&video.FavoriteCount,
+			&video.AdditionDate,
+			&video.Tags,
+			&video.AdditionalMeta,
+			&video.Permissions,
+			&video.LinkedItemIDs,
+			&video.ContentSource,
+			&video.MetadataSource,
+			&video.LyricSources,
+		)
 		if err != nil {
 			return videos, normalizePostgreSQLError(err)
 		}
@@ -405,7 +549,26 @@ func (db *PostgreSQLDatabase) GetVideos(ctx context.Context, userID string) ([]t
 	defer rows.Close()
 	for rows.Next() {
 		video := types.Video{}
-		err = rows.Scan(&video.ID, &video.UserID, &video.Title, &video.ArtistIDs, &video.Duration, &video.Description, &video.ReleaseDate, &video.Subtitles, &video.WatchCount, &video.FavoriteCount, &video.AdditionDate, &video.Tags, &video.AdditionalMeta, &video.Permissions, &video.LinkedItemIDs, &video.ContentSource, &video.MetadataSource, &video.LyricSources)
+		err = rows.Scan(
+			&video.ID,
+			&video.UserID,
+			&video.Title,
+			&video.ArtistIDs,
+			&video.Duration,
+			&video.Description,
+			&video.ReleaseDate,
+			&video.Subtitles,
+			&video.WatchCount,
+			&video.FavoriteCount,
+			&video.AdditionDate,
+			&video.Tags,
+			&video.AdditionalMeta,
+			&video.Permissions,
+			&video.LinkedItemIDs,
+			&video.ContentSource,
+			&video.MetadataSource,
+			&video.LyricSources,
+		)
 		if err != nil {
 			return videos, normalizePostgreSQLError(err)
 		}
@@ -417,7 +580,26 @@ func (db *PostgreSQLDatabase) GetVideos(ctx context.Context, userID string) ([]t
 func (db *PostgreSQLDatabase) GetVideo(ctx context.Context, id string) (types.Video, error) {
 	video := types.Video{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM videos WHERE id=$1;", id)
-	err := row.Scan(&video.ID, &video.UserID, &video.Title, &video.ArtistIDs, &video.Duration, &video.Description, &video.ReleaseDate, &video.Subtitles, &video.WatchCount, &video.FavoriteCount, &video.AdditionDate, &video.Tags, &video.AdditionalMeta, &video.Permissions, &video.LinkedItemIDs, &video.ContentSource, &video.MetadataSource, &video.LyricSources)
+	err := row.Scan(
+		&video.ID,
+		&video.UserID,
+		&video.Title,
+		&video.ArtistIDs,
+		&video.Duration,
+		&video.Description,
+		&video.ReleaseDate,
+		&video.Subtitles,
+		&video.WatchCount,
+		&video.FavoriteCount,
+		&video.AdditionDate,
+		&video.Tags,
+		&video.AdditionalMeta,
+		&video.Permissions,
+		&video.LinkedItemIDs,
+		&video.ContentSource,
+		&video.MetadataSource,
+		&video.LyricSources,
+	)
 
 	return video, normalizePostgreSQLError(err)
 }
@@ -456,7 +638,23 @@ func (db *PostgreSQLDatabase) GetAllArtists(ctx context.Context) ([]types.Artist
 	defer rows.Close()
 	for rows.Next() {
 		artist := types.Artist{}
-		err = rows.Scan(&artist.ID, &artist.UserID, &artist.Name, &artist.AlbumIDs, &artist.TrackIDs, &artist.Description, &artist.CreationDate, &artist.ListenCount, &artist.FavoriteCount, &artist.AdditionDate, &artist.Tags, &artist.AdditionalMeta, &artist.Permissions, &artist.LinkedItemIDs, &artist.MetadataSource)
+		err = rows.Scan(
+			&artist.ID,
+			&artist.UserID,
+			&artist.Name,
+			&artist.AlbumIDs,
+			&artist.TrackIDs,
+			&artist.Description,
+			&artist.CreationDate,
+			&artist.ListenCount,
+			&artist.FavoriteCount,
+			&artist.AdditionDate,
+			&artist.Tags,
+			&artist.AdditionalMeta,
+			&artist.Permissions,
+			&artist.LinkedItemIDs,
+			&artist.MetadataSource,
+		)
 		if err != nil {
 			return artists, normalizePostgreSQLError(err)
 		}
@@ -474,7 +672,23 @@ func (db *PostgreSQLDatabase) GetArtists(ctx context.Context, userID string) ([]
 	defer rows.Close()
 	for rows.Next() {
 		artist := types.Artist{}
-		err = rows.Scan(&artist.ID, &artist.UserID, &artist.Name, &artist.AlbumIDs, &artist.TrackIDs, &artist.Description, &artist.CreationDate, &artist.ListenCount, &artist.FavoriteCount, &artist.AdditionDate, &artist.Tags, &artist.AdditionalMeta, &artist.Permissions, &artist.LinkedItemIDs, &artist.MetadataSource)
+		err = rows.Scan(
+			&artist.ID,
+			&artist.UserID,
+			&artist.Name,
+			&artist.AlbumIDs,
+			&artist.TrackIDs,
+			&artist.Description,
+			&artist.CreationDate,
+			&artist.ListenCount,
+			&artist.FavoriteCount,
+			&artist.AdditionDate,
+			&artist.Tags,
+			&artist.AdditionalMeta,
+			&artist.Permissions,
+			&artist.LinkedItemIDs,
+			&artist.MetadataSource,
+		)
 		if err != nil {
 			return artists, normalizePostgreSQLError(err)
 		}
@@ -486,7 +700,23 @@ func (db *PostgreSQLDatabase) GetArtists(ctx context.Context, userID string) ([]
 func (db *PostgreSQLDatabase) GetArtist(ctx context.Context, id string) (types.Artist, error) {
 	artist := types.Artist{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM artists WHERE id=$1;", id)
-	err := row.Scan(&artist.ID, &artist.UserID, &artist.Name, &artist.AlbumIDs, &artist.TrackIDs, &artist.Description, &artist.CreationDate, &artist.ListenCount, &artist.FavoriteCount, &artist.AdditionDate, &artist.Tags, &artist.AdditionalMeta, &artist.Permissions, &artist.LinkedItemIDs, &artist.MetadataSource)
+	err := row.Scan(
+		&artist.ID,
+		&artist.UserID,
+		&artist.Name,
+		&artist.AlbumIDs,
+		&artist.TrackIDs,
+		&artist.Description,
+		&artist.CreationDate,
+		&artist.ListenCount,
+		&artist.FavoriteCount,
+		&artist.AdditionDate,
+		&artist.Tags,
+		&artist.AdditionalMeta,
+		&artist.Permissions,
+		&artist.LinkedItemIDs,
+		&artist.MetadataSource,
+	)
 	return artist, normalizePostgreSQLError(err)
 }
 
@@ -524,7 +754,21 @@ func (db *PostgreSQLDatabase) GetAllPlaylists(ctx context.Context) ([]types.Play
 	defer rows.Close()
 	for rows.Next() {
 		playlist := types.Playlist{}
-		err = rows.Scan(&playlist.ID, &playlist.UserID, &playlist.Title, &playlist.TrackIDs, &playlist.ListenCount, &playlist.FavoriteCount, &playlist.Description, &playlist.CreationDate, &playlist.AdditionDate, &playlist.Tags, &playlist.AdditionalMeta, &playlist.Permissions, &playlist.MetadataSource)
+		err = rows.Scan(
+			&playlist.ID,
+			&playlist.UserID,
+			&playlist.Title,
+			&playlist.TrackIDs,
+			&playlist.ListenCount,
+			&playlist.FavoriteCount,
+			&playlist.Description,
+			&playlist.CreationDate,
+			&playlist.AdditionDate,
+			&playlist.Tags,
+			&playlist.AdditionalMeta,
+			&playlist.Permissions,
+			&playlist.MetadataSource,
+		)
 		if err != nil {
 			return playlists, normalizePostgreSQLError(err)
 		}
@@ -542,7 +786,21 @@ func (db *PostgreSQLDatabase) GetPlaylists(ctx context.Context, userID string) (
 	defer rows.Close()
 	for rows.Next() {
 		playlist := types.Playlist{}
-		err = rows.Scan(&playlist.ID, &playlist.UserID, &playlist.Title, &playlist.TrackIDs, &playlist.ListenCount, &playlist.FavoriteCount, &playlist.Description, &playlist.CreationDate, &playlist.AdditionDate, &playlist.Tags, &playlist.AdditionalMeta, &playlist.Permissions, &playlist.MetadataSource)
+		err = rows.Scan(
+			&playlist.ID,
+			&playlist.UserID,
+			&playlist.Title,
+			&playlist.TrackIDs,
+			&playlist.ListenCount,
+			&playlist.FavoriteCount,
+			&playlist.Description,
+			&playlist.CreationDate,
+			&playlist.AdditionDate,
+			&playlist.Tags,
+			&playlist.AdditionalMeta,
+			&playlist.Permissions,
+			&playlist.MetadataSource,
+		)
 		if err != nil {
 			return playlists, normalizePostgreSQLError(err)
 		}
@@ -554,7 +812,21 @@ func (db *PostgreSQLDatabase) GetPlaylists(ctx context.Context, userID string) (
 func (db *PostgreSQLDatabase) GetPlaylist(ctx context.Context, id string) (types.Playlist, error) {
 	playlist := types.Playlist{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM playlists WHERE id=$1;", id)
-	err := row.Scan(&playlist.ID, &playlist.UserID, &playlist.Title, &playlist.TrackIDs, &playlist.ListenCount, &playlist.FavoriteCount, &playlist.Description, &playlist.CreationDate, &playlist.AdditionDate, &playlist.Tags, &playlist.AdditionalMeta, &playlist.Permissions, &playlist.MetadataSource)
+	err := row.Scan(
+		&playlist.ID,
+		&playlist.UserID,
+		&playlist.Title,
+		&playlist.TrackIDs,
+		&playlist.ListenCount,
+		&playlist.FavoriteCount,
+		&playlist.Description,
+		&playlist.CreationDate,
+		&playlist.AdditionDate,
+		&playlist.Tags,
+		&playlist.AdditionalMeta,
+		&playlist.Permissions,
+		&playlist.MetadataSource,
+	)
 	return playlist, normalizePostgreSQLError(err)
 }
 
@@ -592,7 +864,21 @@ func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUse
 	defer rows.Close()
 	for rows.Next() {
 		user := types.DatabaseUser{}
-		err = rows.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
+		err = rows.Scan(
+			&user.ID,
+			&user.Username,
+			&user.Email,
+			&user.PasswordHash,
+			&user.DisplayName,
+			&user.Description,
+			&user.ListenedTo,
+			&user.Favorites,
+			&user.PublicViewCount,
+			&user.CreationDate,
+			&user.Permissions,
+			&user.LinkedArtistID,
+			&user.LinkedSources,
+		)
 		if err != nil {
 			return users, normalizePostgreSQLError(err)
 		}
@@ -604,14 +890,42 @@ func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUse
 func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (types.DatabaseUser, error) {
 	user := types.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM users WHERE id=$1;", id)
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
+	err := row.Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.DisplayName,
+		&user.Description,
+		&user.ListenedTo,
+		&user.Favorites,
+		&user.PublicViewCount,
+		&user.CreationDate,
+		&user.Permissions,
+		&user.LinkedArtistID,
+		&user.LinkedSources,
+	)
 	return user, normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetUserByUsername(ctx context.Context, username string) (types.DatabaseUser, error) {
 	user := types.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, "SELECT * FROM users WHERE username=$1 OR email=$1;", strings.ToLower(username))
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
+	err := row.Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.DisplayName,
+		&user.Description,
+		&user.ListenedTo,
+		&user.Favorites,
+		&user.PublicViewCount,
+		&user.CreationDate,
+		&user.Permissions,
+		&user.LinkedArtistID,
+		&user.LinkedSources,
+	)
 	return user, normalizePostgreSQLError(err)
 }
 
@@ -640,18 +954,35 @@ func (db *PostgreSQLDatabase) DeleteUser(ctx context.Context, id string) error {
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.DatabaseUser, error) {
+func (db *PostgreSQLDatabase) GetOAuthUser(
+	ctx context.Context,
+	provider, providerUserID string,
+) (types.DatabaseUser, error) {
 	var user types.DatabaseUser
 	row := db.pool.QueryRow(ctx, `
         SELECT u.* FROM users u
         JOIN oauth_providers o ON u.id = o.user_id
         WHERE o.provider = $1 AND o.provider_user_id = $2;
     `, provider, providerUserID)
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.DisplayName, &user.Description, &user.ListenedTo, &user.Favorites, &user.PublicViewCount, &user.CreationDate, &user.Permissions, &user.LinkedArtistID, &user.LinkedSources)
+	err := row.Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash,
+		&user.DisplayName,
+		&user.Description,
+		&user.ListenedTo,
+		&user.Favorites,
+		&user.PublicViewCount,
+		&user.CreationDate,
+		&user.Permissions,
+		&user.LinkedArtistID,
+		&user.LinkedSources,
+	)
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) LinkOAuthAccount(ctx context.Context, provider string, userID string, providerUserID string) error {
+func (db *PostgreSQLDatabase) LinkOAuthAccount(ctx context.Context, provider, userID, providerUserID string) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO oauth_providers (id, user_id, provider, provider_user_id)
         VALUES ($1, $2, $3, $4);
@@ -659,7 +990,7 @@ func (db *PostgreSQLDatabase) LinkOAuthAccount(ctx context.Context, provider str
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DisconnectOAuthAccount(ctx context.Context, provider string, userID string) error {
+func (db *PostgreSQLDatabase) DisconnectOAuthAccount(ctx context.Context, provider, userID string) error {
 	_, err := db.pool.Exec(ctx, `
         DELETE FROM oauth_providers WHERE user_id = $1 AND provider = $2;
     `, userID, provider)
@@ -668,18 +999,25 @@ func (db *PostgreSQLDatabase) DisconnectOAuthAccount(ctx context.Context, provid
 
 func (db *PostgreSQLDatabase) UsernameExists(ctx context.Context, username string) (bool, error) {
 	var exists bool
-	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1);", strings.ToLower(username)).Scan(&exists)
+	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1);", strings.ToLower(username)).
+		Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
-	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1);", strings.ToLower(email)).Scan(&exists)
+	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1);", strings.ToLower(email)).
+		Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
-	_, err := db.pool.Exec(ctx, "INSERT INTO blacklisted_tokens (token, expiration) VALUES ($1, $2);", token, expiration)
+	_, err := db.pool.Exec(
+		ctx,
+		"INSERT INTO blacklisted_tokens (token, expiration) VALUES ($1, $2);",
+		token,
+		expiration,
+	)
 	return normalizePostgreSQLError(err)
 }
 

@@ -1960,7 +1960,10 @@ func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetOAuthUser(ctx context.Context, provider string, providerUserID string) (types.DatabaseUser, error) {
+func (db *SQLiteDatabase) GetOAuthUser(
+	ctx context.Context,
+	provider, providerUserID string,
+) (types.DatabaseUser, error) {
 	var user types.DatabaseUser
 
 	conn, err := db.pool.Take(ctx)
@@ -2016,7 +2019,7 @@ func (db *SQLiteDatabase) GetOAuthUser(ctx context.Context, provider string, pro
 	return user, nil
 }
 
-func (db *SQLiteDatabase) LinkOAuthAccount(ctx context.Context, provider string, userID string, providerUserID string) error {
+func (db *SQLiteDatabase) LinkOAuthAccount(ctx context.Context, provider, userID, providerUserID string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2032,7 +2035,7 @@ func (db *SQLiteDatabase) LinkOAuthAccount(ctx context.Context, provider string,
 	return err
 }
 
-func (db *SQLiteDatabase) DisconnectOAuthAccount(ctx context.Context, provider string, userID string) error {
+func (db *SQLiteDatabase) DisconnectOAuthAccount(ctx context.Context, provider, userID string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2096,9 +2099,13 @@ func (db *SQLiteDatabase) BlacklistToken(ctx context.Context, token string, expi
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);", &sqlitex.ExecOptions{
-		Args: []any{token, expiration.Format(time.DateTime)},
-	})
+	err = sqlitex.Execute(
+		conn,
+		"INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);",
+		&sqlitex.ExecOptions{
+			Args: []any{token, expiration.Format(time.DateTime)},
+		},
+	)
 
 	return err
 }
@@ -2124,14 +2131,18 @@ func (db *SQLiteDatabase) IsTokenBlacklisted(ctx context.Context, token string) 
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);", &sqlitex.ExecOptions{
-		ResultFunc: func(stmt *sqlite.Stmt) error {
-			exists = stmt.ColumnBool(0)
+	err = sqlitex.Execute(
+		conn,
+		"SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);",
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				exists = stmt.ColumnBool(0)
 
-			return nil
+				return nil
+			},
+			Args: []any{token},
 		},
-		Args: []any{token},
-	})
+	)
 
 	return exists, err
 }

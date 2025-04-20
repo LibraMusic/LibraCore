@@ -76,7 +76,9 @@ func CleanOverfilledStorage(ctx context.Context) {
 
 	for sum > config.Conf.Storage.SizeLimit.Bytes() {
 		if len(playables) == 0 {
-			log.Warn("Storage is overfilled, but no playables are old enough to delete. Consider increasing the storage limit or decreasing the minimum age threshold")
+			log.Warn(
+				"Storage is overfilled, but no playables are old enough to delete. Consider increasing the storage limit or decreasing the minimum age threshold",
+			)
 			break
 		}
 
@@ -200,7 +202,7 @@ func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
 	}
 }
 
-func IsContentStored(contentType string, playableID string) bool {
+func IsContentStored(contentType, playableID string) bool {
 	path, err := getStoragePath()
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
@@ -227,7 +229,7 @@ func IsContentStored(contentType string, playableID string) bool {
 	return false
 }
 
-func StoreContent(contentType string, playableID string, data []byte, fileExtension string) {
+func StoreContent(contentType, playableID string, data []byte, fileExtension string) {
 	path, err := getStoragePath()
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
@@ -241,7 +243,7 @@ func StoreContent(contentType string, playableID string, data []byte, fileExtens
 	}
 }
 
-func StoreCover(contentType string, playableID string, data []byte, fileExtension string) {
+func StoreCover(contentType, playableID string, data []byte, fileExtension string) {
 	path, err := getStoragePath()
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)

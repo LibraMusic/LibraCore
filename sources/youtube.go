@@ -74,7 +74,7 @@ func (*YouTubeSource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (s *YouTubeSource) Search(query string, limit int, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
+func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	// TODO: Implement pagination if possible.
@@ -364,7 +364,8 @@ func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 	var command []string
 	youtubeLocation := getYouTubeScriptPath()
 
-	if playable.GetType() == "video" || playable.GetAdditionalMeta()["is_video"] == true { //revive:disable-line:bool-literal-in-expr Value cannot be used as a boolean
+	if playable.GetType() == "video" ||
+		playable.GetAdditionalMeta()["is_video"] == true { //revive:disable-line:bool-literal-in-expr Value cannot be used as a boolean
 		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
 			youtubeLocation,
 			`subtitles`,
@@ -431,7 +432,10 @@ func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.S
 	return playable, nil
 }
 
-func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeTrackMetadata(
+	playable types.SourcePlayable,
+	output map[string]any,
+) (types.SourcePlayable, error) {
 	result := playable.(types.Track)
 
 	lyricsID := output["track"].(map[string]any)["lyricsId"]
@@ -478,7 +482,10 @@ func (*YouTubeSource) completeTrackMetadata(playable types.SourcePlayable, outpu
 	return result, nil
 }
 
-func (*YouTubeSource) completeAlbumMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeAlbumMetadata(
+	playable types.SourcePlayable,
+	output map[string]any,
+) (types.SourcePlayable, error) {
 	result := playable.(types.Album)
 
 	result.Description = output["description"].(string)
@@ -498,7 +505,10 @@ func (*YouTubeSource) completeAlbumMetadata(playable types.SourcePlayable, outpu
 	return result, nil
 }
 
-func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeVideoMetadata(
+	playable types.SourcePlayable,
+	output map[string]any,
+) (types.SourcePlayable, error) {
 	result := playable.(types.Video)
 
 	result.Description = output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["description"].(string)
@@ -536,7 +546,10 @@ func (*YouTubeSource) completeVideoMetadata(playable types.SourcePlayable, outpu
 	return result, nil
 }
 
-func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
+func (*YouTubeSource) completeArtistMetadata(
+	playable types.SourcePlayable,
+	output map[string]any,
+) (types.SourcePlayable, error) {
 	result := playable.(types.Artist)
 
 	result.Description = output["description"].(string)
@@ -580,7 +593,10 @@ func (*YouTubeSource) completeArtistMetadata(playable types.SourcePlayable, outp
 	return result, nil
 }
 
-func (*YouTubeSource) completePlaylistMetadata(playable types.SourcePlayable, output map[string]any) (types.SourcePlayable, error) {
+func (*YouTubeSource) completePlaylistMetadata(
+	playable types.SourcePlayable,
+	output map[string]any,
+) (types.SourcePlayable, error) {
 	result := playable.(types.Playlist)
 
 	result.Description = output["description"].(string)

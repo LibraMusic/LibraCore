@@ -46,7 +46,7 @@ func (*LocalFileSource) GetMediaTypes() []string {
 	return []string{"music", "video"}
 }
 
-func (s *LocalFileSource) Search(_ string, _ int, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
+func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
 	var results []types.SourcePlayable
 
 	fileInfo, err := os.Stat(s.Path)

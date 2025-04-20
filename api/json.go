@@ -28,7 +28,8 @@ func (GoJSONSerializer) Deserialize(c echo.Context, i any) error {
 	var ute *json.UnmarshalTypeError
 	var se *json.SyntaxError
 	if errors.As(err, &ute) {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unmarshal type error: expected=%v, got=%v, field=%v, offset=%v", ute.Type, ute.Value, ute.Field, ute.Offset)).SetInternal(err)
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unmarshal type error: expected=%v, got=%v, field=%v, offset=%v", ute.Type, ute.Value, ute.Field, ute.Offset)).
+			SetInternal(err)
 	} else if errors.As(err, &se) {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Syntax error: offset=%v, error=%v", se.Offset, se.Error())).SetInternal(err)
 	}

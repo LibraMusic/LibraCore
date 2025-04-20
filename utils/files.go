@@ -35,7 +35,7 @@ func DownloadFile(url string) ([]byte, error) {
 	return data, nil
 }
 
-func DownloadFileTo(url string, path string) error {
+func DownloadFileTo(url, path string) error {
 	out, err := os.Create(path)
 	if err != nil {
 		return err

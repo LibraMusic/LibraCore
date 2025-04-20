@@ -43,9 +43,9 @@ func ConvertPathFormat(path string) string {
 	return result
 }
 
-func CreateFeedRoutes(e *echo.Group, basePath string, baseSummary string, handlers ...echo.MiddlewareFunc) {
+func CreateFeedRoutes(e *echo.Group, basePath, baseSummary string, handlers ...echo.MiddlewareFunc) {
 	// Define a helper to add route and docs.
-	addRoute := func(path string, feedType string, h echo.HandlerFunc) {
+	addRoute := func(path, feedType string, h echo.HandlerFunc) {
 		fullPath := basePath + path
 		FeedRoutesDoc = append(FeedRoutesDoc, FeedRouteDoc{
 			BasePath: ConvertPathFormat(basePath),
@@ -93,7 +93,7 @@ func CreateFeedRoutes(e *echo.Group, basePath string, baseSummary string, handle
 	})
 }
 
-func CreateFeed(baseURL string, routePath string) *feeds.Feed {
+func CreateFeed(baseURL, routePath string) *feeds.Feed {
 	// TODO: Get data from route at basePath for the resulting value here.
 	feed := &feeds.Feed{
 		Title:       "Libra",

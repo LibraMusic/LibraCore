@@ -113,7 +113,14 @@ func RegisterBuiltInProviders(publicURL string) {
 		return amazon.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/amazon/callback", publicURL)), nil
 	})
 	RegisterProvider("apple", func(p OAuthProvider) (goth.Provider, error) {
-		return apple.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/apple/callback", publicURL), nil, apple.ScopeName, apple.ScopeEmail), nil
+		return apple.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/apple/callback", publicURL),
+			nil,
+			apple.ScopeName,
+			apple.ScopeEmail,
+		), nil
 	})
 	RegisterProvider("auth0", func(p OAuthProvider) (goth.Provider, error) {
 		domain := p.AdditionalDetails["domain"]
@@ -123,7 +130,12 @@ func RegisterBuiltInProviders(publicURL string) {
 		return auth0.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/auth0/callback", publicURL), domain), nil
 	})
 	RegisterProvider("azuread", func(p OAuthProvider) (goth.Provider, error) {
-		return azureadv2.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/azuread/callback", publicURL), azureadv2.ProviderOptions{}), nil
+		return azureadv2.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/azuread/callback", publicURL),
+			azureadv2.ProviderOptions{},
+		), nil
 	})
 	RegisterProvider("battlenet", func(p OAuthProvider) (goth.Provider, error) {
 		return battlenet.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/battlenet/callback", publicURL)), nil
@@ -157,9 +169,19 @@ func RegisterBuiltInProviders(publicURL string) {
 		issuerURL := p.AdditionalDetails["issuer_url"]
 		profileURL := p.AdditionalDetails["profile_url"]
 		if authURL == "" || tokenURL == "" || issuerURL == "" || profileURL == "" {
-			return nil, errors.New("missing base_url or auth_url, token_url, issuer_url, or profile_url for cognito provider")
+			return nil, errors.New(
+				"missing base_url or auth_url, token_url, issuer_url, or profile_url for cognito provider",
+			)
 		}
-		return cognito.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/cognito/callback", publicURL), authURL, tokenURL, issuerURL, profileURL), nil
+		return cognito.NewCustomisedURL(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/cognito/callback", publicURL),
+			authURL,
+			tokenURL,
+			issuerURL,
+			profileURL,
+		), nil
 	})
 	RegisterProvider("dailymotion", func(p OAuthProvider) (goth.Provider, error) {
 		return dailymotion.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/dailymotion/callback", publicURL), "email"), nil
@@ -171,7 +193,13 @@ func RegisterBuiltInProviders(publicURL string) {
 		return digitalocean.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/digitalocean/callback", publicURL), "read"), nil
 	})
 	RegisterProvider("discord", func(p OAuthProvider) (goth.Provider, error) {
-		return discord.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/discord/callback", publicURL), discord.ScopeIdentify, discord.ScopeEmail), nil
+		return discord.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/discord/callback", publicURL),
+			discord.ScopeIdentify,
+			discord.ScopeEmail,
+		), nil
 	})
 	RegisterProvider("dropbox", func(p OAuthProvider) (goth.Provider, error) {
 		return dropbox.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/dropbox/callback", publicURL)), nil
@@ -193,7 +221,14 @@ func RegisterBuiltInProviders(publicURL string) {
 			if authURL == "" || tokenURL == "" || profileURL == "" {
 				return nil, errors.New("missing auth_url, token_url, or profile_url for gitea provider")
 			}
-			return gitea.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/gitea/callback", publicURL), authURL, tokenURL, profileURL), nil
+			return gitea.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/gitea/callback", publicURL),
+				authURL,
+				tokenURL,
+				profileURL,
+			), nil
 		}
 		return gitea.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/gitea/callback", publicURL)), nil
 	})
@@ -206,7 +241,15 @@ func RegisterBuiltInProviders(publicURL string) {
 			if authURL == "" || tokenURL == "" || profileURL == "" || emailURL == "" {
 				return nil, errors.New("missing auth_url, token_url, profile_url, or email_url for github provider")
 			}
-			return github.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/github/callback", publicURL), authURL, tokenURL, profileURL, emailURL), nil
+			return github.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/github/callback", publicURL),
+				authURL,
+				tokenURL,
+				profileURL,
+				emailURL,
+			), nil
 		}
 		return github.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/github/callback", publicURL)), nil
 	})
@@ -218,7 +261,14 @@ func RegisterBuiltInProviders(publicURL string) {
 			if authURL == "" || tokenURL == "" || profileURL == "" {
 				return nil, errors.New("missing auth_url, token_url, or profile_url for gitlab provider")
 			}
-			return gitlab.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/gitlab/callback", publicURL), authURL, tokenURL, profileURL), nil
+			return gitlab.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/gitlab/callback", publicURL),
+				authURL,
+				tokenURL,
+				profileURL,
+			), nil
 		}
 		return gitlab.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/gitlab/callback", publicURL)), nil
 	})
@@ -239,9 +289,22 @@ func RegisterBuiltInProviders(publicURL string) {
 			if authURL == "" || tokenURL == "" || userAPIEndpoint == "" {
 				return nil, errors.New("missing auth_url, token_url, or user_api_endpoint for influxcloud provider")
 			}
-			return influxcloud.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/influxcloud/callback", publicURL), authURL, tokenURL, userAPIEndpoint, "userscope"), nil
+			return influxcloud.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/influxcloud/callback", publicURL),
+				authURL,
+				tokenURL,
+				userAPIEndpoint,
+				"userscope",
+			), nil
 		}
-		return influxcloud.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/influxcloud/callback", publicURL), "userscope"), nil
+		return influxcloud.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/influxcloud/callback", publicURL),
+			"userscope",
+		), nil
 	})
 	RegisterProvider("instagram", func(p OAuthProvider) (goth.Provider, error) {
 		return instagram.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/instagram/callback", publicURL)), nil
@@ -259,7 +322,14 @@ func RegisterBuiltInProviders(publicURL string) {
 		return lastfm.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/lastfm/callback", publicURL)), nil
 	})
 	RegisterProvider("line", func(p OAuthProvider) (goth.Provider, error) {
-		return line.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/line/callback", publicURL), "profile", "openid", "email"), nil
+		return line.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/line/callback", publicURL),
+			"profile",
+			"openid",
+			"email",
+		), nil
 	})
 	RegisterProvider("linkedin", func(p OAuthProvider) (goth.Provider, error) {
 		return linkedin.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/linkedin/callback", publicURL)), nil
@@ -267,7 +337,13 @@ func RegisterBuiltInProviders(publicURL string) {
 	RegisterProvider("mastodon", func(p OAuthProvider) (goth.Provider, error) {
 		instanceURL := p.AdditionalDetails["instance_url"]
 		if instanceURL != "" {
-			return mastodon.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/mastodon/callback", publicURL), instanceURL, "read:accounts"), nil
+			return mastodon.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/mastodon/callback", publicURL),
+				instanceURL,
+				"read:accounts",
+			), nil
 		}
 		return mastodon.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/mastodon/callback", publicURL), "read:accounts"), nil
 	})
@@ -283,15 +359,29 @@ func RegisterBuiltInProviders(publicURL string) {
 	RegisterProvider("nextcloud", func(p OAuthProvider) (goth.Provider, error) {
 		nextcloudURL := p.AdditionalDetails["nextcloud_url"]
 		if nextcloudURL != "" {
-			return nextcloud.NewCustomisedDNS(p.Key, p.Secret, fmt.Sprintf("%s/auth/nextcloud/callback", publicURL), nextcloudURL), nil
+			return nextcloud.NewCustomisedDNS(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/nextcloud/callback", publicURL),
+				nextcloudURL,
+			), nil
 		}
 		authURL := p.AdditionalDetails["auth_url"]
 		tokenURL := p.AdditionalDetails["token_url"]
 		profileURL := p.AdditionalDetails["profile_url"]
 		if authURL == "" || tokenURL == "" || profileURL == "" {
-			return nil, errors.New("missing nextcloud_url or auth_url, token_url, or profile_url for nextcloud provider")
+			return nil, errors.New(
+				"missing nextcloud_url or auth_url, token_url, or profile_url for nextcloud provider",
+			)
 		}
-		return nextcloud.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/nextcloud/callback", publicURL), authURL, tokenURL, profileURL), nil
+		return nextcloud.NewCustomisedURL(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/nextcloud/callback", publicURL),
+			authURL,
+			tokenURL,
+			profileURL,
+		), nil
 	})
 	RegisterProvider("okta", func(p OAuthProvider) (goth.Provider, error) {
 		orgURL := p.AdditionalDetails["org_url"]
@@ -303,9 +393,19 @@ func RegisterBuiltInProviders(publicURL string) {
 		issuerURL := p.AdditionalDetails["issuer_url"]
 		profileURL := p.AdditionalDetails["profile_url"]
 		if authURL == "" || tokenURL == "" || issuerURL == "" || profileURL == "" {
-			return nil, errors.New("missing org_url or auth_url, token_url, issuer_url, or profile_url for okta provider")
+			return nil, errors.New(
+				"missing org_url or auth_url, token_url, issuer_url, or profile_url for okta provider",
+			)
 		}
-		return okta.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/okta/callback", publicURL), authURL, tokenURL, issuerURL, profileURL), nil
+		return okta.NewCustomisedURL(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/okta/callback", publicURL),
+			authURL,
+			tokenURL,
+			issuerURL,
+			profileURL,
+		), nil
 	})
 	RegisterProvider("onedrive", func(p OAuthProvider) (goth.Provider, error) {
 		return onedrive.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/onedrive/callback", publicURL)), nil
@@ -319,7 +419,13 @@ func RegisterBuiltInProviders(publicURL string) {
 
 		autoDiscoveryURL := p.AdditionalDetails["auto_discovery_url"]
 		if autoDiscoveryURL != "" {
-			return openidConnect.NewNamed(name, p.Key, p.Secret, fmt.Sprintf("%s/auth/%s/callback", publicURL, realName), autoDiscoveryURL)
+			return openidConnect.NewNamed(
+				name,
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/%s/callback", publicURL, realName),
+				autoDiscoveryURL,
+			)
 		}
 		authURL := p.AdditionalDetails["auth_url"]
 		tokenURL := p.AdditionalDetails["token_url"]
@@ -327,16 +433,34 @@ func RegisterBuiltInProviders(publicURL string) {
 		userInfoURL := p.AdditionalDetails["user_info_url"]
 		endSessionEndpoint := p.AdditionalDetails["end_session_endpoint"]
 		if authURL == "" || tokenURL == "" || issuerURL == "" || userInfoURL == "" || endSessionEndpoint == "" {
-			return nil, fmt.Errorf("missing auto_discovery_url or auth_url, token_url, issuer_url, user_info_url, or end_session_endpoint for openid-connect provider with name %s", name)
+			return nil, fmt.Errorf(
+				"missing auto_discovery_url or auth_url, token_url, issuer_url, user_info_url, or end_session_endpoint for openid-connect provider with name %s",
+				name,
+			)
 		}
-		provider, err := openidConnect.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/%s/callback", publicURL, realName), authURL, tokenURL, issuerURL, userInfoURL, endSessionEndpoint)
+		provider, err := openidConnect.NewCustomisedURL(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/%s/callback", publicURL, realName),
+			authURL,
+			tokenURL,
+			issuerURL,
+			userInfoURL,
+			endSessionEndpoint,
+		)
 		if provider != nil {
 			provider.SetName(realName)
 		}
 		return provider, err
 	})
 	RegisterProvider("oura", func(p OAuthProvider) (goth.Provider, error) {
-		return oura.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/oura/callback", publicURL), oura.ScopeEmail, oura.ScopePersonal), nil
+		return oura.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/oura/callback", publicURL),
+			oura.ScopeEmail,
+			oura.ScopePersonal,
+		), nil
 	})
 	RegisterProvider("patreon", func(p OAuthProvider) (goth.Provider, error) {
 		authURL := p.AdditionalDetails["auth_url"]
@@ -346,7 +470,14 @@ func RegisterBuiltInProviders(publicURL string) {
 			if authURL == "" || tokenURL == "" || profileURL == "" {
 				return nil, errors.New("missing auth_url, token_url, or profile_url for patreon provider")
 			}
-			return patreon.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/patreon/callback", publicURL), authURL, tokenURL, profileURL), nil
+			return patreon.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/patreon/callback", publicURL),
+				authURL,
+				tokenURL,
+				profileURL,
+			), nil
 		}
 		return patreon.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/patreon/callback", publicURL)), nil
 	})
@@ -358,7 +489,14 @@ func RegisterBuiltInProviders(publicURL string) {
 			if authURL == "" || tokenURL == "" || profileURL == "" {
 				return nil, errors.New("missing auth_url, token_url, or profile_url for paypal provider")
 			}
-			return paypal.NewCustomisedURL(p.Key, p.Secret, fmt.Sprintf("%s/auth/paypal/callback", publicURL), authURL, tokenURL, profileURL), nil
+			return paypal.NewCustomisedURL(
+				p.Key,
+				p.Secret,
+				fmt.Sprintf("%s/auth/paypal/callback", publicURL),
+				authURL,
+				tokenURL,
+				profileURL,
+			), nil
 		}
 		return paypal.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/paypal/callback", publicURL)), nil
 	})
@@ -369,7 +507,12 @@ func RegisterBuiltInProviders(publicURL string) {
 		return seatalk.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/seatalk/callback", publicURL)), nil
 	})
 	RegisterProvider("shopify", func(p OAuthProvider) (goth.Provider, error) {
-		return shopify.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/shopify/callback", publicURL), shopify.ScopeReadCustomers), nil
+		return shopify.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/shopify/callback", publicURL),
+			shopify.ScopeReadCustomers,
+		), nil
 	})
 	RegisterProvider("slack", func(p OAuthProvider) (goth.Provider, error) {
 		return slack.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/slack/callback", publicURL)), nil
@@ -432,7 +575,12 @@ func RegisterBuiltInProviders(publicURL string) {
 		if lang == "" {
 			lang = string(wechat.WECHAT_LANG_CN)
 		}
-		return wechat.New(p.Key, p.Secret, fmt.Sprintf("%s/auth/wechat/callback", publicURL), wechat.WechatLangType(lang)), nil
+		return wechat.New(
+			p.Key,
+			p.Secret,
+			fmt.Sprintf("%s/auth/wechat/callback", publicURL),
+			wechat.WechatLangType(lang),
+		), nil
 	})
 	RegisterProvider("wecom", func(p OAuthProvider) (goth.Provider, error) {
 		agentID := p.AdditionalDetails["agent_id"]

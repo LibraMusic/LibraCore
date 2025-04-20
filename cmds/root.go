@@ -22,11 +22,15 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&config.DataDir, "dataDir", "", "persistent data directory (usually for containers)")
+	rootCmd.PersistentFlags().
+		StringVar(&config.DataDir, "dataDir", "", "persistent data directory (usually for containers)")
 	_ = rootCmd.MarkFlagDirname("dataDir")
 
 	rootCmd.PersistentFlags().String("logLevel", "", "log level (debug|info|warn|error)")
-	_ = rootCmd.RegisterFlagCompletionFunc("logLevel", cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp))
+	_ = rootCmd.RegisterFlagCompletionFunc(
+		"logLevel",
+		cobra.FixedCompletions([]string{"debug", "info", "warn", "error"}, cobra.ShellCompDirectiveNoFileComp),
+	)
 	taurus.BindFlag("Logs.Level", rootCmd.PersistentFlags().Lookup("logLevel"))
 }
 

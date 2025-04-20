@@ -60,9 +60,10 @@ func InitServer() *echo.Echo {
 
 	e.GET("/", func(c echo.Context) error {
 		accept := c.Request().Header.Get(echo.HeaderAccept)
-		if accept == echo.MIMEApplicationJSON {
+		switch accept {
+		case echo.MIMEApplicationJSON:
 			return c.JSON(http.StatusOK, &libraSource)
-		} else if accept == echo.MIMETextHTML {
+		case echo.MIMETextHTML:
 			// TODO: Implement.
 			return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 		}

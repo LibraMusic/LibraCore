@@ -7,7 +7,7 @@ func GeneratePassword(p string) string {
 	return string(hash)
 }
 
-func ComparePassword(hashedPassword string, password string) bool {
+func ComparePassword(hashedPassword, password string) bool {
 	// Make sure we don't allow empty passwords since accounts using OAuth providers may not have a password.
 	if password == "" {
 		return false

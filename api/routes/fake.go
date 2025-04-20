@@ -8,11 +8,11 @@ var _ fakePlayable
 
 // The fake route has all the implementations of Playable as possible responses so their schemas will be generated.
 
-//	@Success	200	{object}	types.Track
-//	@Success	200	{object}	types.Album
-//	@Success	200	{object}	types.Video
-//	@Success	200	{object}	types.Playlist
-//	@Success	200	{object}	types.Artist
-//	@Success	200	{object}	types.User
-//	@Router		/fake [get]
+// @Success	200	{object}	types.Track
+// @Success	200	{object}	types.Album
+// @Success	200	{object}	types.Video
+// @Success	200	{object}	types.Playlist
+// @Success	200	{object}	types.Artist
+// @Success	200	{object}	types.User
+// @Router		/fake [get]
 func _() {}

@@ -91,7 +91,12 @@ func Register(c echo.Context) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
+	token, err := utils.GenerateToken(
+		user.ID,
+		config.Conf.Auth.JWT.AccessTokenExpiration,
+		config.Conf.Auth.JWT.SigningMethod,
+		config.Conf.Auth.JWT.SigningKey,
+	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -129,7 +134,12 @@ func Login(c echo.Context) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(user.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
+	token, err := utils.GenerateToken(
+		user.ID,
+		config.Conf.Auth.JWT.AccessTokenExpiration,
+		config.Conf.Auth.JWT.SigningMethod,
+		config.Conf.Auth.JWT.SigningKey,
+	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -183,7 +193,12 @@ func OAuthCallback(c echo.Context) error {
 				"message": err.Error(),
 			})
 		}
-		token, err := utils.GenerateToken(existingUser.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
+		token, err := utils.GenerateToken(
+			existingUser.ID,
+			config.Conf.Auth.JWT.AccessTokenExpiration,
+			config.Conf.Auth.JWT.SigningMethod,
+			config.Conf.Auth.JWT.SigningKey,
+		)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{
 				"message": err.Error(),
@@ -217,7 +232,12 @@ func OAuthCallback(c echo.Context) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(newUser.ID, config.Conf.Auth.JWT.AccessTokenExpiration, config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
+	token, err := utils.GenerateToken(
+		newUser.ID,
+		config.Conf.Auth.JWT.AccessTokenExpiration,
+		config.Conf.Auth.JWT.SigningMethod,
+		config.Conf.Auth.JWT.SigningKey,
+	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -235,7 +255,10 @@ func OAuth(c echo.Context) error {
 	// provider := c.Param("provider")
 	user, err := gothic.CompleteUserAuth(c.Response(), c.Request())
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "OAuth callback failed", "error": err.Error()})
+		return c.JSON(
+			http.StatusInternalServerError,
+			echo.Map{"message": "OAuth callback failed", "error": err.Error()},
+		)
 	}
 
 	// TODO
@@ -250,7 +273,8 @@ func GetReservedUsernames() []string {
 }
 
 func IsUsernameReserved(username string) bool {
-	return slices.Contains(GetReservedUsernames(), username) || slices.ContainsFunc(config.Conf.General.ReservedUsernames, func(s string) bool {
-		return strings.EqualFold(s, username)
-	})
+	return slices.Contains(GetReservedUsernames(), username) ||
+		slices.ContainsFunc(config.Conf.General.ReservedUsernames, func(s string) bool {
+			return strings.EqualFold(s, username)
+		})
 }

@@ -18,7 +18,21 @@ var (
 )
 
 func GetCorrectSigningMethod(signingMethod string) string {
-	signingMethods := []string{"HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512", "EdDSA"}
+	signingMethods := []string{
+		"HS256",
+		"HS384",
+		"HS512",
+		"RS256",
+		"RS384",
+		"RS512",
+		"PS256",
+		"PS384",
+		"PS512",
+		"ES256",
+		"ES384",
+		"ES512",
+		"EdDSA",
+	}
 	for _, method := range signingMethods {
 		if strings.EqualFold(signingMethod, method) {
 			return method
@@ -27,7 +41,7 @@ func GetCorrectSigningMethod(signingMethod string) string {
 	return ""
 }
 
-func GenerateToken(id string, expiration time.Duration, signingMethod string, signingKey string) (string, error) {
+func GenerateToken(id string, expiration time.Duration, signingMethod, signingKey string) (string, error) {
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(signingMethod), jwt.MapClaims{
 		"user_id": id,
 		"exp":     time.Now().Add(expiration).Unix(),
@@ -41,7 +55,7 @@ func GenerateToken(id string, expiration time.Duration, signingMethod string, si
 	return t, nil
 }
 
-func LoadPrivateKey(signingMethod string, signingKey string) error {
+func LoadPrivateKey(signingMethod, signingKey string) error {
 	var err error
 
 	switch signingMethod {
