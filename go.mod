@@ -7,14 +7,14 @@ require (
 	github.com/c2h5oh/datasize v0.0.0-20231215233829-aa82cc1e6500
 	github.com/charmbracelet/log v0.4.2
 	github.com/goccy/go-json v0.10.5
-	github.com/goccy/go-yaml v1.17.1
+	github.com/goccy/go-yaml v1.18.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/gorilla/feeds v1.2.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/kohkimakimoto/echo-openapidocs v0.2.0
 	github.com/labstack/echo-contrib v0.17.4
 	github.com/labstack/echo-jwt/v4 v4.3.1
-	github.com/labstack/echo/v4 v4.13.3
+	github.com/labstack/echo/v4 v4.13.4
 	github.com/libramusic/taurus/v2 v2.0.1
 	github.com/magefile/mage v1.15.0
 	github.com/markbates/goth v1.81.0
@@ -25,7 +25,7 @@ require (
 	github.com/swaggo/swag/v2 v2.0.0-rc4
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/crypto v0.38.0
-	zombiezen.com/go/sqlite v1.4.0
+	zombiezen.com/go/sqlite v1.4.2
 )
 
 require (
@@ -98,21 +98,21 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	golang.org/x/exp v0.0.0-20250215185904-eff6e970281f // indirect
+	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.30.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/libc v1.61.13 // indirect
+	modernc.org/libc v1.65.7 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.8.2 // indirect
-	modernc.org/sqlite v1.35.0 // indirect
+	modernc.org/memory v1.11.0 // indirect
+	modernc.org/sqlite v1.37.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
