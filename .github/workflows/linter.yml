@@ -37,7 +37,7 @@ jobs:
           find . -type f -name "*.sh" -exec shellcheck {} +
 
       - name: Commit & Push Changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "chore: fix linting issues"
           status_options: "--untracked-files=no"
