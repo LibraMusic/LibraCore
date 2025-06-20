@@ -2,7 +2,7 @@
 
 Libra is a new, open, and extensible music service. Libra does what you want, how you want.
 
-The current goal is to have LibraCore at a pre-releasable state by the end of March, 2025.
+The current goal is to release LibraCore v0.1.0 by the end of 2025.
 
 ## Setup Steps
 
@@ -30,9 +30,9 @@ sudo -u postgres createdb -O libra -E UTF-8 libra
 
 Dependencies:
 
--   `SQLite` or `PostgreSQL`
--   `yt-dlp` and `ytmusicapi` for the YouTube source
--   `FFmpeg`
+- `SQLite` or `PostgreSQL`
+- `yt-dlp` and `ytmusicapi` for the YouTube source
+- `FFmpeg`
 
 ## Development
 
