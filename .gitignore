@@ -9,6 +9,7 @@ data/
 dist/
 completions/
 manpages/
+source_scripts/
 data/
 libra.db
 libra.db-wal
