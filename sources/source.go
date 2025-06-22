@@ -9,11 +9,16 @@ import (
 )
 
 type Source interface {
+	Satisfies(id string) bool
+	SupportsMultiple() bool
+	DeriveNew(id string) (Source, error)
+
 	GetID() string
 	GetName() string
 	GetVersion() *semver.Version
 	GetSourceTypes() []string
 	GetMediaTypes() []string
+
 	Search(query string, limit, page int, filters map[string]any) ([]types.SourcePlayable, error)
 	GetContent(playable types.SourcePlayable) ([]byte, error)
 	GetLyrics(playable types.LyricsPlayable) (map[string]string, error)

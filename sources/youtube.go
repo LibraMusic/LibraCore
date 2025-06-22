@@ -1,3 +1,5 @@
+//go:build youtube_source || !(no_youtube_source || no_sources)
+
 package sources
 
 import (
@@ -7,11 +9,13 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 
 	"github.com/libramusic/libracore/config"
@@ -52,6 +56,21 @@ func getYouTubeScriptPath() string {
 		return filepath.Join(absDataDir, path)
 	}
 	return path
+}
+
+func (*YouTubeSource) Satisfies(id string) bool {
+	return slices.Contains([]string{
+		"youtube",
+		"yt",
+	}, strings.ToLower(id))
+}
+
+func (*YouTubeSource) SupportsMultiple() bool {
+	return false
+}
+
+func (s *YouTubeSource) DeriveNew(_ string) (Source, error) {
+	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
 }
 
 func (*YouTubeSource) GetID() string {
@@ -632,4 +651,13 @@ func (*YouTubeSource) completePlaylistMetadata(
 	result.AdditionalMeta["display_track_count"] = output["trackCount"].(int)
 
 	return result, nil
+}
+
+func init() {
+	source, err := InitYouTubeSource()
+	if err != nil {
+		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+	} else {
+		Registry[source.GetID()] = source
+	}
 }

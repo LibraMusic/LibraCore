@@ -23,7 +23,6 @@ import (
 	"github.com/libramusic/libracore/api/server"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/sources"
 	"github.com/libramusic/libracore/storage"
 	"github.com/libramusic/libracore/utils"
 )
@@ -33,8 +32,6 @@ var serverCmd = &cobra.Command{
 	Aliases: []string{"start"},
 	Short:   "Start the server",
 	Run: func(_ *cobra.Command, _ []string) {
-		utils.SetupLogger(config.Conf.Logs.Format, config.Conf.Logs.Level)
-
 		if _, err := url.ParseRequestURI(config.Conf.Application.PublicURL); err != nil {
 			log.Fatal("Invalid public URL", "url", config.Conf.Application.PublicURL)
 		}
@@ -86,8 +83,6 @@ var serverCmd = &cobra.Command{
 		}
 
 		storage.CleanOverfilledStorage(context.Background())
-
-		sources.InitManager()
 
 		if err := metrics.RegisterMetrics(); err != nil {
 			log.Fatal("Failed to update custom metrics", "err", err)

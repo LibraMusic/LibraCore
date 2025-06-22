@@ -1,9 +1,12 @@
+//go:build postgresql_db || !(no_postgresql_db || no_dbs)
+
 package db
 
 import (
 	"context"
 	"errors"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -21,10 +24,14 @@ type PostgreSQLDatabase struct {
 	pool *pgxpool.Pool
 }
 
-func ConnectPostgreSQL() (*PostgreSQLDatabase, error) {
-	result := &PostgreSQLDatabase{}
-	err := result.Connect()
-	return result, normalizePostgreSQLError(err)
+func (*PostgreSQLDatabase) Satisfies(engine string) bool {
+	return slices.Contains([]string{
+		"postgresql",
+		"postgres",
+		"postgre",
+		"pgsql",
+		"pg",
+	}, strings.ToLower(engine))
 }
 
 func (db *PostgreSQLDatabase) Connect() error {
@@ -1037,4 +1044,9 @@ func normalizePostgreSQLError(err error) error {
 		return ErrNotFound
 	}
 	return err
+}
+
+func init() {
+	db := &PostgreSQLDatabase{}
+	Registry["postgresql"] = db
 }

@@ -1,5 +1,4 @@
 //go:build mage
-// +build mage
 
 package main
 
@@ -33,7 +32,8 @@ func Build() error {
 	mg.Deps(Deps)
 	mg.Deps(Generate)
 	fmt.Println("Building...")
-	return sh.Run("go", "build", "-v", "-o", binaryName)
+	buildTags := os.Getenv("BUILD_TAGS")
+	return sh.Run("go", "build", "-v", "-tags", buildTags, "-o", binaryName)
 }
 
 func Generate() error {
@@ -94,7 +94,9 @@ func Lint() error {
 	}
 
 	if err := sh.Run("shellcheck", "--version"); err != nil {
-		fmt.Println("shellcheck is not installed. Please install it from https://github.com/koalaman/shellcheck#installing")
+		fmt.Println(
+			"shellcheck is not installed. Please install it from https://github.com/koalaman/shellcheck#installing",
+		)
 	} else {
 		if err = sh.RunV("find", ".", "-type", "f", "-name", "*.sh", "-exec", "shellcheck", "{}", "+"); err != nil {
 			return err

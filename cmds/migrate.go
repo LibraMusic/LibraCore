@@ -8,7 +8,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/utils"
 )
 
 var migrateCmd = &cobra.Command{
@@ -17,8 +16,6 @@ var migrateCmd = &cobra.Command{
 	Long: `Migrate the database. Use 'up' to migrate up, 'down' to migrate down.
 Uses your database connection string from the config file.`,
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
-		utils.SetupLogger("text", log.InfoLevel)
-
 		err := db.ConnectDatabase()
 		if err != nil {
 			log.Fatal("Error connecting to database", "err", err)

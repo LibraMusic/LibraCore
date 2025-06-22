@@ -16,7 +16,10 @@ import (
 	"github.com/libramusic/libracore/types"
 )
 
-var DB Database
+var (
+	Registry = map[string]Database{}
+	DB       Database
+)
 
 //go:embed migrations
 var migrationsFS embed.FS
@@ -27,6 +30,8 @@ var (
 )
 
 type Database interface {
+	Satisfies(engine string) bool
+
 	Connect() error
 	Close() error
 	EngineName() string
@@ -93,21 +98,17 @@ func ConnectDatabase() error {
 		return nil
 	}
 
-	var err error
-
-	switch strings.ToLower(config.Conf.Database.Engine) {
-	case "sqlite", "sqlite3":
-		DB, err = ConnectSQLite()
-	case "postgresql", "postgres", "postgre", "pgsql", "psql", "pg":
-		DB, err = ConnectPostgreSQL()
-	default:
-		return fmt.Errorf("unsupported database engine: %s", config.Conf.Database.Engine)
+	for _, db := range Registry {
+		if db.Satisfies(config.Conf.Database.Engine) {
+			DB = db
+			if err := DB.Connect(); err != nil {
+				return fmt.Errorf("error connecting to database: %w", err)
+			}
+			log.Info("Connected to database", "engine", db.EngineName())
+			return nil
+		}
 	}
-	if err != nil {
-		return fmt.Errorf("error connecting to database: %w", err)
-	}
-	log.Info("Connected to database")
-	return nil
+	return fmt.Errorf("unsupported database engine: %s", config.Conf.Database.Engine)
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.

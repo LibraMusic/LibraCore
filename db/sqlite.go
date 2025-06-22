@@ -1,3 +1,5 @@
+//go:build sqlite_db || !(no_sqlite_db || no_dbs)
+
 package db
 
 import (
@@ -5,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -23,10 +26,11 @@ type SQLiteDatabase struct {
 	pool *sqlitex.Pool
 }
 
-func ConnectSQLite() (*SQLiteDatabase, error) {
-	result := &SQLiteDatabase{}
-	err := result.Connect()
-	return result, err
+func (*SQLiteDatabase) Satisfies(engine string) bool {
+	return slices.Contains([]string{
+		"sqlite",
+		"sqlite3",
+	}, strings.ToLower(engine))
 }
 
 func (db *SQLiteDatabase) Connect() error {
@@ -2145,4 +2149,9 @@ func (db *SQLiteDatabase) IsTokenBlacklisted(ctx context.Context, token string) 
 	)
 
 	return exists, err
+}
+
+func init() {
+	db := &SQLiteDatabase{}
+	Registry["sqlite"] = db
 }

@@ -1,6 +1,12 @@
+//go:build spotify_source || !(no_spotify_source || no_sources)
+
 package sources
 
 import (
+	"fmt"
+	"slices"
+	"strings"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
@@ -12,6 +18,21 @@ type SpotifySource struct{}
 
 func InitSpotifySource() (*SpotifySource, error) {
 	return &SpotifySource{}, nil
+}
+
+func (*SpotifySource) Satisfies(id string) bool {
+	return slices.Contains([]string{
+		"spotify",
+		"sp",
+	}, strings.ToLower(id))
+}
+
+func (*SpotifySource) SupportsMultiple() bool {
+	return false
+}
+
+func (s *SpotifySource) DeriveNew(_ string) (Source, error) {
+	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
 }
 
 func (*SpotifySource) GetID() string {
@@ -66,4 +87,13 @@ func (s *SpotifySource) CompleteMetadata(playable types.SourcePlayable) (types.S
 	log.Error("unimplemented")
 
 	return playable, nil
+}
+
+func init() {
+	source, err := InitSpotifySource()
+	if err != nil {
+		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+	} else {
+		Registry[source.GetID()] = source
+	}
 }

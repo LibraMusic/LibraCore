@@ -1,6 +1,11 @@
+//go:build web_source || !(no_web_source || no_sources)
+
 package sources
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
@@ -18,6 +23,21 @@ func InitWebSource(url string) (*WebSource, error) {
 	return &WebSource{
 		URL: url,
 	}, nil
+}
+
+func (*WebSource) Satisfies(id string) bool {
+	return !strings.HasPrefix(id, "file:") && utils.IsValidSourceURL(id)
+}
+
+func (s *WebSource) SupportsMultiple() bool {
+	return s.URL == ""
+}
+
+func (s *WebSource) DeriveNew(id string) (Source, error) {
+	if s.SupportsMultiple() {
+		return InitWebSource(id)
+	}
+	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
 }
 
 func (*WebSource) GetID() string {
@@ -83,4 +103,13 @@ func (s *WebSource) CompleteMetadata(playable types.SourcePlayable) (types.Sourc
 	log.Error("unimplemented")
 
 	return playable, nil
+}
+
+func init() {
+	source, err := InitWebSource("")
+	if err != nil {
+		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+	} else {
+		Registry[source.GetID()] = source
+	}
 }

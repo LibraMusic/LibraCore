@@ -1,11 +1,15 @@
+//go:build localfile_source || !(no_localfile_source || no_sources)
+
 package sources
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
@@ -22,8 +26,23 @@ type LocalFileSource struct {
 
 func InitLocalFileSource(path string) (*LocalFileSource, error) {
 	return &LocalFileSource{
-		Path: path,
+		Path: strings.TrimPrefix(path, "file:"),
 	}, nil
+}
+
+func (*LocalFileSource) Satisfies(id string) bool {
+	return strings.HasPrefix(id, "file:")
+}
+
+func (s *LocalFileSource) SupportsMultiple() bool {
+	return s.Path == ""
+}
+
+func (s *LocalFileSource) DeriveNew(id string) (Source, error) {
+	if s.SupportsMultiple() {
+		return InitLocalFileSource(id)
+	}
+	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
 }
 
 func (s *LocalFileSource) GetID() string {
@@ -153,4 +172,13 @@ func (s *LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types
 	log.Error("unimplemented")
 
 	return playable, nil
+}
+
+func init() {
+	source, err := InitLocalFileSource("")
+	if err != nil {
+		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+	} else {
+		Registry[source.GetID()] = source
+	}
 }
