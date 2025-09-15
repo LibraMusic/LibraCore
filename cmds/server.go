@@ -60,7 +60,7 @@ var serverCmd = &cobra.Command{
 		}
 
 		api.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
-		for _, provider := range config.Conf.Auth.OAuth.Providers {
+		for _, provider := range config.Conf.Auth.Providers {
 			if provider.ID == "" {
 				log.Fatal("OAuth provider ID cannot be empty")
 			}

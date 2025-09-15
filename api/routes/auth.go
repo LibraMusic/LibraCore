@@ -17,6 +17,8 @@ import (
 	"github.com/libramusic/libracore/utils"
 )
 
+const RedirectURIQueryParam = "redirect_uri"
+
 type registerRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -151,6 +153,28 @@ func Login(c echo.Context) error {
 	})
 }
 
+func LoginProvider(c echo.Context) error {
+	redirectURI := c.QueryParam(RedirectURIQueryParam)
+	if redirectURI == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": RedirectURIQueryParam + " is required",
+		})
+	}
+
+	if _, err := gothic.CompleteUserAuth(c.Response(), c.Request()); err == nil {
+		return c.Redirect(http.StatusFound, redirectURI)
+	}
+
+	if err := gothic.StoreInSession(RedirectURIQueryParam, redirectURI, c.Request(), c.Response()); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": "failed to store " + RedirectURIQueryParam + " in session: " + err.Error(),
+		})
+	}
+
+	gothic.BeginAuthHandler(c.Response(), c.Request())
+	return nil
+}
+
 func Logout(c echo.Context) error {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(jwt.MapClaims)
@@ -173,28 +197,56 @@ func Logout(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func OAuthLogout(c echo.Context) error {
-	// TODO: Implement OAuth logout.
-	return c.NoContent(http.StatusNotImplemented)
+func ConnectProvider(c echo.Context) error { 
+	redirectURI := c.QueryParam(RedirectURIQueryParam)
+	if redirectURI == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": RedirectURIQueryParam + " is required",
+		})
+	}
+
+	if _, err := gothic.CompleteUserAuth(c.Response(), c.Request()); err == nil {
+		return c.Redirect(http.StatusFound, redirectURI)
+	}
+
+	if err := gothic.StoreInSession(RedirectURIQueryParam, redirectURI, c.Request(), c.Response()); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": "failed to store " + RedirectURIQueryParam + " in session: " + err.Error(),
+		})
+	}
+
+	gothic.BeginAuthHandler(c.Response(), c.Request())
+	return nil
 }
 
-func OAuthCallback(c echo.Context) error {
-	user, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
+func ProviderCallback(c echo.Context) error {
+	providerUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
 	if err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "failed to complete user auth: " + err.Error(),
+		})
 	}
 
 	ctx := c.Request().Context()
 
-	existingUser, err := db.DB.GetOAuthUser(ctx, user.Provider, user.UserID)
+	// Check if the provider account is already linked to a user.
+	user, err := db.DB.GetProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if !errors.Is(err, db.ErrNotFound) {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, echo.Map{
 				"message": err.Error(),
 			})
 		}
+
+		redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
+		if err != nil || redirectURI == "" {
+			return c.JSON(http.StatusBadRequest, echo.Map{
+				"message": RedirectURIQueryParam + " not found in session",
+			})
+		}
+
 		token, err := utils.GenerateToken(
-			existingUser.ID,
+			user.ID,
 			config.Conf.Auth.JWT.AccessTokenExpiration,
 			config.Conf.Auth.JWT.SigningMethod,
 			config.Conf.Auth.JWT.SigningKey,
@@ -204,18 +256,21 @@ func OAuthCallback(c echo.Context) error {
 				"message": err.Error(),
 			})
 		}
-		return c.JSON(http.StatusOK, echo.Map{
-			"token": token,
-		})
+		
+		if strings.Contains(redirectURI, "?") {
+			redirectURI += "&token=" + token
+		} else {
+			redirectURI += "?token=" + token
+		}
+		
+		return c.Redirect(http.StatusFound, redirectURI)
 	}
-
-	// TODO: Check for existing user (not OAuth).
 
 	newUser := types.DatabaseUser{
 		ID:          utils.GenerateID(config.Conf.General.IDLength),
-		Username:    user.NickName,
-		Email:       user.Email,
-		DisplayName: user.Name,
+		Username:    providerUser.UserID,
+		Email:       providerUser.Email,
+		DisplayName: providerUser.Name,
 	}
 
 	// TODO: Profile picture.
@@ -226,9 +281,16 @@ func OAuthCallback(c echo.Context) error {
 		})
 	}
 
-	if err := db.DB.LinkOAuthAccount(ctx, user.Provider, newUser.ID, user.UserID); err != nil {
+	if err := db.DB.LinkProviderAccount(ctx, providerUser.Provider, newUser.ID, providerUser.UserID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
+		})
+	}
+
+	redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
+	if err != nil || redirectURI == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": RedirectURIQueryParam + " not found in session",
 		})
 	}
 
@@ -243,27 +305,44 @@ func OAuthCallback(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-
-	// TODO: Make sure this is correct and working.
-	// TODO: Maybe figure out frontend redirection since the login route is meant to be called as an API but the OAuth callback is redirected to by the OAuth provider.
-	return c.JSON(http.StatusOK, echo.Map{
-		"token": token,
-	})
+	
+	if strings.Contains(redirectURI, "?") {
+		redirectURI += "&token=" + token
+	} else {
+		redirectURI += "?token=" + token
+	}
+	
+	return c.Redirect(http.StatusFound, redirectURI)
 }
 
-func OAuth(c echo.Context) error {
-	// provider := c.Param("provider")
-	user, err := gothic.CompleteUserAuth(c.Response(), c.Request())
+func DisconnectProvider(c echo.Context) error {
+	providerUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
 	if err != nil {
-		return c.JSON(
-			http.StatusInternalServerError,
-			echo.Map{"message": "OAuth callback failed", "error": err.Error()},
-		)
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": "failed to complete user auth: " + err.Error(),
+		})
+	}
+	gothic.Logout(c.Response().Writer, c.Request())
+
+	ctx := c.Request().Context()
+
+	_, err = db.DB.GetProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	if errors.Is(err, db.ErrNotFound) {
+		return c.JSON(http.StatusNotFound, echo.Map{
+			"message": "provider account not found",
+		})
+	} else if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
+	}
+	if err := db.DB.DisconnectProviderAccount(ctx, providerUser.Provider, providerUser.UserID); err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
 	}
 
-	// TODO
-
-	return c.JSON(http.StatusOK, user)
+	return c.NoContent(http.StatusOK)
 }
 
 func GetReservedUsernames() []string {

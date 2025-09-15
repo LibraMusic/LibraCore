@@ -44,17 +44,13 @@ type JWTAuthConfig struct {
 	AccessTokenExpiration  time.Duration `yaml:"access_token_expiration"`
 }
 
-type OAuthAuthConfig struct {
-	Providers []api.OAuthProvider `yaml:"providers"`
-}
-
 type AuthConfig struct {
-	JWT                        JWTAuthConfig   `yaml:"jwt"`
-	OAuth                      OAuthAuthConfig `yaml:"oauth"`
-	GlobalAPIRoutesRequireAuth bool            `yaml:"global_api_routes_require_auth"`
-	UserAPIRoutesRequireAuth   bool            `yaml:"user_api_routes_require_auth"`
-	UserAPIRequireSameUseUser  bool            `yaml:"user_api_require_same_user"`
-	DisableAccountCreation     bool            `yaml:"disable_account_creation"`
+	JWT                        JWTAuthConfig      `yaml:"jwt"`
+	Providers                  []api.AuthProvider `yaml:"providers"`
+	GlobalAPIRoutesRequireAuth bool               `yaml:"global_api_routes_require_auth"`
+	UserAPIRoutesRequireAuth   bool               `yaml:"user_api_routes_require_auth"`
+	UserAPIRequireSameUseUser  bool               `yaml:"user_api_require_same_user"`
+	DisableAccountCreation     bool               `yaml:"disable_account_creation"`
 }
 
 type GeneralConfig struct {

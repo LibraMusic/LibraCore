@@ -1,6 +1,6 @@
 application:
   port: 8080
-  public_url: http://127.0.0.1:8080 # Currently used for OAuth redirects and OpenAPI.
+  public_url: http://127.0.0.1:8080 # Currently used for authentication provider redirects and OpenAPI.
   source_id: libra
   source_name: Libra
   media_types:
@@ -13,8 +13,7 @@ auth:
     signing_key: secret # The secret key used to sign JWTs. In algorithms that use public/private keys, this should be the private key. Change this to a secure value. File paths are also supported with the format "file:<path>".
     refresh_token_expiration: 30d # Default is 30 days.
     access_token_expiration: 15m # Default is 15 minutes.
-  oauth:
-    providers: []
+  providers: []
   global_api_routes_require_auth: true # Determines if "global" API routes (e.g., /api/v1/tracks) require authentication.
   user_api_routes_require_auth: true # Determines if "user" API routes (e.g., /api/v1/tracks/:id) require authentication.
   user_api_require_same_user: false # Determines if "user" API routes require that the authenticated user is the same as the user in the route. Disabled by default because enabling it disables song sharing and other interactions between users.

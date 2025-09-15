@@ -83,9 +83,10 @@ type Database interface {
 	EmailExists(ctx context.Context, email string) (bool, error)
 	DeleteUser(ctx context.Context, id string) error
 
-	GetOAuthUser(ctx context.Context, provider, providerUserID string) (types.DatabaseUser, error)
-	LinkOAuthAccount(ctx context.Context, provider, userID, providerUserID string) error
-	DisconnectOAuthAccount(ctx context.Context, provider, userID string) error
+	GetProviderUser(ctx context.Context, provider, providerUserID string) (types.DatabaseUser, error)
+	IsProviderLinked(ctx context.Context, provider, userID string) (bool, error)
+	LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error
+	DisconnectProviderAccount(ctx context.Context, provider, userID string) error
 
 	BlacklistToken(ctx context.Context, token string, expiration time.Time) error
 	CleanExpiredTokens(ctx context.Context) error

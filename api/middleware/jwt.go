@@ -27,11 +27,10 @@ func JWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		config := echojwt.Config{
-			SigningKey:     key,
-			SigningMethod:  config.Conf.Auth.JWT.SigningMethod,
-			ContextKey:     "jwt",
 			SuccessHandler: jwtSuccessHandler,
 			ErrorHandler:   jwtErrorHandler,
+			SigningKey:     key,
+			SigningMethod:  config.Conf.Auth.JWT.SigningMethod,
 		}
 
 		return echojwt.WithConfig(config)(next)(c)
@@ -57,7 +56,7 @@ func UserJWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func jwtSuccessHandler(c echo.Context) {
-	user := c.Get("jwt").(*jwt.Token)
+	user := c.Get("user").(*jwt.Token)
 	isBlacklisted, err := db.DB.IsTokenBlacklisted(c.Request().Context(), user.Raw)
 	if err != nil {
 		_ = c.JSON(http.StatusInternalServerError, echo.Map{

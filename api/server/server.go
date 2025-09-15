@@ -91,10 +91,11 @@ func InitServer() *echo.Echo {
 	authGroup := apiGroup.Group("/auth")
 	authGroup.POST("/register", routes.Register)
 	authGroup.POST("/login", routes.Login)
+	authGroup.POST("/login/:provider", routes.LoginProvider)
 	authGroup.POST("/logout", routes.Logout, middleware.JWTProtected)
-	authGroup.POST("/logout/:provider", routes.OAuthLogout)
-	authGroup.GET("/:provider", routes.OAuth)
-	authGroup.GET("/:provider/callback", routes.OAuthCallback)
+	authGroup.GET("/connect/:provider", routes.ConnectProvider, middleware.JWTProtected)
+	authGroup.GET("/callback/:provider", routes.ProviderCallback)
+	authGroup.POST("/disconnect/:provider", routes.DisconnectProvider, middleware.JWTProtected)
 
 	v1Group := apiGroup.Group("/v1")
 

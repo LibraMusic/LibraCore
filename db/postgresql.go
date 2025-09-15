@@ -5,6 +5,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/types"
-	"github.com/libramusic/libracore/utils"
 )
 
 type PostgreSQLDatabase struct {
@@ -36,9 +36,7 @@ func (*PostgreSQLDatabase) Satisfies(engine string) bool {
 
 func (db *PostgreSQLDatabase) Connect() error {
 	log.Info("Connecting to PostgreSQL...")
-	connStr := "host=" + config.Conf.Database.PostgreSQL.Host + " port=" + strconv.Itoa(
-		config.Conf.Database.PostgreSQL.Port,
-	) + " user=" + config.Conf.Database.PostgreSQL.User + " password=" + config.Conf.Database.PostgreSQL.Pass + " dbname=" + config.Conf.Database.PostgreSQL.DBName + " " + config.Conf.Database.PostgreSQL.Params
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s %s", config.Conf.Database.PostgreSQL.Host, config.Conf.Database.PostgreSQL.Port, config.Conf.Database.PostgreSQL.User, config.Conf.Database.PostgreSQL.Pass, config.Conf.Database.PostgreSQL.DBName, config.Conf.Database.PostgreSQL.Params)
 	pool, err := pgxpool.New(context.Background(), connStr)
 	db.pool = pool
 	if err != nil {
@@ -252,7 +250,7 @@ func (*PostgreSQLDatabase) EngineName() string {
 
 func (db *PostgreSQLDatabase) GetAllTracks(ctx context.Context) ([]types.Track, error) {
 	var tracks []types.Track
-	rows, err := db.pool.Query(ctx, "SELECT * FROM tracks;")
+	rows, err := db.pool.Query(ctx, `SELECT * FROM tracks;`)
 	if err != nil {
 		return tracks, normalizePostgreSQLError(err)
 	}
@@ -293,7 +291,7 @@ func (db *PostgreSQLDatabase) GetAllTracks(ctx context.Context) ([]types.Track, 
 
 func (db *PostgreSQLDatabase) GetTracks(ctx context.Context, userID string) ([]types.Track, error) {
 	var tracks []types.Track
-	rows, err := db.pool.Query(ctx, "SELECT * FROM tracks WHERE user_id=$1;", userID)
+	rows, err := db.pool.Query(ctx, `SELECT * FROM tracks WHERE user_id=$1;`, userID)
 	if err != nil {
 		return tracks, normalizePostgreSQLError(err)
 	}
@@ -334,7 +332,7 @@ func (db *PostgreSQLDatabase) GetTracks(ctx context.Context, userID string) ([]t
 
 func (db *PostgreSQLDatabase) GetTrack(ctx context.Context, id string) (types.Track, error) {
 	track := types.Track{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM tracks WHERE id=$1;", id)
+	row := db.pool.QueryRow(ctx, `SELECT * FROM tracks WHERE id=$1;`, id)
 	err := row.Scan(
 		&track.ID,
 		&track.UserID,
@@ -384,13 +382,13 @@ func (db *PostgreSQLDatabase) UpdateTrack(ctx context.Context, track types.Track
 }
 
 func (db *PostgreSQLDatabase) DeleteTrack(ctx context.Context, id string) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM tracks WHERE id=$1;", id)
+	_, err := db.pool.Exec(ctx, `DELETE FROM tracks WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, error) {
 	var albums []types.Album
-	rows, err := db.pool.Query(ctx, "SELECT * FROM albums;")
+	rows, err := db.pool.Query(ctx, `SELECT * FROM albums;`)
 	if err != nil {
 		return albums, normalizePostgreSQLError(err)
 	}
@@ -426,7 +424,7 @@ func (db *PostgreSQLDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, 
 
 func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]types.Album, error) {
 	var albums []types.Album
-	rows, err := db.pool.Query(ctx, "SELECT * FROM albums WHERE user_id=$1;", userID)
+	rows, err := db.pool.Query(ctx, `SELECT * FROM albums WHERE user_id=$1;`, userID)
 	if err != nil {
 		return albums, normalizePostgreSQLError(err)
 	}
@@ -462,7 +460,7 @@ func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]t
 
 func (db *PostgreSQLDatabase) GetAlbum(ctx context.Context, id string) (types.Album, error) {
 	album := types.Album{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM albums WHERE id=$1;", id)
+	row := db.pool.QueryRow(ctx, `SELECT * FROM albums WHERE id=$1;`, id)
 	err := row.Scan(
 		&album.ID,
 		&album.UserID,
@@ -506,13 +504,13 @@ func (db *PostgreSQLDatabase) UpdateAlbum(ctx context.Context, album types.Album
 }
 
 func (db *PostgreSQLDatabase) DeleteAlbum(ctx context.Context, id string) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM albums WHERE id=$1;", id)
+	_, err := db.pool.Exec(ctx, `DELETE FROM albums WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetAllVideos(ctx context.Context) ([]types.Video, error) {
 	var videos []types.Video
-	rows, err := db.pool.Query(ctx, "SELECT * FROM videos;")
+	rows, err := db.pool.Query(ctx, `SELECT * FROM videos;`)
 	if err != nil {
 		return videos, normalizePostgreSQLError(err)
 	}
@@ -549,7 +547,7 @@ func (db *PostgreSQLDatabase) GetAllVideos(ctx context.Context) ([]types.Video, 
 
 func (db *PostgreSQLDatabase) GetVideos(ctx context.Context, userID string) ([]types.Video, error) {
 	var videos []types.Video
-	rows, err := db.pool.Query(ctx, "SELECT * FROM videos WHERE user_id=$1;", userID)
+	rows, err := db.pool.Query(ctx, `SELECT * FROM videos WHERE user_id=$1;`, userID)
 	if err != nil {
 		return videos, normalizePostgreSQLError(err)
 	}
@@ -586,7 +584,7 @@ func (db *PostgreSQLDatabase) GetVideos(ctx context.Context, userID string) ([]t
 
 func (db *PostgreSQLDatabase) GetVideo(ctx context.Context, id string) (types.Video, error) {
 	video := types.Video{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM videos WHERE id=$1;", id)
+	row := db.pool.QueryRow(ctx, `SELECT * FROM videos WHERE id=$1;`, id)
 	err := row.Scan(
 		&video.ID,
 		&video.UserID,
@@ -632,13 +630,13 @@ func (db *PostgreSQLDatabase) UpdateVideo(ctx context.Context, video types.Video
 }
 
 func (db *PostgreSQLDatabase) DeleteVideo(ctx context.Context, id string) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM videos WHERE id=$1;", id)
+	_, err := db.pool.Exec(ctx, `DELETE FROM videos WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetAllArtists(ctx context.Context) ([]types.Artist, error) {
 	var artists []types.Artist
-	rows, err := db.pool.Query(ctx, "SELECT * FROM artists;")
+	rows, err := db.pool.Query(ctx, `SELECT * FROM artists;`)
 	if err != nil {
 		return artists, normalizePostgreSQLError(err)
 	}
@@ -672,7 +670,7 @@ func (db *PostgreSQLDatabase) GetAllArtists(ctx context.Context) ([]types.Artist
 
 func (db *PostgreSQLDatabase) GetArtists(ctx context.Context, userID string) ([]types.Artist, error) {
 	var artists []types.Artist
-	rows, err := db.pool.Query(ctx, "SELECT * FROM artists WHERE user_id=$1;", userID)
+	rows, err := db.pool.Query(ctx, `SELECT * FROM artists WHERE user_id=$1;`, userID)
 	if err != nil {
 		return artists, normalizePostgreSQLError(err)
 	}
@@ -706,7 +704,7 @@ func (db *PostgreSQLDatabase) GetArtists(ctx context.Context, userID string) ([]
 
 func (db *PostgreSQLDatabase) GetArtist(ctx context.Context, id string) (types.Artist, error) {
 	artist := types.Artist{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM artists WHERE id=$1;", id)
+	row := db.pool.QueryRow(ctx, `SELECT * FROM artists WHERE id=$1;`, id)
 	err := row.Scan(
 		&artist.ID,
 		&artist.UserID,
@@ -748,13 +746,13 @@ func (db *PostgreSQLDatabase) UpdateArtist(ctx context.Context, artist types.Art
 }
 
 func (db *PostgreSQLDatabase) DeleteArtist(ctx context.Context, id string) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM artists WHERE id=$1;", id)
+	_, err := db.pool.Exec(ctx, `DELETE FROM artists WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetAllPlaylists(ctx context.Context) ([]types.Playlist, error) {
 	var playlists []types.Playlist
-	rows, err := db.pool.Query(ctx, "SELECT * FROM playlists;")
+	rows, err := db.pool.Query(ctx, `SELECT * FROM playlists;`)
 	if err != nil {
 		return playlists, normalizePostgreSQLError(err)
 	}
@@ -786,7 +784,7 @@ func (db *PostgreSQLDatabase) GetAllPlaylists(ctx context.Context) ([]types.Play
 
 func (db *PostgreSQLDatabase) GetPlaylists(ctx context.Context, userID string) ([]types.Playlist, error) {
 	var playlists []types.Playlist
-	rows, err := db.pool.Query(ctx, "SELECT * FROM playlists WHERE user_id=$1;", userID)
+	rows, err := db.pool.Query(ctx, `SELECT * FROM playlists WHERE user_id=$1;`, userID)
 	if err != nil {
 		return playlists, normalizePostgreSQLError(err)
 	}
@@ -818,7 +816,7 @@ func (db *PostgreSQLDatabase) GetPlaylists(ctx context.Context, userID string) (
 
 func (db *PostgreSQLDatabase) GetPlaylist(ctx context.Context, id string) (types.Playlist, error) {
 	playlist := types.Playlist{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM playlists WHERE id=$1;", id)
+	row := db.pool.QueryRow(ctx, `SELECT * FROM playlists WHERE id=$1;`, id)
 	err := row.Scan(
 		&playlist.ID,
 		&playlist.UserID,
@@ -858,13 +856,13 @@ func (db *PostgreSQLDatabase) UpdatePlaylist(ctx context.Context, playlist types
 }
 
 func (db *PostgreSQLDatabase) DeletePlaylist(ctx context.Context, id string) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM playlists WHERE id=$1;", id)
+	_, err := db.pool.Exec(ctx, `DELETE FROM playlists WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUser, error) {
 	var users []types.DatabaseUser
-	rows, err := db.pool.Query(ctx, "SELECT * FROM users;")
+	rows, err := db.pool.Query(ctx, `SELECT * FROM users;`)
 	if err != nil {
 		return users, normalizePostgreSQLError(err)
 	}
@@ -896,7 +894,7 @@ func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUse
 
 func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (types.DatabaseUser, error) {
 	user := types.DatabaseUser{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM users WHERE id=$1;", id)
+	row := db.pool.QueryRow(ctx, `SELECT * FROM users WHERE id=$1;`, id)
 	err := row.Scan(
 		&user.ID,
 		&user.Username,
@@ -917,7 +915,7 @@ func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (types.Dat
 
 func (db *PostgreSQLDatabase) GetUserByUsername(ctx context.Context, username string) (types.DatabaseUser, error) {
 	user := types.DatabaseUser{}
-	row := db.pool.QueryRow(ctx, "SELECT * FROM users WHERE username=$1 OR email=$1;", strings.ToLower(username))
+	row := db.pool.QueryRow(ctx, `SELECT * FROM users WHERE username=$1 OR email=$1;`, strings.ToLower(username))
 	err := row.Scan(
 		&user.ID,
 		&user.Username,
@@ -957,19 +955,19 @@ func (db *PostgreSQLDatabase) UpdateUser(ctx context.Context, user types.Databas
 }
 
 func (db *PostgreSQLDatabase) DeleteUser(ctx context.Context, id string) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM users WHERE id=$1;", id)
+	_, err := db.pool.Exec(ctx, `DELETE FROM users WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetOAuthUser(
+func (db *PostgreSQLDatabase) GetProviderUser(
 	ctx context.Context,
 	provider, providerUserID string,
 ) (types.DatabaseUser, error) {
 	var user types.DatabaseUser
 	row := db.pool.QueryRow(ctx, `
         SELECT u.* FROM users u
-        JOIN oauth_providers o ON u.id = o.user_id
-        WHERE o.provider = $1 AND o.provider_user_id = $2;
+        JOIN auth_providers p ON u.id = p.user_id
+        WHERE p.provider = $1 AND p.provider_user_id = $2;
     `, provider, providerUserID)
 	err := row.Scan(
 		&user.ID,
@@ -989,31 +987,41 @@ func (db *PostgreSQLDatabase) GetOAuthUser(
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) LinkOAuthAccount(ctx context.Context, provider, userID, providerUserID string) error {
+func (db *PostgreSQLDatabase) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1 FROM auth_providers WHERE user_id = $1 AND provider = $2
+		);
+	`, userID, provider).Scan(&exists)
+	return exists, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQLDatabase) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
 	_, err := db.pool.Exec(ctx, `
-        INSERT INTO oauth_providers (id, user_id, provider, provider_user_id)
-        VALUES ($1, $2, $3, $4);
-    `, utils.GenerateID(config.Conf.General.IDLength), userID, provider, providerUserID)
+        INSERT INTO auth_providers (user_id, provider, provider_user_id)
+        VALUES ($1, $2, $3);
+    `, userID, provider, providerUserID)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DisconnectOAuthAccount(ctx context.Context, provider, userID string) error {
+func (db *PostgreSQLDatabase) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
 	_, err := db.pool.Exec(ctx, `
-        DELETE FROM oauth_providers WHERE user_id = $1 AND provider = $2;
+        DELETE FROM auth_providers WHERE user_id = $1 AND provider = $2;
     `, userID, provider)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) UsernameExists(ctx context.Context, username string) (bool, error) {
 	var exists bool
-	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1);", strings.ToLower(username)).
+	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE username=$1);`, strings.ToLower(username)).
 		Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
-	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE email=$1);", strings.ToLower(email)).
+	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE email=$1);`, strings.ToLower(email)).
 		Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
@@ -1021,7 +1029,7 @@ func (db *PostgreSQLDatabase) EmailExists(ctx context.Context, email string) (bo
 func (db *PostgreSQLDatabase) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
 	_, err := db.pool.Exec(
 		ctx,
-		"INSERT INTO blacklisted_tokens (token, expiration) VALUES ($1, $2);",
+		`INSERT INTO blacklisted_tokens (token, expiration) VALUES ($1, $2);`,
 		token,
 		expiration,
 	)
@@ -1029,13 +1037,13 @@ func (db *PostgreSQLDatabase) BlacklistToken(ctx context.Context, token string, 
 }
 
 func (db *PostgreSQLDatabase) CleanExpiredTokens(ctx context.Context) error {
-	_, err := db.pool.Exec(ctx, "DELETE FROM blacklisted_tokens WHERE expiration < NOW();")
+	_, err := db.pool.Exec(ctx, `DELETE FROM blacklisted_tokens WHERE expiration < NOW();`)
 	return normalizePostgreSQLError(err)
 }
 
 func (db *PostgreSQLDatabase) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
 	var exists bool
-	err := db.pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token=$1);", token).Scan(&exists)
+	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token=$1);`, token).Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
 

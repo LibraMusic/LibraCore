@@ -19,7 +19,6 @@ import (
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/types"
-	"github.com/libramusic/libracore/utils"
 )
 
 type SQLiteDatabase struct {
@@ -144,7 +143,7 @@ func (db *SQLiteDatabase) setVersion(ctx context.Context, version uint64, dirty 
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM schema_migrations;", nil)
+	err = sqlitex.Execute(conn, `DELETE FROM schema_migrations;`, nil)
 	if err != nil {
 		return err
 	}
@@ -307,7 +306,7 @@ func (db *SQLiteDatabase) GetAllTracks(ctx context.Context) ([]types.Track, erro
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM tracks;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM tracks;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			track := types.Track{}
 
@@ -368,7 +367,7 @@ func (db *SQLiteDatabase) GetTracks(ctx context.Context, userID string) ([]types
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM tracks WHERE user_id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM tracks WHERE user_id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			track := types.Track{}
 
@@ -431,7 +430,7 @@ func (db *SQLiteDatabase) GetTrack(ctx context.Context, id string) (types.Track,
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM tracks WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM tracks WHERE id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -619,7 +618,7 @@ func (db *SQLiteDatabase) DeleteTrack(ctx context.Context, id string) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM tracks WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `DELETE FROM tracks WHERE id = ?;`, &sqlitex.ExecOptions{
 		Args: []any{id},
 	})
 	return err
@@ -634,7 +633,7 @@ func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]types.Album, erro
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM albums;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM albums;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			album := types.Album{}
 
@@ -686,7 +685,7 @@ func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]types
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM albums WHERE user_id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM albums WHERE user_id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			album := types.Album{}
 
@@ -740,7 +739,7 @@ func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (types.Album,
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM albums WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM albums WHERE id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -898,7 +897,7 @@ func (db *SQLiteDatabase) DeleteAlbum(ctx context.Context, id string) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM albums WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `DELETE FROM albums WHERE id = ?;`, &sqlitex.ExecOptions{
 		Args: []any{id},
 	})
 	return err
@@ -913,7 +912,7 @@ func (db *SQLiteDatabase) GetAllVideos(ctx context.Context) ([]types.Video, erro
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM videos;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM videos;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			video := types.Video{}
 
@@ -968,7 +967,7 @@ func (db *SQLiteDatabase) GetVideos(ctx context.Context, userID string) ([]types
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM videos WHERE user_id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM videos WHERE user_id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			video := types.Video{}
 
@@ -1025,7 +1024,7 @@ func (db *SQLiteDatabase) GetVideo(ctx context.Context, id string) (types.Video,
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM videos WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM videos WHERE id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1197,7 +1196,7 @@ func (db *SQLiteDatabase) DeleteVideo(ctx context.Context, id string) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM videos WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `DELETE FROM videos WHERE id = ?;`, &sqlitex.ExecOptions{
 		Args: []any{id},
 	})
 	return err
@@ -1212,7 +1211,7 @@ func (db *SQLiteDatabase) GetAllArtists(ctx context.Context) ([]types.Artist, er
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM artists;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM artists;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			artist := types.Artist{}
 
@@ -1262,7 +1261,7 @@ func (db *SQLiteDatabase) GetArtists(ctx context.Context, userID string) ([]type
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM artists WHERE user_id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM artists WHERE user_id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			artist := types.Artist{}
 
@@ -1314,7 +1313,7 @@ func (db *SQLiteDatabase) GetArtist(ctx context.Context, id string) (types.Artis
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM artists WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM artists WHERE id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1470,7 +1469,7 @@ func (db *SQLiteDatabase) DeleteArtist(ctx context.Context, id string) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM artists WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `DELETE FROM artists WHERE id = ?;`, &sqlitex.ExecOptions{
 		Args: []any{id},
 	})
 	return err
@@ -1485,7 +1484,7 @@ func (db *SQLiteDatabase) GetAllPlaylists(ctx context.Context) ([]types.Playlist
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM playlists;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM playlists;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			playlist := types.Playlist{}
 
@@ -1529,7 +1528,7 @@ func (db *SQLiteDatabase) GetPlaylists(ctx context.Context, userID string) ([]ty
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM playlists WHERE user_id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM playlists WHERE user_id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			playlist := types.Playlist{}
 
@@ -1575,7 +1574,7 @@ func (db *SQLiteDatabase) GetPlaylist(ctx context.Context, id string) (types.Pla
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM playlists WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM playlists WHERE id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1711,7 +1710,7 @@ func (db *SQLiteDatabase) DeletePlaylist(ctx context.Context, id string) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM playlists WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `DELETE FROM playlists WHERE id = ?;`, &sqlitex.ExecOptions{
 		Args: []any{id},
 	})
 	return err
@@ -1726,7 +1725,7 @@ func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]types.DatabaseUser, e
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT * FROM users;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM users;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			user := types.DatabaseUser{}
 
@@ -1771,7 +1770,7 @@ func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (types.Databas
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM users WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM users WHERE id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1824,7 +1823,7 @@ func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, "SELECT * FROM users WHERE username = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT * FROM users WHERE username = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1958,13 +1957,13 @@ func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM users WHERE id = ?;", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `DELETE FROM users WHERE id = ?;`, &sqlitex.ExecOptions{
 		Args: []any{id},
 	})
 	return err
 }
 
-func (db *SQLiteDatabase) GetOAuthUser(
+func (db *SQLiteDatabase) GetProviderUser(
 	ctx context.Context,
 	provider, providerUserID string,
 ) (types.DatabaseUser, error) {
@@ -1979,8 +1978,8 @@ func (db *SQLiteDatabase) GetOAuthUser(
 	scanned := false
 	err = sqlitex.Execute(conn, `
         SELECT u.* FROM users u
-        JOIN oauth_providers o ON u.id = o.user_id
-        WHERE o.provider = ? AND o.provider_user_id = ?;`, &sqlitex.ExecOptions{
+        JOIN auth_providers p ON u.id = p.user_id
+        WHERE p.provider = ? AND p.provider_user_id = ?;`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -2023,7 +2022,28 @@ func (db *SQLiteDatabase) GetOAuthUser(
 	return user, nil
 }
 
-func (db *SQLiteDatabase) LinkOAuthAccount(ctx context.Context, provider, userID, providerUserID string) error {
+func (db *SQLiteDatabase) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
+	var exists bool
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return exists, err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `SELECT EXISTS(SELECT 1 FROM auth_providers WHERE provider = ? AND user_id = ?);`, &sqlitex.ExecOptions{
+		ResultFunc: func(stmt *sqlite.Stmt) error {
+			exists = stmt.ColumnBool(0)
+
+			return nil
+		},
+		Args: []any{provider, userID},
+	})
+
+	return exists, err
+}
+
+func (db *SQLiteDatabase) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2031,15 +2051,15 @@ func (db *SQLiteDatabase) LinkOAuthAccount(ctx context.Context, provider, userID
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        INSERT INTO oauth_providers (id, user_id, provider, provider_user_id)
-        VALUES (?, ?, ?, ?);`, &sqlitex.ExecOptions{
-		Args: []any{utils.GenerateID(config.Conf.General.IDLength), userID, provider, providerUserID},
+        INSERT INTO auth_providers (user_id, provider, provider_user_id)
+        VALUES (?, ?, ?);`, &sqlitex.ExecOptions{
+		Args: []any{userID, provider, providerUserID},
 	})
 
 	return err
 }
 
-func (db *SQLiteDatabase) DisconnectOAuthAccount(ctx context.Context, provider, userID string) error {
+func (db *SQLiteDatabase) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2047,7 +2067,7 @@ func (db *SQLiteDatabase) DisconnectOAuthAccount(ctx context.Context, provider, 
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        DELETE FROM oauth_providers WHERE user_id = ? AND provider = ?;`, &sqlitex.ExecOptions{
+        DELETE FROM auth_providers WHERE user_id = ? AND provider = ?;`, &sqlitex.ExecOptions{
 		Args: []any{userID, provider},
 	})
 
@@ -2063,7 +2083,7 @@ func (db *SQLiteDatabase) UsernameExists(ctx context.Context, username string) (
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?);", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT EXISTS(SELECT 1 FROM users WHERE username = ?);`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			exists = stmt.ColumnBool(0)
 
@@ -2084,7 +2104,7 @@ func (db *SQLiteDatabase) EmailExists(ctx context.Context, email string) (bool, 
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?);", &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `SELECT EXISTS(SELECT 1 FROM users WHERE email = ?);`, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			exists = stmt.ColumnBool(0)
 
@@ -2105,7 +2125,7 @@ func (db *SQLiteDatabase) BlacklistToken(ctx context.Context, token string, expi
 
 	err = sqlitex.Execute(
 		conn,
-		"INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);",
+		`INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);`,
 		&sqlitex.ExecOptions{
 			Args: []any{token, expiration.Format(time.DateTime)},
 		},
@@ -2121,7 +2141,7 @@ func (db *SQLiteDatabase) CleanExpiredTokens(ctx context.Context) error {
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, "DELETE FROM blacklisted_tokens WHERE expiration < datetime('now');", nil)
+	err = sqlitex.Execute(conn, `DELETE FROM blacklisted_tokens WHERE expiration < datetime('now');`, nil)
 
 	return err
 }
@@ -2137,7 +2157,7 @@ func (db *SQLiteDatabase) IsTokenBlacklisted(ctx context.Context, token string) 
 
 	err = sqlitex.Execute(
 		conn,
-		"SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);",
+		`SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token = ?);`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
 				exists = stmt.ColumnBool(0)
