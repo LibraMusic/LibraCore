@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"slices"
@@ -9,6 +10,7 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 
 	"github.com/libramusic/libracore/config"
@@ -231,41 +233,43 @@ func ProviderCallback(c echo.Context) error {
 
 	// Check if the provider account is already linked to a user.
 	user, err := db.DB.GetProviderUser(ctx, providerUser.Provider, providerUser.UserID)
-	if !errors.Is(err, db.ErrNotFound) {
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, echo.Map{
-				"message": err.Error(),
-			})
-		}
-
-		redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
-		if err != nil || redirectURI == "" {
-			return c.JSON(http.StatusBadRequest, echo.Map{
-				"message": RedirectURIQueryParam + " not found in session",
-			})
-		}
-
-		token, err := utils.GenerateToken(
-			user.ID,
-			config.Conf.Auth.JWT.AccessTokenExpiration,
-			config.Conf.Auth.JWT.SigningMethod,
-			config.Conf.Auth.JWT.SigningKey,
-		)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, echo.Map{
-				"message": err.Error(),
-			})
-		}
-
-		if strings.Contains(redirectURI, "?") {
-			redirectURI += "&token=" + token
-		} else {
-			redirectURI += "?token=" + token
-		}
-
-		return c.Redirect(http.StatusFound, redirectURI)
+	if errors.Is(err, db.ErrNotFound) {
+		return handleNewProviderUser(ctx, c, providerUser)
+	}
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
 	}
 
+	return handleExistingProviderUser(c, user)
+}
+
+func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
+	redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
+	if err != nil || redirectURI == "" {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": RedirectURIQueryParam + " not found in session",
+		})
+	}
+
+	token, err := utils.GenerateToken(
+		user.ID,
+		config.Conf.Auth.JWT.AccessTokenExpiration,
+		config.Conf.Auth.JWT.SigningMethod,
+		config.Conf.Auth.JWT.SigningKey,
+	)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	redirectURL := buildRedirectURL(redirectURI, token)
+	return c.Redirect(http.StatusFound, redirectURL)
+}
+
+func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser goth.User) error {
 	newUser := media.DatabaseUser{
 		ID:          utils.GenerateID(config.Conf.General.IDLength),
 		Username:    providerUser.UserID,
@@ -306,13 +310,15 @@ func ProviderCallback(c echo.Context) error {
 		})
 	}
 
+	redirectURL := buildRedirectURL(redirectURI, token)
+	return c.Redirect(http.StatusFound, redirectURL)
+}
+
+func buildRedirectURL(redirectURI, token string) string {
 	if strings.Contains(redirectURI, "?") {
 		redirectURI += "&token=" + token
-	} else {
-		redirectURI += "?token=" + token
 	}
-
-	return c.Redirect(http.StatusFound, redirectURI)
+	return redirectURI + "?token=" + token
 }
 
 func DisconnectProvider(c echo.Context) error {
@@ -322,7 +328,7 @@ func DisconnectProvider(c echo.Context) error {
 			"message": "failed to complete user auth: " + err.Error(),
 		})
 	}
-	gothic.Logout(c.Response().Writer, c.Request())
+	_ = gothic.Logout(c.Response().Writer, c.Request())
 
 	ctx := c.Request().Context()
 
