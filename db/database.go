@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 )
 
 var (
@@ -39,51 +39,51 @@ type Database interface {
 	MigrateUp(steps int) error
 	MigrateDown(steps int) error
 
-	GetAllTracks(ctx context.Context) ([]types.Track, error)
-	GetTracks(ctx context.Context, userID string) ([]types.Track, error)
-	GetTrack(ctx context.Context, id string) (types.Track, error)
-	AddTrack(ctx context.Context, track types.Track) error
-	UpdateTrack(ctx context.Context, track types.Track) error
+	GetAllTracks(ctx context.Context) ([]media.Track, error)
+	GetTracks(ctx context.Context, userID string) ([]media.Track, error)
+	GetTrack(ctx context.Context, id string) (media.Track, error)
+	AddTrack(ctx context.Context, track media.Track) error
+	UpdateTrack(ctx context.Context, track media.Track) error
 	DeleteTrack(ctx context.Context, id string) error
 
-	GetAllAlbums(ctx context.Context) ([]types.Album, error)
-	GetAlbums(ctx context.Context, userID string) ([]types.Album, error)
-	GetAlbum(ctx context.Context, id string) (types.Album, error)
-	AddAlbum(ctx context.Context, album types.Album) error
-	UpdateAlbum(ctx context.Context, album types.Album) error
+	GetAllAlbums(ctx context.Context) ([]media.Album, error)
+	GetAlbums(ctx context.Context, userID string) ([]media.Album, error)
+	GetAlbum(ctx context.Context, id string) (media.Album, error)
+	AddAlbum(ctx context.Context, album media.Album) error
+	UpdateAlbum(ctx context.Context, album media.Album) error
 	DeleteAlbum(ctx context.Context, id string) error
 
-	GetAllVideos(ctx context.Context) ([]types.Video, error)
-	GetVideos(ctx context.Context, userID string) ([]types.Video, error)
-	GetVideo(ctx context.Context, id string) (types.Video, error)
-	AddVideo(ctx context.Context, video types.Video) error
-	UpdateVideo(ctx context.Context, video types.Video) error
+	GetAllVideos(ctx context.Context) ([]media.Video, error)
+	GetVideos(ctx context.Context, userID string) ([]media.Video, error)
+	GetVideo(ctx context.Context, id string) (media.Video, error)
+	AddVideo(ctx context.Context, video media.Video) error
+	UpdateVideo(ctx context.Context, video media.Video) error
 	DeleteVideo(ctx context.Context, id string) error
 
-	GetAllArtists(ctx context.Context) ([]types.Artist, error)
-	GetArtists(ctx context.Context, userID string) ([]types.Artist, error)
-	GetArtist(ctx context.Context, id string) (types.Artist, error)
-	AddArtist(ctx context.Context, artist types.Artist) error
-	UpdateArtist(ctx context.Context, artist types.Artist) error
+	GetAllArtists(ctx context.Context) ([]media.Artist, error)
+	GetArtists(ctx context.Context, userID string) ([]media.Artist, error)
+	GetArtist(ctx context.Context, id string) (media.Artist, error)
+	AddArtist(ctx context.Context, artist media.Artist) error
+	UpdateArtist(ctx context.Context, artist media.Artist) error
 	DeleteArtist(ctx context.Context, id string) error
 
-	GetAllPlaylists(ctx context.Context) ([]types.Playlist, error)
-	GetPlaylists(ctx context.Context, userID string) ([]types.Playlist, error)
-	GetPlaylist(ctx context.Context, id string) (types.Playlist, error)
-	AddPlaylist(ctx context.Context, playlist types.Playlist) error
-	UpdatePlaylist(ctx context.Context, playlist types.Playlist) error
+	GetAllPlaylists(ctx context.Context) ([]media.Playlist, error)
+	GetPlaylists(ctx context.Context, userID string) ([]media.Playlist, error)
+	GetPlaylist(ctx context.Context, id string) (media.Playlist, error)
+	AddPlaylist(ctx context.Context, playlist media.Playlist) error
+	UpdatePlaylist(ctx context.Context, playlist media.Playlist) error
 	DeletePlaylist(ctx context.Context, id string) error
 
-	GetUsers(ctx context.Context) ([]types.DatabaseUser, error)
-	GetUser(ctx context.Context, id string) (types.DatabaseUser, error)
-	GetUserByUsername(ctx context.Context, username string) (types.DatabaseUser, error)
-	CreateUser(ctx context.Context, user types.DatabaseUser) error
-	UpdateUser(ctx context.Context, user types.DatabaseUser) error
+	GetUsers(ctx context.Context) ([]media.DatabaseUser, error)
+	GetUser(ctx context.Context, id string) (media.DatabaseUser, error)
+	GetUserByUsername(ctx context.Context, username string) (media.DatabaseUser, error)
+	CreateUser(ctx context.Context, user media.DatabaseUser) error
+	UpdateUser(ctx context.Context, user media.DatabaseUser) error
 	UsernameExists(ctx context.Context, username string) (bool, error)
 	EmailExists(ctx context.Context, email string) (bool, error)
 	DeleteUser(ctx context.Context, id string) error
 
-	GetProviderUser(ctx context.Context, provider, providerUserID string) (types.DatabaseUser, error)
+	GetProviderUser(ctx context.Context, provider, providerUserID string) (media.DatabaseUser, error)
 	IsProviderLinked(ctx context.Context, provider, userID string) (bool, error)
 	LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error
 	DisconnectProviderAccount(ctx context.Context, provider, userID string) error
@@ -113,8 +113,8 @@ func ConnectDatabase() error {
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.
-func GetAllPlayables(ctx context.Context) ([]types.Playable, error) {
-	var playables []types.Playable
+func GetAllPlayables(ctx context.Context) ([]media.Playable, error) {
+	var playables []media.Playable
 
 	tracks, err := DB.GetAllTracks(ctx)
 	if err != nil {
@@ -160,8 +160,8 @@ func GetAllPlayables(ctx context.Context) ([]types.Playable, error) {
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.
-func GetPlayables(ctx context.Context, userID string) ([]types.Playable, error) {
-	var playables []types.Playable
+func GetPlayables(ctx context.Context, userID string) ([]media.Playable, error) {
+	var playables []media.Playable
 
 	tracks, err := DB.GetTracks(ctx, userID)
 	if err != nil {

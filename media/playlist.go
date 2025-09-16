@@ -1,4 +1,4 @@
-package types
+package media
 
 type Playlist struct {
 	ID             string            `json:"id"              example:"JpXHsNCAATt"`

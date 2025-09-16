@@ -16,7 +16,7 @@ import (
 	"github.com/libramusic/taurus/v2"
 
 	"github.com/libramusic/libracore/api"
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/utils"
 )
 
@@ -65,7 +65,7 @@ type GeneralConfig struct {
 	ReservedUsernames         []string                          `yaml:"reserved_usernames"`
 	CustomDisplayNames        bool                              `yaml:"custom_display_names"`
 	ReserveDisplayNames       bool                              `yaml:"reserve_display_names"`
-	AdminPermissions          map[string]types.AdminPermissions `yaml:"admin_permissions"`
+	AdminPermissions          map[string]media.AdminPermissions `yaml:"admin_permissions"`
 	EnabledSources            []string                          `yaml:"enabled_sources"`
 	DocumentFeedRoutes        bool                              `yaml:"document_feed_routes"`
 }

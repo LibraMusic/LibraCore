@@ -1,4 +1,4 @@
-package types
+package media
 
 type UnsupportedSourceTypeError struct {
 	SourceType string

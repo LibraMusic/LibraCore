@@ -1,4 +1,4 @@
-package types
+package media
 
 type Track struct {
 	ID             string            `json:"id"               example:"7nTwkcl51u4"`

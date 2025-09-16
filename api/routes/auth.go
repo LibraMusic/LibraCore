@@ -13,7 +13,7 @@ import (
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/utils"
 )
 
@@ -80,7 +80,7 @@ func Register(c echo.Context) error {
 		}
 	}
 
-	user := types.DatabaseUser{
+	user := media.DatabaseUser{
 		ID:           utils.GenerateID(config.Conf.General.IDLength),
 		Username:     req.Username,
 		Email:        req.Email,
@@ -197,7 +197,7 @@ func Logout(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func ConnectProvider(c echo.Context) error { 
+func ConnectProvider(c echo.Context) error {
 	redirectURI := c.QueryParam(RedirectURIQueryParam)
 	if redirectURI == "" {
 		return c.JSON(http.StatusBadRequest, echo.Map{
@@ -256,17 +256,17 @@ func ProviderCallback(c echo.Context) error {
 				"message": err.Error(),
 			})
 		}
-		
+
 		if strings.Contains(redirectURI, "?") {
 			redirectURI += "&token=" + token
 		} else {
 			redirectURI += "?token=" + token
 		}
-		
+
 		return c.Redirect(http.StatusFound, redirectURI)
 	}
 
-	newUser := types.DatabaseUser{
+	newUser := media.DatabaseUser{
 		ID:          utils.GenerateID(config.Conf.General.IDLength),
 		Username:    providerUser.UserID,
 		Email:       providerUser.Email,
@@ -305,13 +305,13 @@ func ProviderCallback(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	
+
 	if strings.Contains(redirectURI, "?") {
 		redirectURI += "&token=" + token
 	} else {
 		redirectURI += "?token=" + token
 	}
-	
+
 	return c.Redirect(http.StatusFound, redirectURI)
 }
 

@@ -19,7 +19,7 @@ import (
 	"github.com/goccy/go-json"
 
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/utils"
 )
 
@@ -93,8 +93,8 @@ func (*YouTubeSource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
-	var results []types.SourcePlayable
+func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]any) ([]media.SourcePlayable, error) {
+	var results []media.SourcePlayable
 
 	// TODO: Implement pagination if possible.
 
@@ -134,8 +134,8 @@ func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]an
 	return results, nil
 }
 
-func (s *YouTubeSource) parseSearchResult(v map[string]any) (types.SourcePlayable, error) {
-	var result types.SourcePlayable
+func (s *YouTubeSource) parseSearchResult(v map[string]any) (media.SourcePlayable, error) {
+	var result media.SourcePlayable
 	var err error
 
 	switch v["resultType"] {
@@ -150,13 +150,13 @@ func (s *YouTubeSource) parseSearchResult(v map[string]any) (types.SourcePlayabl
 	case "playlist":
 		result, err = s.parsePlaylistResult(v)
 	default:
-		err = types.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
+		err = media.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
 	}
 
 	return result, err
 }
 
-func (s *YouTubeSource) parseSongResult(v map[string]any) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseSongResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -176,7 +176,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]any) (types.SourcePlayable,
 		return nil, err
 	}
 
-	return types.Track{
+	return media.Track{
 		Title:       v["title"].(string),
 		Duration:    v["duration_seconds"].(int),
 		ReleaseDate: year,
@@ -192,7 +192,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]any) (types.SourcePlayable,
 	}, nil
 }
 
-func (s *YouTubeSource) parseAlbumResult(v map[string]any) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseAlbumResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -212,7 +212,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]any) (types.SourcePlayable
 		return nil, err
 	}
 
-	return types.Album{
+	return media.Album{
 		Title:       v["title"].(string),
 		ReleaseDate: year,
 		AdditionalMeta: map[string]any{
@@ -225,9 +225,9 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]any) (types.SourcePlayable
 	}, nil
 }
 
-func (s *YouTubeSource) parseVideoResult(v map[string]any) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable, error) {
 	if !config.Conf.General.IncludeVideoResults {
-		return nil, types.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
+		return nil, media.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
 	}
 
 	var displayArtists []string
@@ -257,7 +257,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (types.SourcePlayable
 			return nil, err
 		}
 
-		return types.Track{
+		return media.Track{
 			Title:       v["title"].(string),
 			Duration:    v["duration_seconds"].(int),
 			ReleaseDate: year,
@@ -281,7 +281,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (types.SourcePlayable
 		return nil, err
 	}
 
-	return types.Video{
+	return media.Video{
 		Title:       v["title"].(string),
 		Duration:    v["duration_seconds"].(int),
 		ReleaseDate: year,
@@ -295,7 +295,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (types.SourcePlayable
 	}, nil
 }
 
-func (s *YouTubeSource) parseArtistResult(v map[string]any) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parseArtistResult(v map[string]any) (media.SourcePlayable, error) {
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := utils.DownloadFile(thumbnailURL)
@@ -303,7 +303,7 @@ func (s *YouTubeSource) parseArtistResult(v map[string]any) (types.SourcePlayabl
 		return nil, err
 	}
 
-	return types.Artist{
+	return media.Artist{
 		Name: v["artist"].(string),
 		AdditionalMeta: map[string]any{
 			"display_cover_art": thumbnail,
@@ -313,7 +313,7 @@ func (s *YouTubeSource) parseArtistResult(v map[string]any) (types.SourcePlayabl
 	}, nil
 }
 
-func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (types.SourcePlayable, error) {
+func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -326,7 +326,7 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (types.SourcePlaya
 		return nil, err
 	}
 
-	return types.Playlist{
+	return media.Playlist{
 		Title: v["title"].(string),
 		AdditionalMeta: map[string]any{
 			"display_artists":   displayArtists,
@@ -338,9 +338,9 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (types.SourcePlaya
 	}, nil
 }
 
-func (s *YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (s *YouTubeSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	var command []string
@@ -362,7 +362,7 @@ func (s *YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error
 			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 		}...)
 	default:
-		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	out, err := utils.ExecCommand(command)
@@ -373,11 +373,11 @@ func (s *YouTubeSource) GetContent(playable types.SourcePlayable) ([]byte, error
 	return out, nil
 }
 
-func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
+func (s *YouTubeSource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	var command []string
@@ -411,9 +411,9 @@ func (s *YouTubeSource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 	return result, nil
 }
 
-func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
+func (s *YouTubeSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	youtubeLocation := getYouTubeScriptPath()
@@ -452,10 +452,10 @@ func (s *YouTubeSource) CompleteMetadata(playable types.SourcePlayable) (types.S
 }
 
 func (*YouTubeSource) completeTrackMetadata(
-	playable types.SourcePlayable,
+	playable media.SourcePlayable,
 	output map[string]any,
-) (types.SourcePlayable, error) {
-	result := playable.(types.Track)
+) (media.SourcePlayable, error) {
+	result := playable.(media.Track)
 
 	lyricsID := output["track"].(map[string]any)["lyricsId"]
 	if lyricsID != nil {
@@ -502,10 +502,10 @@ func (*YouTubeSource) completeTrackMetadata(
 }
 
 func (*YouTubeSource) completeAlbumMetadata(
-	playable types.SourcePlayable,
+	playable media.SourcePlayable,
 	output map[string]any,
-) (types.SourcePlayable, error) {
-	result := playable.(types.Album)
+) (media.SourcePlayable, error) {
+	result := playable.(media.Album)
 
 	result.Description = output["description"].(string)
 
@@ -525,10 +525,10 @@ func (*YouTubeSource) completeAlbumMetadata(
 }
 
 func (*YouTubeSource) completeVideoMetadata(
-	playable types.SourcePlayable,
+	playable media.SourcePlayable,
 	output map[string]any,
-) (types.SourcePlayable, error) {
-	result := playable.(types.Video)
+) (media.SourcePlayable, error) {
+	result := playable.(media.Video)
 
 	result.Description = output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["description"].(string)
 
@@ -566,10 +566,10 @@ func (*YouTubeSource) completeVideoMetadata(
 }
 
 func (*YouTubeSource) completeArtistMetadata(
-	playable types.SourcePlayable,
+	playable media.SourcePlayable,
 	output map[string]any,
-) (types.SourcePlayable, error) {
-	result := playable.(types.Artist)
+) (media.SourcePlayable, error) {
+	result := playable.(media.Artist)
 
 	result.Description = output["description"].(string)
 
@@ -613,10 +613,10 @@ func (*YouTubeSource) completeArtistMetadata(
 }
 
 func (*YouTubeSource) completePlaylistMetadata(
-	playable types.SourcePlayable,
+	playable media.SourcePlayable,
 	output map[string]any,
-) (types.SourcePlayable, error) {
-	result := playable.(types.Playlist)
+) (media.SourcePlayable, error) {
+	result := playable.(media.Playlist)
 
 	result.Description = output["description"].(string)
 

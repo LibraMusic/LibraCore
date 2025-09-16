@@ -1,4 +1,4 @@
-package types
+package media
 
 type InvalidSourceError struct {
 	SourceID string

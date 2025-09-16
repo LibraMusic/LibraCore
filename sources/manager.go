@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 )
 
 var (
@@ -35,7 +35,7 @@ func EnableSource(sourceStr string) error {
 			if source.SupportsMultiple() {
 				newSource, err := source.DeriveNew(sourceStr)
 				if err != nil {
-					return types.SourceInitializationError{SourceID: sourceStr, Err: err}
+					return media.SourceInitializationError{SourceID: sourceStr, Err: err}
 				}
 				Registry[newSource.GetID()] = newSource
 				enabledSources = append(enabledSources, newSource.GetID())
@@ -45,7 +45,7 @@ func EnableSource(sourceStr string) error {
 			return nil
 		}
 	}
-	return types.InvalidSourceError{SourceID: sourceStr}
+	return media.InvalidSourceError{SourceID: sourceStr}
 }
 
 // TODO: Implement Search
@@ -56,14 +56,14 @@ func EnableSource(sourceStr string) error {
 
 // TODO: Implement CompleteMetadata
 
-/* func GetImage(searchResult types.SearchResult) ([]byte, error) {
+/* func GetImage(searchResult media.SearchResult) ([]byte, error) {
 	if _, ok := Registry[searchResult.ServiceID]; ok {
 		return Registry[searchResult.ServiceID].GetImage(searchResult)
 	}
 	return []byte{}, nil
 }
 
-func GetContent(searchResult types.SearchResult) ([]byte, error) {
+func GetContent(searchResult media.SearchResult) ([]byte, error) {
 	if _, ok := Registry[searchResult.ServiceID]; ok {
 		return Registry[searchResult.ServiceID].GetContent(searchResult)
 	}

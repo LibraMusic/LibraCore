@@ -16,7 +16,7 @@ import (
 	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/utils"
 )
 
@@ -65,8 +65,8 @@ func (*LocalFileSource) GetMediaTypes() []string {
 	return []string{"music", "video"}
 }
 
-func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]types.SourcePlayable, error) {
-	var results []types.SourcePlayable
+func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]media.SourcePlayable, error) {
+	var results []media.SourcePlayable
 
 	fileInfo, err := os.Stat(s.Path)
 	if err != nil {
@@ -114,7 +114,7 @@ func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]
 
 		log.Error("unimplemented")
 
-		result := types.Track{
+		result := media.Track{
 			Title:       output["format"].(map[string]any)["tags"].(map[string]any)["title"].(string),
 			Duration:    int(output["format"].(map[string]any)["duration"].(float64)),
 			ReleaseDate: "",
@@ -131,9 +131,9 @@ func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]
 	return results, nil
 }
 
-func (s *LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, error) {
+func (s *LocalFileSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	log.Error("unimplemented")
@@ -141,11 +141,11 @@ func (s *LocalFileSource) GetContent(playable types.SourcePlayable) ([]byte, err
 	return nil, nil
 }
 
-func (s *LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
+func (s *LocalFileSource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	log.Error("unimplemented")
@@ -153,9 +153,9 @@ func (s *LocalFileSource) GetLyrics(playable types.LyricsPlayable) (map[string]s
 	return result, nil
 }
 
-func (s *LocalFileSource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
+func (s *LocalFileSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	out, err := ffmpeg.Probe(s.Path)

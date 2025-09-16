@@ -1,4 +1,4 @@
-package types
+package media
 
 type Album struct {
 	ID             string            `json:"id"              example:"BhRpYVlrMo8"`

@@ -10,7 +10,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/utils"
 )
 
@@ -55,23 +55,23 @@ func (*SpotifySource) GetMediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
-func (*SpotifySource) Search(_ string, _, _ int, _ map[string]any) ([]types.SourcePlayable, error) {
-	var results []types.SourcePlayable
+func (*SpotifySource) Search(_ string, _, _ int, _ map[string]any) ([]media.SourcePlayable, error) {
+	var results []media.SourcePlayable
 
 	log.Error("unimplemented")
 
 	return results, nil
 }
 
-func (*SpotifySource) GetContent(_ types.SourcePlayable) ([]byte, error) {
-	return nil, types.UnsupportedSourceTypeError{SourceType: "content"}
+func (*SpotifySource) GetContent(_ media.SourcePlayable) ([]byte, error) {
+	return nil, media.UnsupportedSourceTypeError{SourceType: "content"}
 }
 
-func (s *SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]string, error) {
+func (s *SpotifySource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	log.Error("unimplemented")
@@ -79,9 +79,9 @@ func (s *SpotifySource) GetLyrics(playable types.LyricsPlayable) (map[string]str
 	return result, nil
 }
 
-func (s *SpotifySource) CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error) {
+func (s *SpotifySource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, types.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
 	log.Error("unimplemented")

@@ -1,4 +1,4 @@
-package types
+package media
 
 type Video struct {
 	ID             string            `json:"id"              example:"hCNchWdmbro"`

@@ -1,4 +1,4 @@
-package types
+package media
 
 type Artist struct {
 	ID             string            `json:"id"              example:"h3r3VpPvSq8"`

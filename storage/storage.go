@@ -15,7 +15,7 @@ import (
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 )
 
 const (
@@ -129,8 +129,8 @@ func getContentFiles(path string, dirs []os.FileInfo) []string {
 	return contentFiles
 }
 
-func getPlayables(ctx context.Context, contentFiles []string) []types.SourcePlayable {
-	var playables []types.SourcePlayable
+func getPlayables(ctx context.Context, contentFiles []string) []media.SourcePlayable {
+	var playables []media.SourcePlayable
 
 	tracks, err := db.DB.GetAllTracks(ctx)
 	if err != nil {
@@ -161,7 +161,7 @@ func getPlayables(ctx context.Context, contentFiles []string) []types.SourcePlay
 	return playables
 }
 
-func removePlayableFiles(storagePath string, playable types.SourcePlayable) {
+func removePlayableFiles(storagePath string, playable media.SourcePlayable) {
 	playableType := playable.GetType()
 	playableID := playable.GetID()
 

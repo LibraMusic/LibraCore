@@ -18,7 +18,7 @@ import (
 	"github.com/libramusic/libracore/utils"
 )
 
-//go:generate go tool swag init -g server.go -d ./,../routes/,../../types/ -o . --ot go -v3.1
+//go:generate go tool swag init -g server.go -d ./,../routes/,../../media/ -o . --ot go -v3.1
 
 //	@title			Libra API
 //	@version		0.1.0-DEV

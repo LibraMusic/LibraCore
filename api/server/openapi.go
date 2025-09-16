@@ -50,10 +50,10 @@ func loadBaseOpenAPISpec() echo.Map {
 func processSchemas(v1Spec echo.Map) {
 	schemas := v1Spec["components"].(map[string]any)["schemas"].(map[string]any)
 
-	// Remove "types." prefix from schema names
+	// Remove "media." prefix from schema names
 	for key := range schemas {
-		if strings.HasPrefix(key, "types.") {
-			newKey := strings.TrimPrefix(key, "types.")
+		if strings.HasPrefix(key, "media.") {
+			newKey := strings.TrimPrefix(key, "media.")
 			schemas[newKey] = schemas[key]
 			delete(schemas, key)
 		}
@@ -155,8 +155,8 @@ func updateReference(ref string) string {
 	switch {
 	case ref == "#/components/schemas/routes.fakePlayable":
 		return "#/components/schemas/Playable"
-	case strings.HasPrefix(ref, "#/components/schemas/types."):
-		newRef := strings.TrimPrefix(ref, "#/components/schemas/types.")
+	case strings.HasPrefix(ref, "#/components/schemas/media."):
+		newRef := strings.TrimPrefix(ref, "#/components/schemas/media.")
 		return "#/components/schemas/" + newRef
 	default:
 		return ref

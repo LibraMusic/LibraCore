@@ -1,4 +1,4 @@
-package types
+package media
 
 type UnsupportedMediaTypeError struct {
 	MediaType string

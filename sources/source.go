@@ -5,7 +5,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 
-	"github.com/libramusic/libracore/types"
+	"github.com/libramusic/libracore/media"
 )
 
 type Source interface {
@@ -19,10 +19,10 @@ type Source interface {
 	GetSourceTypes() []string
 	GetMediaTypes() []string
 
-	Search(query string, limit, page int, filters map[string]any) ([]types.SourcePlayable, error)
-	GetContent(playable types.SourcePlayable) ([]byte, error)
-	GetLyrics(playable types.LyricsPlayable) (map[string]string, error)
-	CompleteMetadata(playable types.SourcePlayable) (types.SourcePlayable, error)
+	Search(query string, limit, page int, filters map[string]any) ([]media.SourcePlayable, error)
+	GetContent(playable media.SourcePlayable) ([]byte, error)
+	GetLyrics(playable media.LyricsPlayable) (map[string]string, error)
+	CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error)
 }
 
 func SupportsMediaType(s Source, mediaType string) bool {

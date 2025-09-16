@@ -1,4 +1,4 @@
-package types
+package media
 
 type Playable interface {
 	GetType() string
