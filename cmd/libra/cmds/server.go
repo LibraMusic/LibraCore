@@ -88,7 +88,7 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Failed to update custom metrics", "err", err)
 		}
 
-		e := server.InitServer()
+		e := server.New()
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()

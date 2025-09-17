@@ -33,7 +33,7 @@ import (
 
 //	@servers.url	http://localhost:8080/api/v1
 
-func InitServer() *echo.Echo {
+func New() *echo.Echo {
 	libraSource := echo.Map{
 		"id":           config.Conf.Application.SourceID,
 		"name":         config.Conf.Application.SourceName,
