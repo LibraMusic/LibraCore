@@ -34,7 +34,7 @@ var upCmd = &cobra.Command{
 			var err error
 			steps, err = strconv.Atoi(args[0])
 			if err != nil {
-				fmt.Println("Error: steps must be an integer") //nolint:forbidigo // CLI error message
+				fmt.Println("Error: steps must be an integer")
 				return
 			}
 		}
@@ -42,7 +42,7 @@ var upCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Error migrating database", "err", err)
 		}
-		fmt.Println("Database migration complete") //nolint:forbidigo // CLI success message
+		fmt.Println("Database migration complete")
 	},
 }
 
@@ -57,7 +57,7 @@ var downCmd = &cobra.Command{
 			var err error
 			steps, err = strconv.Atoi(args[0])
 			if err != nil {
-				fmt.Println("Error: steps must be an integer") //nolint:forbidigo // CLI error message
+				fmt.Println("Error: steps must be an integer")
 				return
 			}
 		}
@@ -65,7 +65,7 @@ var downCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal("Error migrating database", "err", err)
 		}
-		fmt.Println("Database migration complete") //nolint:forbidigo // CLI success message
+		fmt.Println("Database migration complete")
 	},
 }
 

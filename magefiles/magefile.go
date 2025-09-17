@@ -33,7 +33,7 @@ func Build() error {
 	mg.Deps(Generate)
 	fmt.Println("Building...")
 	buildTags := os.Getenv("BUILD_TAGS")
-	return sh.Run("go", "build", "-v", "-tags", buildTags, "-o", binaryName)
+	return sh.Run("go", "build", "-v", "-tags", buildTags, "-o", binaryName, "cmd/libra/main.go")
 }
 
 func Generate() error {

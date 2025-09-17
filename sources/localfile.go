@@ -16,8 +16,8 @@ import (
 	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/media"
-	"github.com/libramusic/libracore/utils"
 )
 
 type LocalFileSource struct {
@@ -54,7 +54,7 @@ func (s *LocalFileSource) GetName() string {
 }
 
 func (*LocalFileSource) GetVersion() *semver.Version {
-	return utils.LibraVersion
+	return libracore.LibraVersion
 }
 
 func (*LocalFileSource) GetSourceTypes() []string {

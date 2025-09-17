@@ -6,8 +6,8 @@ import (
 
 	"github.com/libramusic/taurus/v2"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/utils"
 )
 
 var rootCmd = &cobra.Command{
@@ -35,5 +35,5 @@ func init() {
 	if err := config.LoadConfig(); err != nil {
 		log.Fatal("Failed to load config", "err", err)
 	}
-	utils.SetupLogger(config.Conf.Logs.Format, config.Conf.Logs.Level)
+	libracore.SetupLogger(config.Conf.Logs.Format, config.Conf.Logs.Level)
 }

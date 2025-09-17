@@ -1,5 +1,7 @@
 package media
 
+import "math/rand/v2"
+
 type Playable interface {
 	GetType() string
 	GetID() string
@@ -32,4 +34,15 @@ type LyricsPlayable interface {
 
 	GetLyrics() map[string]string
 	GetLyricSources() map[string]string
+}
+
+func GenerateID(length int) string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	charsetLength := len(charset)
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.IntN(charsetLength)]
+	}
+	return string(b)
 }

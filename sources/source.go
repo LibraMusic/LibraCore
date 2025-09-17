@@ -1,7 +1,10 @@
 package sources
 
 import (
+	"errors"
+	"os/exec"
 	"slices"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 
@@ -35,4 +38,25 @@ func SupportsMediaType(s Source, mediaType string) bool {
 		return slices.Contains(s.GetMediaTypes(), "playlist")
 	}
 	return false
+}
+
+func IsValidSourceURL(urlStr string) bool {
+	return HasSupportedScheme(urlStr)
+}
+
+func HasSupportedScheme(urlStr string) bool {
+	if strings.HasPrefix(urlStr, "http://") || strings.HasPrefix(urlStr, "https://") ||
+		!strings.Contains(urlStr, "://") {
+		return true
+	}
+	return false
+}
+
+func execCommand(command []string) ([]byte, error) {
+	if len(command) == 0 {
+		return nil, errors.New("no command provided")
+	} else if len(command) == 1 {
+		return exec.Command(command[0]).Output()
+	}
+	return exec.Command(command[0], command[1:]...).Output()
 }

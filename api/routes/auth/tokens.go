@@ -1,4 +1,4 @@
-package utils
+package auth
 
 import (
 	"crypto"
@@ -69,4 +69,19 @@ func LoadPrivateKey(signingMethod, signingKey string) error {
 		EdDSAPrivateKey = key.(ed25519.PrivateKey)
 	}
 	return err
+}
+
+func SigningKey(signingMethod, configSigningKey string) any {
+	var key any
+	switch signingMethod {
+	case "HS256", "HS384", "HS512":
+		key = []byte(configSigningKey)
+	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
+		key = RSAPrivateKey.Public()
+	case "ES256", "ES384", "ES512":
+		key = ECDSAPrivateKey.Public()
+	case "EdDSA":
+		key = EdDSAPrivateKey.Public()
+	}
+	return key
 }

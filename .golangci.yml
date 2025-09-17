@@ -22,6 +22,7 @@ formatters:
         - default
         - prefix(github.com/libramusic)
         - prefix(github.com/libramusic/libracore)
+        - prefix(github.com/libramusic/libracore/cmd)
 
     gofumpt:
       extra-rules: true
@@ -417,3 +418,7 @@ linters:
           - gosec
           - noctx
           - wrapcheck
+      - path: 'cmd/libra/cmds/(.+)\.go'
+        linters:
+          - forbidigo
+        text: '`\^\(fmt\\\.Print\(\|f\|ln\)\|print\|println\)\$`'

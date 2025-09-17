@@ -10,8 +10,8 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/media"
-	"github.com/libramusic/libracore/utils"
 )
 
 type SpotifySource struct{}
@@ -44,7 +44,7 @@ func (*SpotifySource) GetName() string {
 }
 
 func (*SpotifySource) GetVersion() *semver.Version {
-	return utils.LibraVersion
+	return libracore.LibraVersion
 }
 
 func (*SpotifySource) GetSourceTypes() []string {

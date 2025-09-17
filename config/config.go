@@ -17,7 +17,6 @@ import (
 
 	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/media"
-	"github.com/libramusic/libracore/utils"
 )
 
 var Conf Config
@@ -170,7 +169,7 @@ func setupTypes() {
 	})
 	taurus.RegisterUnmarshaler(nil, func(duration *time.Duration, data []byte) error {
 		var err error
-		*duration, err = utils.ParseHumanDuration(string(data))
+		*duration, err = ParseHumanDuration(string(data))
 		return err
 	})
 }

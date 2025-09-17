@@ -1,4 +1,4 @@
-package utils
+package libracore
 
 import "github.com/charmbracelet/log"
 

@@ -5,14 +5,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/libramusic/libracore/utils"
+	"github.com/libramusic/libracore"
 )
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Display version and build information",
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println(utils.GetVersionInfo()) //nolint:forbidigo // CLI response
+		fmt.Println(libracore.GetVersionInfo())
 	},
 }
 

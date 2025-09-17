@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/libramusic/libracore/cmds"
+	"github.com/libramusic/libracore/cmd/libra/cmds"
 )
 
 func main() {

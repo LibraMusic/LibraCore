@@ -20,11 +20,11 @@ import (
 
 	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/api/metrics"
+	"github.com/libramusic/libracore/api/routes/auth"
 	"github.com/libramusic/libracore/api/server"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/storage"
-	"github.com/libramusic/libracore/utils"
 )
 
 var serverCmd = &cobra.Command{
@@ -36,7 +36,7 @@ var serverCmd = &cobra.Command{
 			log.Fatal("Invalid public URL", "url", config.Conf.Application.PublicURL)
 		}
 
-		signingMethod := utils.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
+		signingMethod := auth.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
 			log.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWT.SigningMethod)
 		}
@@ -55,7 +55,7 @@ var serverCmd = &cobra.Command{
 			config.Conf.Auth.JWT.SigningKey = string(keyData)
 		}
 
-		if err := utils.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey); err != nil {
+		if err := auth.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey); err != nil {
 			log.Fatal("Error loading private key", "err", err)
 		}
 

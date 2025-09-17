@@ -10,12 +10,13 @@ import (
 	"github.com/labstack/echo-contrib/echoprometheus"
 	"github.com/labstack/echo/v4"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/api/middleware"
 	"github.com/libramusic/libracore/api/routes"
+	"github.com/libramusic/libracore/api/routes/auth"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/utils"
 )
 
 //go:generate go tool swag init -g server.go -d ./,../routes/,../../media/ -o . --ot go -v3.1
@@ -36,20 +37,20 @@ func InitServer() *echo.Echo {
 	libraSource := echo.Map{
 		"id":           config.Conf.Application.SourceID,
 		"name":         config.Conf.Application.SourceName,
-		"version":      utils.LibraVersion.String(),
+		"version":      libracore.LibraVersion.String(),
 		"source_types": []string{"content", "metadata", "lyrics"},
 		"media_types":  config.Conf.Application.MediaTypes,
 	}
 
 	libraMeta := echo.Map{
-		"version":  utils.LibraVersion.String(),
+		"version":  libracore.LibraVersion.String(),
 		"database": db.DB.EngineName(),
 	}
 
 	//nolint:forbidigo // Basic information on startup
 	{
 		fmt.Println()
-		fmt.Printf("Libra v%s\n", utils.LibraVersion.String())
+		fmt.Printf("Libra v%s\n", libracore.LibraVersion.String())
 		fmt.Printf("Database: %s\n", db.DB.EngineName())
 	}
 
@@ -89,13 +90,13 @@ func InitServer() *echo.Echo {
 	apiGroup := e.Group("/api")
 
 	authGroup := apiGroup.Group("/auth")
-	authGroup.POST("/register", routes.Register)
-	authGroup.POST("/login", routes.Login)
-	authGroup.POST("/login/:provider", routes.LoginProvider)
-	authGroup.POST("/logout", routes.Logout, middleware.JWTProtected)
-	authGroup.GET("/connect/:provider", routes.ConnectProvider, middleware.JWTProtected)
-	authGroup.GET("/callback/:provider", routes.ProviderCallback)
-	authGroup.POST("/disconnect/:provider", routes.DisconnectProvider, middleware.JWTProtected)
+	authGroup.POST("/register", auth.Register)
+	authGroup.POST("/login", auth.Login)
+	authGroup.POST("/login/:provider", auth.LoginProvider)
+	authGroup.POST("/logout", auth.Logout, middleware.JWTProtected)
+	authGroup.GET("/connect/:provider", auth.ConnectProvider, middleware.JWTProtected)
+	authGroup.GET("/callback/:provider", auth.ProviderCallback)
+	authGroup.POST("/disconnect/:provider", auth.DisconnectProvider, middleware.JWTProtected)
 
 	v1Group := apiGroup.Group("/v1")
 

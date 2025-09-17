@@ -7,24 +7,14 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 
+	"github.com/libramusic/libracore/api/routes/auth"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/utils"
 )
 
 func JWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var key any
-		switch config.Conf.Auth.JWT.SigningMethod {
-		case "HS256", "HS384", "HS512":
-			key = []byte(config.Conf.Auth.JWT.SigningKey)
-		case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
-			key = utils.RSAPrivateKey.Public()
-		case "ES256", "ES384", "ES512":
-			key = utils.ECDSAPrivateKey.Public()
-		case "EdDSA":
-			key = utils.EdDSAPrivateKey.Public()
-		}
+		key := auth.SigningKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey)
 
 		config := echojwt.Config{
 			SuccessHandler: jwtSuccessHandler,

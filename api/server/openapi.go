@@ -7,9 +7,9 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v4"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/api/routes"
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/utils"
 )
 
 func GetOpenAPISpec() echo.Map {
@@ -27,7 +27,7 @@ func GetOpenAPISpec() echo.Map {
 
 // loadBaseOpenAPISpec loads the OpenAPI spec and updates version and server URL info.
 func loadBaseOpenAPISpec() echo.Map {
-	SwaggerInfo.Version = utils.LibraVersion.String()
+	SwaggerInfo.Version = libracore.LibraVersion.String()
 	v1SpecJSON := SwaggerInfo.ReadDoc()
 	var v1Spec echo.Map
 	if err := json.Unmarshal([]byte(v1SpecJSON), &v1Spec); err != nil {

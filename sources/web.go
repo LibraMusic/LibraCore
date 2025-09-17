@@ -9,8 +9,8 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/media"
-	"github.com/libramusic/libracore/utils"
 )
 
 type WebSource struct {
@@ -26,7 +26,7 @@ func InitWebSource(url string) (*WebSource, error) {
 }
 
 func (*WebSource) Satisfies(id string) bool {
-	return !strings.HasPrefix(id, "file:") && utils.IsValidSourceURL(id)
+	return !strings.HasPrefix(id, "file:") && IsValidSourceURL(id)
 }
 
 func (s *WebSource) SupportsMultiple() bool {
@@ -52,7 +52,7 @@ func (*WebSource) GetName() string {
 
 func (*WebSource) GetVersion() *semver.Version {
 	log.Error("unimplemented")
-	return utils.LibraVersion
+	return libracore.LibraVersion
 }
 
 func (*WebSource) GetSourceTypes() []string {

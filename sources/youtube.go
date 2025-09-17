@@ -18,9 +18,10 @@ import (
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/media"
-	"github.com/libramusic/libracore/utils"
+	"github.com/libramusic/libracore/storage"
 )
 
 //go:embed scripts/youtube.py
@@ -82,7 +83,7 @@ func (*YouTubeSource) GetName() string {
 }
 
 func (*YouTubeSource) GetVersion() *semver.Version {
-	return utils.LibraVersion
+	return libracore.LibraVersion
 }
 
 func (*YouTubeSource) GetSourceTypes() []string {
@@ -112,7 +113,7 @@ func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]an
 		fmt.Sprintf(`limit=%d`, limit),
 		fmt.Sprintf(`filters="%s"`, strings.ReplaceAll(string(filtersJSON), `"`, `\"`)),
 	}...)
-	out, err := utils.ExecCommand(command)
+	out, err := execCommand(command)
 	if err != nil {
 		return results, fmt.Errorf("error executing command: %w", err)
 	}
@@ -171,7 +172,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]any) (media.SourcePlayable,
 
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +208,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]any) (media.SourcePlayable
 
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +253,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 
 		thumbnails := v["thumbnails"].([]map[string]any)
 		thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-		thumbnail, err := utils.DownloadFile(thumbnailURL)
+		thumbnail, err := storage.DownloadFile(thumbnailURL)
 		if err != nil {
 			return nil, err
 		}
@@ -276,7 +277,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +299,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 func (s *YouTubeSource) parseArtistResult(v map[string]any) (media.SourcePlayable, error) {
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +322,7 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (media.SourcePlaya
 
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return nil, err
 	}
@@ -365,7 +366,7 @@ func (s *YouTubeSource) GetContent(playable media.SourcePlayable) ([]byte, error
 		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
 	}
 
-	out, err := utils.ExecCommand(command)
+	out, err := execCommand(command)
 	if err != nil {
 		return nil, err
 	}
@@ -398,7 +399,7 @@ func (s *YouTubeSource) GetLyrics(playable media.LyricsPlayable) (map[string]str
 		}...)
 	}
 
-	out, err := utils.ExecCommand(command)
+	out, err := execCommand(command)
 	if err != nil {
 		return result, err
 	}
@@ -424,7 +425,7 @@ func (s *YouTubeSource) CompleteMetadata(playable media.SourcePlayable) (media.S
 		`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 	}...)
 
-	out, err := utils.ExecCommand(command)
+	out, err := execCommand(command)
 	if err != nil {
 		return playable, err
 	}
@@ -492,7 +493,7 @@ func (*YouTubeSource) completeTrackMetadata(
 
 	thumbnails := output["track"].(map[string]any)["thumbnail"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -511,7 +512,7 @@ func (*YouTubeSource) completeAlbumMetadata(
 
 	thumbnails := output["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -556,7 +557,7 @@ func (*YouTubeSource) completeVideoMetadata(
 
 	thumbnails := output["track"].(map[string]any)["thumbnail"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -590,7 +591,7 @@ func (*YouTubeSource) completeArtistMetadata(
 
 	thumbnails := output["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}
@@ -640,7 +641,7 @@ func (*YouTubeSource) completePlaylistMetadata(
 
 	thumbnails := output["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
-	thumbnail, err := utils.DownloadFile(thumbnailURL)
+	thumbnail, err := storage.DownloadFile(thumbnailURL)
 	if err != nil {
 		return result, err
 	}

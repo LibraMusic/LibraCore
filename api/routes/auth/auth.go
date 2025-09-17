@@ -1,4 +1,4 @@
-package routes
+package auth
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/media"
-	"github.com/libramusic/libracore/utils"
 )
 
 const RedirectURIQueryParam = "redirect_uri"
@@ -83,10 +82,10 @@ func Register(c echo.Context) error {
 	}
 
 	user := media.DatabaseUser{
-		ID:           utils.GenerateID(config.Conf.General.IDLength),
+		ID:           media.GenerateID(config.Conf.General.IDLength),
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: utils.GeneratePassword(req.Password),
+		PasswordHash: generatePassword(req.Password),
 	}
 	err = db.DB.CreateUser(ctx, user)
 	if err != nil {
@@ -95,7 +94,7 @@ func Register(c echo.Context) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(
+	token, err := GenerateToken(
 		user.ID,
 		config.Conf.Auth.JWT.AccessTokenExpiration,
 		config.Conf.Auth.JWT.SigningMethod,
@@ -132,13 +131,13 @@ func Login(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	if !utils.ComparePassword(user.PasswordHash, req.Password) {
+	if !comparePassword(user.PasswordHash, req.Password) {
 		return c.JSON(http.StatusUnauthorized, echo.Map{
 			"message": "incorrect password",
 		})
 	}
 
-	token, err := utils.GenerateToken(
+	token, err := GenerateToken(
 		user.ID,
 		config.Conf.Auth.JWT.AccessTokenExpiration,
 		config.Conf.Auth.JWT.SigningMethod,
@@ -253,7 +252,7 @@ func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
 		})
 	}
 
-	token, err := utils.GenerateToken(
+	token, err := GenerateToken(
 		user.ID,
 		config.Conf.Auth.JWT.AccessTokenExpiration,
 		config.Conf.Auth.JWT.SigningMethod,
@@ -271,7 +270,7 @@ func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
 
 func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser goth.User) error {
 	newUser := media.DatabaseUser{
-		ID:          utils.GenerateID(config.Conf.General.IDLength),
+		ID:          media.GenerateID(config.Conf.General.IDLength),
 		Username:    providerUser.UserID,
 		Email:       providerUser.Email,
 		DisplayName: providerUser.Name,
@@ -298,7 +297,7 @@ func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser got
 		})
 	}
 
-	token, err := utils.GenerateToken(
+	token, err := GenerateToken(
 		newUser.ID,
 		config.Conf.Auth.JWT.AccessTokenExpiration,
 		config.Conf.Auth.JWT.SigningMethod,
