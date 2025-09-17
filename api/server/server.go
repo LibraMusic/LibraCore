@@ -55,6 +55,7 @@ func InitServer() *echo.Echo {
 	}
 
 	e := echo.New()
+	e.HideBanner = true
 	e.JSONSerializer = &api.GoJSONSerializer{}
 
 	e.Use(echoprometheus.NewMiddleware("libra"))
