@@ -93,8 +93,8 @@ var serverCmd = &cobra.Command{
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
 		go func() {
-			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); errors.Is(err, http.ErrServerClosed) {
-				log.Fatal("Error starting server", "err", err)
+			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); !errors.Is(err, http.ErrServerClosed) {
+				log.Fatal("HTTP server error", "err", err)
 			}
 		}()
 
