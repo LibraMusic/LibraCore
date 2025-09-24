@@ -22,7 +22,6 @@ formatters:
         - default
         - prefix(github.com/libramusic)
         - prefix(github.com/libramusic/libracore)
-        - prefix(github.com/libramusic/libracore/cmd)
 
     gofumpt:
       extra-rules: true
