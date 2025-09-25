@@ -56,7 +56,7 @@ func New() *echo.Echo {
 
 	e := echo.New()
 	e.HideBanner = true
-	e.JSONSerializer = &api.GoJSONSerializer{}
+	e.JSONSerializer = &api.JSONV2Serializer{}
 
 	e.Use(echoprometheus.NewMiddleware("libra"))
 
