@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
@@ -28,6 +29,19 @@ var Aliases = map[string]interface{}{
 	"c":    Clean,
 }
 
+func setExperiments() error {
+	experiments := os.Getenv("GOEXPERIMENT")
+	if experiments == "" {
+		return os.Setenv("GOEXPERIMENT", "jsonv2")
+	}
+	for _, exp := range strings.Split(experiments, ",") {
+		if exp == "jsonv2" {
+			return nil
+		}
+	}
+	return os.Setenv("GOEXPERIMENT", experiments+",jsonv2")
+}
+
 func Build() error {
 	mg.Deps(Deps)
 	mg.Deps(Generate)
@@ -37,6 +51,7 @@ func Build() error {
 }
 
 func Generate() error {
+	mg.Deps(setExperiments)
 	fmt.Println("Running code generation...")
 	if err := sh.Run("go", "generate", "./..."); err != nil {
 		return err
@@ -63,11 +78,13 @@ func (Test) All() {
 }
 
 func Deps() error {
+	mg.Deps(setExperiments)
 	fmt.Println("Installing dependencies...")
 	return sh.Run("go", "mod", "download")
 }
 
 func Lint() error {
+	mg.Deps(setExperiments)
 	fmt.Println("Linting...")
 
 	if err := sh.Run("golangci-lint", "version"); err != nil {
@@ -107,6 +124,7 @@ func Lint() error {
 }
 
 func Clean() error {
+	mg.Deps(setExperiments)
 	fmt.Println("Cleaning...")
 
 	if err := os.Remove(binaryName); err != nil {
