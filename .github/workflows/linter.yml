@@ -26,6 +26,8 @@ jobs:
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
+        env:
+          GOEXPERIMENT: jsonv2
 
       - uses: astral-sh/ruff-action@v3
         with:
