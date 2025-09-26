@@ -4,6 +4,7 @@ package db
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
-	"github.com/goccy/go-json"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 

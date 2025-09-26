@@ -1,10 +1,10 @@
 package server
 
 import (
+	"encoding/json/v2"
 	"strings"
 
 	"github.com/charmbracelet/log"
-	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore"
