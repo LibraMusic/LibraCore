@@ -21,6 +21,9 @@ func JWTProtected(next echo.HandlerFunc) echo.HandlerFunc {
 			ErrorHandler:   jwtErrorHandler,
 			SigningKey:     key,
 			SigningMethod:  config.Conf.Auth.JWT.SigningMethod,
+			NewClaimsFunc: func(_ echo.Context) jwt.Claims {
+				return new(auth.TokenClaims)
+			},
 		}
 
 		return echojwt.WithConfig(config)(next)(c)

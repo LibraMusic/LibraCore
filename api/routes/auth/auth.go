@@ -178,7 +178,7 @@ func LoginProvider(c echo.Context) error {
 
 func Logout(c echo.Context) error {
 	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
+	claims := user.Claims.(*TokenClaims)
 	expiration, err := claims.GetExpirationTime()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{

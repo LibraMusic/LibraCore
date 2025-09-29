@@ -17,34 +17,19 @@ var (
 	EdDSAPrivateKey ed25519.PrivateKey
 )
 
-func GetCorrectSigningMethod(signingMethod string) string {
-	signingMethods := []string{
-		"HS256",
-		"HS384",
-		"HS512",
-		"RS256",
-		"RS384",
-		"RS512",
-		"PS256",
-		"PS384",
-		"PS512",
-		"ES256",
-		"ES384",
-		"ES512",
-		"EdDSA",
-	}
-	for _, method := range signingMethods {
-		if strings.EqualFold(signingMethod, method) {
-			return method
-		}
-	}
-	return ""
+type TokenClaims struct {
+	UserID string `json:"user_id"`
+	jwt.RegisteredClaims
 }
 
 func GenerateToken(id string, expiration time.Duration, signingMethod, signingKey string) (string, error) {
-	token := jwt.NewWithClaims(jwt.GetSigningMethod(signingMethod), jwt.MapClaims{
-		"user_id": id,
-		"exp":     time.Now().Add(expiration).Unix(),
+	token := jwt.NewWithClaims(jwt.GetSigningMethod(signingMethod), &TokenClaims{
+		UserID: id,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiration)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+		},
 	})
 
 	t, err := token.SignedString(signingKey)
@@ -84,4 +69,28 @@ func SigningKey(signingMethod, configSigningKey string) any {
 		key = EdDSAPrivateKey.Public()
 	}
 	return key
+}
+
+func GetCorrectSigningMethod(signingMethod string) string {
+	signingMethods := []string{
+		"HS256",
+		"HS384",
+		"HS512",
+		"RS256",
+		"RS384",
+		"RS512",
+		"PS256",
+		"PS384",
+		"PS512",
+		"ES256",
+		"ES384",
+		"ES512",
+		"EdDSA",
+	}
+	for _, method := range signingMethods {
+		if strings.EqualFold(signingMethod, method) {
+			return method
+		}
+	}
+	return ""
 }
