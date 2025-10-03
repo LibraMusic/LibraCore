@@ -11,9 +11,9 @@ import (
 )
 
 var migrateCmd = &cobra.Command{
-	Use:   "migrate [up|down] [steps]",
+	Use:   "migrate",
 	Short: "Migrate the database",
-	Long: `Migrate the database. Use 'up' to migrate up, 'down' to migrate down.
+	Long: `Migrate the database.
 Uses your database connection string from the config file.`,
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		err := db.ConnectDatabase()
@@ -26,7 +26,8 @@ Uses your database connection string from the config file.`,
 var upCmd = &cobra.Command{
 	Use:   "up [steps]",
 	Short: "Migrate the database up",
-	Long:  `Migrate the database up. Use 'steps' to specify the number of steps to migrate.`,
+	Long:  `Migrate the database up.
+Use 'steps' to specify the number of steps to migrate.`,
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
@@ -49,7 +50,8 @@ var upCmd = &cobra.Command{
 var downCmd = &cobra.Command{
 	Use:   "down [steps]",
 	Short: "Migrate the database down",
-	Long:  `Migrate the database down. Use 'steps' to specify the number of steps to migrate.`,
+	Long:  `Migrate the database down.
+Use 'steps' to specify the number of steps to migrate.`,
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
