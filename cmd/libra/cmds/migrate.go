@@ -26,9 +26,9 @@ Uses your database connection string from the config file.`,
 var upCmd = &cobra.Command{
 	Use:   "up [steps]",
 	Short: "Migrate the database up",
-	Long:  `Migrate the database up.
+	Long: `Migrate the database up.
 Use 'steps' to specify the number of steps to migrate.`,
-	Args:  cobra.MaximumNArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
 		if len(args) > 0 {
@@ -50,9 +50,9 @@ Use 'steps' to specify the number of steps to migrate.`,
 var downCmd = &cobra.Command{
 	Use:   "down [steps]",
 	Short: "Migrate the database down",
-	Long:  `Migrate the database down.
+	Long: `Migrate the database down.
 Use 'steps' to specify the number of steps to migrate.`,
-	Args:  cobra.MaximumNArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
 		if len(args) > 0 {
