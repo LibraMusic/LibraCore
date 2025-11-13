@@ -12,9 +12,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Generate token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.LINTER_APP_ID }}
+          private-key: ${{ secrets.LINTER_PRIVATE_KEY }}
+
       - name: Checkout code
         uses: actions/checkout@v5
         with:
+          token: ${{ steps.app-token.outputs.token }}
           fetch-depth: 0
 
       - name: Set up Go
