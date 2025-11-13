@@ -25,6 +25,7 @@ func ConvertPathFormat(path string) string {
 	// e.g. /path/:param -> /path/{param}
 	result := ""
 	parts := strings.Split(path, "/")
+	var resultSb28 strings.Builder
 	for _, part := range parts {
 		if part == "" {
 			continue
@@ -32,14 +33,17 @@ func ConvertPathFormat(path string) string {
 
 		split := strings.Split(part, ":")
 		if len(split) > 1 {
-			result += "/" + "{" + split[1] + "}"
+			resultSb28.WriteString("/" + "{" + split[1] + "}")
+			var resultSb36 strings.Builder
 			for i := 2; i < len(split); i++ {
-				result += split[i]
+				resultSb36.WriteString(split[i])
 			}
+			result += resultSb36.String()
 		} else {
-			result += "/" + part
+			resultSb28.WriteString("/" + part)
 		}
 	}
+	result += resultSb28.String()
 	return result
 }
 
