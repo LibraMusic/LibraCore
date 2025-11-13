@@ -23,6 +23,7 @@ metadata:
 
 builds:
   - id: macos
+    main: ./cmd/libra
     binary: libra
     goos:
       - darwin
@@ -37,6 +38,7 @@ builds:
       - -buildmode=pie
 
   - id: linux
+    main: ./cmd/libra
     binary: libra
     goos:
       - linux
@@ -55,6 +57,7 @@ builds:
       - -trimpath
 
   - id: windows
+    main: ./cmd/libra
     binary: libra
     goos:
       - windows
