@@ -19,6 +19,12 @@ jobs:
           app-id: ${{ vars.LINTER_APP_ID }}
           private-key: ${{ secrets.LINTER_PRIVATE_KEY }}
 
+      - name: Get GitHub App User ID
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.app-token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
       - name: Checkout code
         uses: actions/checkout@v5
         with:
@@ -48,4 +54,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "chore: fix linting issues"
+          commit_user_name: "${{ steps.app-token.outputs.app-slug }}[bot]"
+          commit_user_email: "${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com"
           status_options: "--untracked-files=no"
