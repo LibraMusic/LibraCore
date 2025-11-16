@@ -30,13 +30,13 @@ var (
 )
 
 type Database interface {
+	EngineName() string
 	Satisfies(engine string) bool
 
 	Connect() error
 	// Closes the database connection.
 	// Subsequent calls will always return nil.
 	Close() error
-	EngineName() string
 
 	MigrateUp(steps int) error
 	MigrateDown(steps int) error

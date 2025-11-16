@@ -27,6 +27,10 @@ type SQLiteDatabase struct {
 	closeOnce sync.Once
 }
 
+func (*SQLiteDatabase) EngineName() string {
+	return "SQLite"
+}
+
 func (*SQLiteDatabase) Satisfies(engine string) bool {
 	return slices.Contains([]string{
 		"sqlite",
@@ -70,10 +74,6 @@ func (db *SQLiteDatabase) Close() error {
 		err = db.pool.Close()
 	})
 	return err
-}
-
-func (*SQLiteDatabase) EngineName() string {
-	return "SQLite"
 }
 
 func (db *SQLiteDatabase) migrationsTableExists(ctx context.Context) (bool, error) {

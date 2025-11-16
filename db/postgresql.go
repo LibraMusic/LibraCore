@@ -26,6 +26,10 @@ type PostgreSQLDatabase struct {
 	closeOnce sync.Once
 }
 
+func (*PostgreSQLDatabase) EngineName() string {
+	return "PostgreSQL"
+}
+
 func (*PostgreSQLDatabase) Satisfies(engine string) bool {
 	return slices.Contains([]string{
 		"postgresql",
@@ -67,6 +71,14 @@ func (db *PostgreSQLDatabase) Connect() error {
 		}
 	}
 
+	return nil
+}
+
+func (db *PostgreSQLDatabase) Close() error {
+	db.closeOnce.Do(func() {
+		log.Info("Closing PostgreSQL connection...")
+		db.pool.Close()
+	})
 	return nil
 }
 
@@ -246,18 +258,6 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 	}
 
 	return nil
-}
-
-func (db *PostgreSQLDatabase) Close() error {
-	db.closeOnce.Do(func() {
-		log.Info("Closing PostgreSQL connection...")
-		db.pool.Close()
-	})
-	return nil
-}
-
-func (*PostgreSQLDatabase) EngineName() string {
-	return "PostgreSQL"
 }
 
 func (db *PostgreSQLDatabase) GetAllTracks(ctx context.Context) ([]media.Track, error) {
