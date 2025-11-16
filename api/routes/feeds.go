@@ -20,37 +20,33 @@ type FeedRouteDoc struct {
 
 var FeedRoutesDoc []FeedRouteDoc
 
+// Convert from echo format to openapi format.
+// e.g. /path/:param -> /path/{param}.
 func ConvertPathFormat(path string) string {
-	// convert from echo format to openapi format
-	// e.g. /path/:param -> /path/{param}
-	result := ""
-	parts := strings.Split(path, "/")
-	var resultSb28 strings.Builder
-	var resultSb29 strings.Builder
-	for _, part := range parts {
+	var builder strings.Builder
+	builder.Grow(len(path))
+	for part := range strings.SplitSeq(path, "/") {
 		if part == "" {
 			continue
 		}
 
 		split := strings.Split(part, ":")
 		if len(split) > 1 {
-			resultSb28.WriteString("/" + "{" + split[1] + "}")
-			var resultSb36 strings.Builder
+			builder.WriteString("/{")
+			builder.WriteString(split[1])
+			builder.WriteString("}")
 			for i := 2; i < len(split); i++ {
-				resultSb36.WriteString(split[i])
+				builder.WriteString(split[i])
 			}
-			resultSb29.WriteString(resultSb36.String())
 		} else {
-			resultSb28.WriteString("/" + part)
+			builder.WriteString("/")
+			builder.WriteString(part)
 		}
 	}
-	result += resultSb29.String()
-	result += resultSb28.String()
-	return result
+	return builder.String()
 }
 
 func CreateFeedRoutes(e *echo.Group, basePath, baseSummary string, handlers ...echo.MiddlewareFunc) {
-	// Define a helper to add route and docs.
 	addRoute := func(path, feedType string, h echo.HandlerFunc) {
 		fullPath := basePath + path
 		FeedRoutesDoc = append(FeedRoutesDoc, FeedRouteDoc{
