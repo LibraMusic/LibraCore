@@ -5,9 +5,9 @@ services:
       - "8080:8080"
     restart: unless-stopped
     environment:
-      LIBRA_DATA_DIR: ./data
+      LIBRA_DATA_DIR: /data
     volumes:
-      - ./data:/app/data
+      - ./data:/data
     networks:
       - libra
     depends_on:

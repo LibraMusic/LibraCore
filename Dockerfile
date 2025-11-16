@@ -5,9 +5,8 @@ ARG TARGETPLATFORM
 RUN apk add --no-cache ffmpeg
 RUN pip install --no-cache-dir yt-dlp ytmusicapi
 
-WORKDIR /app
-
 EXPOSE 8080
 
-COPY $TARGETPLATFORM/libra ./
-ENTRYPOINT ["./libra", "server"]
+COPY $TARGETPLATFORM/libra /libra
+ENTRYPOINT ["/libra"]
+CMD ["server"]
