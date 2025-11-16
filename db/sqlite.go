@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -22,7 +23,8 @@ import (
 )
 
 type SQLiteDatabase struct {
-	pool *sqlitex.Pool
+	pool      *sqlitex.Pool
+	closeOnce sync.Once
 }
 
 func (*SQLiteDatabase) Satisfies(engine string) bool {
@@ -62,8 +64,11 @@ func (db *SQLiteDatabase) Connect() error {
 }
 
 func (db *SQLiteDatabase) Close() error {
-	log.Info("Closing SQLite connection...")
-	err := db.pool.Close()
+	var err error
+	db.closeOnce.Do(func() {
+		log.Info("Closing SQLite connection...")
+		err = db.pool.Close()
+	})
 	return err
 }
 

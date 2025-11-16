@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/log"
@@ -21,7 +22,8 @@ import (
 )
 
 type PostgreSQLDatabase struct {
-	pool *pgxpool.Pool
+	pool      *pgxpool.Pool
+	closeOnce sync.Once
 }
 
 func (*PostgreSQLDatabase) Satisfies(engine string) bool {
@@ -247,8 +249,10 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 }
 
 func (db *PostgreSQLDatabase) Close() error {
-	log.Info("Closing PostgreSQL connection...")
-	db.pool.Close()
+	db.closeOnce.Do(func() {
+		log.Info("Closing PostgreSQL connection...")
+		db.pool.Close()
+	})
 	return nil
 }
 

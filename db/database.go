@@ -33,6 +33,8 @@ type Database interface {
 	Satisfies(engine string) bool
 
 	Connect() error
+	// Closes the database connection.
+	// Subsequent calls will always return nil.
 	Close() error
 	EngineName() string
 
