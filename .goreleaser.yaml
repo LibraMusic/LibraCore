@@ -24,6 +24,8 @@ metadata:
 builds:
   - main: ./cmd/libra
     binary: libra
+    env:
+      - CGO_ENABLED=0
     goos:
       - linux
       - darwin
