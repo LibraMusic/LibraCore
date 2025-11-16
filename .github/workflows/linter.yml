@@ -38,7 +38,7 @@ jobs:
           cache: true
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
 
@@ -52,7 +52,7 @@ jobs:
           find . -type f -name "*.sh" -exec shellcheck {} +
 
       - name: Commit & Push Changes
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: fix linting issues"
           commit_user_name: "${{ steps.app-token.outputs.app-slug }}[bot]"
