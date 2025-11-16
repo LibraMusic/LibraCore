@@ -28,17 +28,20 @@ import (
 )
 
 var serverCmd = &cobra.Command{
-	Use:     "server",
-	Aliases: []string{"start"},
-	Short:   "Start the server",
-	Run: func(_ *cobra.Command, _ []string) {
+	Use:               "server",
+	Aliases:           []string{"start"},
+	Short:             "Start the server",
+	Args:              cobra.NoArgs,
+	ValidArgsFunction: cobra.NoFileCompletions,
+	SilenceUsage:      true,
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if _, err := url.ParseRequestURI(config.Conf.Application.PublicURL); err != nil {
-			log.Fatal("Invalid public URL", "url", config.Conf.Application.PublicURL)
+			return fmt.Errorf("invalid public URL '%s': %w", config.Conf.Application.PublicURL, err)
 		}
 
 		signingMethod := auth.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
-			log.Fatal("Invalid or unsupported JWT signing method", "method", config.Conf.Auth.JWT.SigningMethod)
+			return fmt.Errorf("invalid or unsupported JWT signing method '%s'", config.Conf.Auth.JWT.SigningMethod)
 		}
 		config.Conf.Auth.JWT.SigningMethod = signingMethod
 
@@ -46,37 +49,44 @@ var serverCmd = &cobra.Command{
 			keyPath := strings.TrimPrefix(config.Conf.Auth.JWT.SigningKey, "file:")
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
-				log.Fatal("Error getting absolute path of JWT signing key file", "err", err)
+				return fmt.Errorf("failed to get absolute path of JWT signing key file '%s': %w", keyPath, err)
 			}
 			keyData, err := os.ReadFile(keyPath)
 			if err != nil {
-				log.Fatal("Error reading JWT signing key file", "err", err)
+				return fmt.Errorf("failed to read JWT signing key file '%s': %w", keyPath, err)
 			}
 			config.Conf.Auth.JWT.SigningKey = string(keyData)
 		}
 
 		if err := auth.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey); err != nil {
-			log.Fatal("Error loading private key", "err", err)
+			return fmt.Errorf("failed to load private key: %w", err)
 		}
 
 		api.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
 		for _, provider := range config.Conf.Auth.Providers {
 			if provider.ID == "" {
-				log.Fatal("OAuth provider ID cannot be empty")
+				return errors.New("auth provider ID cannot be empty")
 			}
 			if provider.GetName() == "" {
-				log.Fatal("Unsupported OAuth provider", "id", provider.ID)
+				return fmt.Errorf("unsupported auth provider '%s'", provider.ID)
 			}
 			p, err := provider.GetProvider()
 			if err != nil {
-				log.Fatal("Failed to initialize OAuth provider", "id", provider.ID, "err", err)
+				return fmt.Errorf("failed to initialize auth provider '%s': %w", provider.ID, err)
 			}
 			goth.UseProviders(p)
 		}
 
 		if err := db.ConnectDatabase(); err != nil {
-			log.Fatal("Error connecting to database", "err", err)
+			return fmt.Errorf("database connection failed: %w", err)
 		}
+		defer func() {
+			// Ensure the database connection is closed even if an error occurs.
+			// This won't do anything if everything starts and shuts down cleanly.
+			if err := db.DB.Close(); err != nil {
+				log.Error("Error closing database connection", "err", err)
+			}
+		}()
 
 		if err := db.DB.CleanExpiredTokens(context.Background()); err != nil {
 			log.Error("Error cleaning expired tokens", "err", err)
@@ -85,30 +95,39 @@ var serverCmd = &cobra.Command{
 		storage.CleanOverfilledStorage(context.Background())
 
 		if err := metrics.RegisterMetrics(); err != nil {
-			log.Fatal("Failed to update custom metrics", "err", err)
+			return fmt.Errorf("failed to register custom metrics: %w", err)
 		}
 
 		e := server.New()
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
+		errCh := make(chan error, 1)
 		go func() {
 			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); !errors.Is(err, http.ErrServerClosed) {
-				log.Fatal("HTTP server error", "err", err)
+				errCh <- err
 			}
 		}()
 
-		<-ctx.Done()
-		log.Info("Shutting down...")
+		select {
+		case err := <-errCh:
+			return fmt.Errorf("HTTP server error: %w", err)
+		case <-ctx.Done():
+			log.Info("Shutting down...")
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
+
 		if err := e.Shutdown(ctx); err != nil {
-			log.Fatal("Error shutting down server", "err", err)
+			return fmt.Errorf("error shutting down server: %w", err)
 		}
 		if err := db.DB.Close(); err != nil {
-			log.Fatal("Error closing database connection", "err", err)
+			return fmt.Errorf("error closing database connection: %w", err)
 		}
+
 		log.Info("Successfully shut down")
+		return nil
 	},
 }
 

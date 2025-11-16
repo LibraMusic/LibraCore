@@ -28,7 +28,8 @@ var upCmd = &cobra.Command{
 	Short: "Migrate the database up",
 	Long: `Migrate the database up.
 Use 'steps' to specify the number of steps to migrate.`,
-	Args: cobra.MaximumNArgs(1),
+	Args:              cobra.MaximumNArgs(1),
+	ValidArgsFunction: cobra.NoFileCompletions,
 	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
 		if len(args) > 0 {
@@ -52,7 +53,8 @@ var downCmd = &cobra.Command{
 	Short: "Migrate the database down",
 	Long: `Migrate the database down.
 Use 'steps' to specify the number of steps to migrate.`,
-	Args: cobra.MaximumNArgs(1),
+	Args:              cobra.MaximumNArgs(1),
+	ValidArgsFunction: cobra.NoFileCompletions,
 	Run: func(_ *cobra.Command, args []string) {
 		steps := -1
 		if len(args) > 0 {

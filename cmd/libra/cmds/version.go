@@ -9,8 +9,10 @@ import (
 )
 
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Display version and build information",
+	Use:               "version",
+	Short:             "Display version and build information",
+	Args:              cobra.NoArgs,
+	ValidArgsFunction: cobra.NoFileCompletions,
 	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println(libracore.GetVersionInfo())
 	},
