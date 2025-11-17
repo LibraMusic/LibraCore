@@ -19,16 +19,16 @@ func IsHigherPriority(first, second string) bool {
 	return firstPriority < secondPriority || (firstPriority == -1 && secondPriority != -1) || second == ""
 }
 
-func EnableSources() {
+func EnableAll() {
 	for _, source := range config.Conf.General.EnabledSources {
-		err := EnableSource(source)
+		err := Enable(source)
 		if err != nil {
 			log.Warn("Error enabling source", "source", source, "err", err)
 		}
 	}
 }
 
-func EnableSource(sourceStr string) error {
+func Enable(sourceStr string) error {
 	for _, source := range Registry {
 		if source.Satisfies(sourceStr) {
 			if source.SupportsMultiple() {
