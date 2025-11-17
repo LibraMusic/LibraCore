@@ -39,7 +39,7 @@ var serverCmd = &cobra.Command{
 			return fmt.Errorf("invalid public URL %q: %w", config.Conf.Application.PublicURL, err)
 		}
 
-		signingMethod := auth.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
+		signingMethod := auth.CorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
 			return fmt.Errorf("invalid or unsupported JWT signing method %q", config.Conf.Auth.JWT.SigningMethod)
 		}
@@ -66,17 +66,17 @@ var serverCmd = &cobra.Command{
 			if provider.ID == "" {
 				return errors.New("auth provider ID cannot be empty")
 			}
-			if provider.GetName() == "" {
+			if provider.Name() == "" {
 				return fmt.Errorf("unsupported auth provider %q", provider.ID)
 			}
-			p, err := provider.GetProvider()
+			p, err := provider.GothProvider()
 			if err != nil {
 				return fmt.Errorf("failed to initialize auth provider %q: %w", provider.ID, err)
 			}
 			goth.UseProviders(p)
 		}
 
-		if err := db.ConnectDatabase(); err != nil {
+		if err := db.Connect(); err != nil {
 			return fmt.Errorf("database connection failed: %w", err)
 		}
 		defer func() {

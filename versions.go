@@ -13,7 +13,7 @@ var (
 	LibraVersion, _ = semver.NewVersion(rawVersion)
 )
 
-func GetVersionInfo() string {
+func VersionInfo() string {
 	application := "LibraCore"
 	version := "v" + LibraVersion.String()
 

@@ -34,23 +34,23 @@ func (*SpotifySource) Derive(_ string) (Source, error) {
 	return nil, ErrMultipleInstancesNotSupported
 }
 
-func (*SpotifySource) GetID() string {
+func (*SpotifySource) ID() string {
 	return "spotify"
 }
 
-func (*SpotifySource) GetName() string {
+func (*SpotifySource) Name() string {
 	return "Spotify"
 }
 
-func (*SpotifySource) GetVersion() *semver.Version {
+func (*SpotifySource) Version() *semver.Version {
 	return libracore.LibraVersion
 }
 
-func (*SpotifySource) GetSourceTypes() []string {
+func (*SpotifySource) SourceTypes() []string {
 	return []string{"metadata", "lyrics"}
 }
 
-func (*SpotifySource) GetMediaTypes() []string {
+func (*SpotifySource) MediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
@@ -62,11 +62,11 @@ func (*SpotifySource) Search(_ string, _, _ int, _ map[string]any) ([]media.Sour
 	return results, nil
 }
 
-func (*SpotifySource) GetContent(_ media.SourcePlayable) ([]byte, error) {
+func (*SpotifySource) Content(_ media.SourcePlayable) ([]byte, error) {
 	return nil, ErrUnsupportedSourceType
 }
 
-func (s *SpotifySource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (s *SpotifySource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -91,8 +91,8 @@ func (s *SpotifySource) CompleteMetadata(playable media.SourcePlayable) (media.S
 func init() {
 	source, err := InitSpotifySource()
 	if err != nil {
-		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
 	} else {
-		Registry[source.GetID()] = source
+		Registry[source.ID()] = source
 	}
 }

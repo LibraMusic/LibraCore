@@ -44,23 +44,23 @@ func (s *LocalFileSource) Derive(id string) (Source, error) {
 	return nil, ErrMultipleInstancesNotSupported
 }
 
-func (s *LocalFileSource) GetID() string {
+func (s *LocalFileSource) ID() string {
 	return "file:" + s.Path
 }
 
-func (s *LocalFileSource) GetName() string {
+func (s *LocalFileSource) Name() string {
 	return "Local File (" + s.Path + ")"
 }
 
-func (*LocalFileSource) GetVersion() *semver.Version {
+func (*LocalFileSource) Version() *semver.Version {
 	return libracore.LibraVersion
 }
 
-func (*LocalFileSource) GetSourceTypes() []string {
+func (*LocalFileSource) SourceTypes() []string {
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (*LocalFileSource) GetMediaTypes() []string {
+func (*LocalFileSource) MediaTypes() []string {
 	return []string{"music", "video"}
 }
 
@@ -121,7 +121,7 @@ func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]
 				"display_artists": displayArtists,
 				"display_album":   output["format"].(map[string]any)["tags"].(map[string]any)["album"].(string),
 			},
-			MetadataSource: s.GetID() + "::" + filepath.Base(s.Path),
+			MetadataSource: s.ID() + "::" + filepath.Base(s.Path),
 		}
 
 		results = append(results, result)
@@ -130,7 +130,7 @@ func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]
 	return results, nil
 }
 
-func (s *LocalFileSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
+func (s *LocalFileSource) Content(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return nil, ErrUnsupportedMediaType
 	}
@@ -140,7 +140,7 @@ func (s *LocalFileSource) GetContent(playable media.SourcePlayable) ([]byte, err
 	return nil, nil
 }
 
-func (s *LocalFileSource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (s *LocalFileSource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -176,8 +176,8 @@ func (s *LocalFileSource) CompleteMetadata(playable media.SourcePlayable) (media
 func init() {
 	source, err := InitLocalFileSource("")
 	if err != nil {
-		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
 	} else {
-		Registry[source.GetID()] = source
+		Registry[source.ID()] = source
 	}
 }

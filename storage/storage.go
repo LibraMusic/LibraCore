@@ -132,7 +132,7 @@ func getContentFiles(path string, dirs []os.FileInfo) []string {
 func getPlayables(ctx context.Context, contentFiles []string) []media.SourcePlayable {
 	var playables []media.SourcePlayable
 
-	tracks, err := db.DB.GetAllTracks(ctx)
+	tracks, err := db.DB.AllTracks(ctx)
 	if err != nil {
 		log.Error("Error getting all tracks from database", "err", err)
 	}
@@ -145,7 +145,7 @@ func getPlayables(ctx context.Context, contentFiles []string) []media.SourcePlay
 		}
 	}
 
-	videos, err := db.DB.GetAllVideos(ctx)
+	videos, err := db.DB.AllVideos(ctx)
 	if err != nil {
 		log.Error("Error getting all videos from database", "err", err)
 	}

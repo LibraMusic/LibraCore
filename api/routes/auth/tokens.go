@@ -72,7 +72,7 @@ func SigningKey(signingMethod, configSigningKey string) any {
 	return key
 }
 
-func GetCorrectSigningMethod(signingMethod string) string {
+func CorrectSigningMethod(signingMethod string) string {
 	signingMethods := []string{
 		"HS256",
 		"HS384",

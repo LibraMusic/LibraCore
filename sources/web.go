@@ -39,27 +39,27 @@ func (s *WebSource) Derive(id string) (Source, error) {
 	return nil, ErrMultipleInstancesNotSupported
 }
 
-func (*WebSource) GetID() string {
+func (*WebSource) ID() string {
 	log.Error("unimplemented")
 	return "web"
 }
 
-func (*WebSource) GetName() string {
+func (*WebSource) Name() string {
 	log.Error("unimplemented")
 	return "Web"
 }
 
-func (*WebSource) GetVersion() *semver.Version {
+func (*WebSource) Version() *semver.Version {
 	log.Error("unimplemented")
 	return libracore.LibraVersion
 }
 
-func (*WebSource) GetSourceTypes() []string {
+func (*WebSource) SourceTypes() []string {
 	log.Error("unimplemented")
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (*WebSource) GetMediaTypes() []string {
+func (*WebSource) MediaTypes() []string {
 	log.Error("unimplemented")
 	return []string{"music", "video", "playlist"}
 }
@@ -72,7 +72,7 @@ func (*WebSource) Search(_ string, _, _ int, _ map[string]any) ([]media.SourcePl
 	return results, nil
 }
 
-func (s *WebSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
+func (s *WebSource) Content(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return nil, ErrUnsupportedMediaType
 	}
@@ -82,7 +82,7 @@ func (s *WebSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
 	return nil, nil
 }
 
-func (s *WebSource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (s *WebSource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -107,8 +107,8 @@ func (s *WebSource) CompleteMetadata(playable media.SourcePlayable) (media.Sourc
 func init() {
 	source, err := InitWebSource("")
 	if err != nil {
-		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
 	} else {
-		Registry[source.GetID()] = source
+		Registry[source.ID()] = source
 	}
 }

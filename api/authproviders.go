@@ -83,11 +83,11 @@ type AuthProvider struct {
 	AdditionalDetails map[string]string `yaml:",inline"`
 }
 
-func (p AuthProvider) GetName() string {
+func (p AuthProvider) Name() string {
 	return providerNames[p.ID]
 }
 
-func (p AuthProvider) GetProvider() (goth.Provider, error) {
+func (p AuthProvider) GothProvider() (goth.Provider, error) {
 	provider, err := goth.GetProvider(p.ID)
 	if err != nil {
 		factory, exists := providerFactories[p.ID]

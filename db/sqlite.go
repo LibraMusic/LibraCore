@@ -111,7 +111,7 @@ func (db *SQLiteDatabase) createMigrationsTable(ctx context.Context) error {
 	return err
 }
 
-func (db *SQLiteDatabase) getCurrentVersion(ctx context.Context) (uint64, bool, error) {
+func (db *SQLiteDatabase) currentVersion(ctx context.Context) (uint64, bool, error) {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return 0, false, err
@@ -169,7 +169,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 		return err
 	}
 
-	currentVersion, dirty, err := db.getCurrentVersion(context.Background())
+	currentVersion, dirty, err := db.currentVersion(context.Background())
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -181,7 +181,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 	if err != nil {
 		return err
 	}
-	files := GetOrderedMigrationFiles(entries, true)
+	files := OrderedMigrationFiles(entries, true)
 
 	appliedCount := 0
 	for _, file := range files {
@@ -236,7 +236,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 		return err
 	}
 
-	currentVersion, dirty, err := db.getCurrentVersion(context.Background())
+	currentVersion, dirty, err := db.currentVersion(context.Background())
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -248,7 +248,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	if err != nil {
 		return err
 	}
-	files := GetOrderedMigrationFiles(entries, false)
+	files := OrderedMigrationFiles(entries, false)
 
 	appliedCount := 0
 	for _, file := range files {
@@ -306,7 +306,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	return nil
 }
 
-func (db *SQLiteDatabase) GetAllTracks(ctx context.Context) ([]media.Track, error) {
+func (db *SQLiteDatabase) AllTracks(ctx context.Context) ([]media.Track, error) {
 	var tracks []media.Track
 
 	conn, err := db.pool.Take(ctx)
@@ -370,7 +370,7 @@ func (db *SQLiteDatabase) GetAllTracks(ctx context.Context) ([]media.Track, erro
 	return tracks, err
 }
 
-func (db *SQLiteDatabase) GetTracks(ctx context.Context, userID string) ([]media.Track, error) {
+func (db *SQLiteDatabase) Tracks(ctx context.Context, userID string) ([]media.Track, error) {
 	var tracks []media.Track
 
 	conn, err := db.pool.Take(ctx)
@@ -435,7 +435,7 @@ func (db *SQLiteDatabase) GetTracks(ctx context.Context, userID string) ([]media
 	return tracks, err
 }
 
-func (db *SQLiteDatabase) GetTrack(ctx context.Context, id string) (media.Track, error) {
+func (db *SQLiteDatabase) Track(ctx context.Context, id string) (media.Track, error) {
 	track := media.Track{}
 
 	conn, err := db.pool.Take(ctx)
@@ -644,7 +644,7 @@ func (db *SQLiteDatabase) DeleteTrack(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]media.Album, error) {
+func (db *SQLiteDatabase) AllAlbums(ctx context.Context) ([]media.Album, error) {
 	var albums []media.Album
 
 	conn, err := db.pool.Take(ctx)
@@ -699,7 +699,7 @@ func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]media.Album, erro
 	return albums, err
 }
 
-func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]media.Album, error) {
+func (db *SQLiteDatabase) Albums(ctx context.Context, userID string) ([]media.Album, error) {
 	var albums []media.Album
 
 	conn, err := db.pool.Take(ctx)
@@ -755,7 +755,7 @@ func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]media
 	return albums, err
 }
 
-func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (media.Album, error) {
+func (db *SQLiteDatabase) Album(ctx context.Context, id string) (media.Album, error) {
 	album := media.Album{}
 
 	conn, err := db.pool.Take(ctx)
@@ -934,7 +934,7 @@ func (db *SQLiteDatabase) DeleteAlbum(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllVideos(ctx context.Context) ([]media.Video, error) {
+func (db *SQLiteDatabase) AllVideos(ctx context.Context) ([]media.Video, error) {
 	var videos []media.Video
 
 	conn, err := db.pool.Take(ctx)
@@ -992,7 +992,7 @@ func (db *SQLiteDatabase) GetAllVideos(ctx context.Context) ([]media.Video, erro
 	return videos, err
 }
 
-func (db *SQLiteDatabase) GetVideos(ctx context.Context, userID string) ([]media.Video, error) {
+func (db *SQLiteDatabase) Videos(ctx context.Context, userID string) ([]media.Video, error) {
 	var videos []media.Video
 
 	conn, err := db.pool.Take(ctx)
@@ -1051,7 +1051,7 @@ func (db *SQLiteDatabase) GetVideos(ctx context.Context, userID string) ([]media
 	return videos, err
 }
 
-func (db *SQLiteDatabase) GetVideo(ctx context.Context, id string) (media.Video, error) {
+func (db *SQLiteDatabase) Video(ctx context.Context, id string) (media.Video, error) {
 	video := media.Video{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1244,7 +1244,7 @@ func (db *SQLiteDatabase) DeleteVideo(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllArtists(ctx context.Context) ([]media.Artist, error) {
+func (db *SQLiteDatabase) AllArtists(ctx context.Context) ([]media.Artist, error) {
 	var artists []media.Artist
 
 	conn, err := db.pool.Take(ctx)
@@ -1297,7 +1297,7 @@ func (db *SQLiteDatabase) GetAllArtists(ctx context.Context) ([]media.Artist, er
 	return artists, err
 }
 
-func (db *SQLiteDatabase) GetArtists(ctx context.Context, userID string) ([]media.Artist, error) {
+func (db *SQLiteDatabase) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
 	var artists []media.Artist
 
 	conn, err := db.pool.Take(ctx)
@@ -1351,7 +1351,7 @@ func (db *SQLiteDatabase) GetArtists(ctx context.Context, userID string) ([]medi
 	return artists, err
 }
 
-func (db *SQLiteDatabase) GetArtist(ctx context.Context, id string) (media.Artist, error) {
+func (db *SQLiteDatabase) Artist(ctx context.Context, id string) (media.Artist, error) {
 	artist := media.Artist{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1528,7 +1528,7 @@ func (db *SQLiteDatabase) DeleteArtist(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetAllPlaylists(ctx context.Context) ([]media.Playlist, error) {
+func (db *SQLiteDatabase) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 
 	conn, err := db.pool.Take(ctx)
@@ -1575,7 +1575,7 @@ func (db *SQLiteDatabase) GetAllPlaylists(ctx context.Context) ([]media.Playlist
 	return playlists, err
 }
 
-func (db *SQLiteDatabase) GetPlaylists(ctx context.Context, userID string) ([]media.Playlist, error) {
+func (db *SQLiteDatabase) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 
 	conn, err := db.pool.Take(ctx)
@@ -1623,7 +1623,7 @@ func (db *SQLiteDatabase) GetPlaylists(ctx context.Context, userID string) ([]me
 	return playlists, err
 }
 
-func (db *SQLiteDatabase) GetPlaylist(ctx context.Context, id string) (media.Playlist, error) {
+func (db *SQLiteDatabase) Playlist(ctx context.Context, id string) (media.Playlist, error) {
 	playlist := media.Playlist{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1780,7 +1780,7 @@ func (db *SQLiteDatabase) DeletePlaylist(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]media.DatabaseUser, error) {
+func (db *SQLiteDatabase) Users(ctx context.Context) ([]media.DatabaseUser, error) {
 	var users []media.DatabaseUser
 
 	conn, err := db.pool.Take(ctx)
@@ -1827,7 +1827,7 @@ func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]media.DatabaseUser, e
 	return users, err
 }
 
-func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (media.DatabaseUser, error) {
+func (db *SQLiteDatabase) User(ctx context.Context, id string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1883,7 +1883,7 @@ func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (media.Databas
 	return user, nil
 }
 
-func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
+func (db *SQLiteDatabase) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 
 	conn, err := db.pool.Take(ctx)
@@ -2038,7 +2038,7 @@ func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) GetProviderUser(
+func (db *SQLiteDatabase) ProviderUser(
 	ctx context.Context,
 	provider, providerUserID string,
 ) (media.DatabaseUser, error) {

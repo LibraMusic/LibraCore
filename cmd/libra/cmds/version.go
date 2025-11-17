@@ -14,7 +14,7 @@ var versionCmd = &cobra.Command{
 	Args:              cobra.NoArgs,
 	ValidArgsFunction: cobra.NoFileCompletions,
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println(libracore.GetVersionInfo())
+		fmt.Println(libracore.VersionInfo())
 	},
 }
 

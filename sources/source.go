@@ -23,26 +23,26 @@ type Source interface {
 	SupportsMultiple() bool
 	Derive(id string) (Source, error)
 
-	GetID() string
-	GetName() string
-	GetVersion() *semver.Version
-	GetSourceTypes() []string
-	GetMediaTypes() []string
+	ID() string
+	Name() string
+	Version() *semver.Version
+	SourceTypes() []string
+	MediaTypes() []string
 
 	Search(query string, limit, page int, filters map[string]any) ([]media.SourcePlayable, error)
-	GetContent(playable media.SourcePlayable) ([]byte, error)
-	GetLyrics(playable media.LyricsPlayable) (map[string]string, error)
+	Content(playable media.SourcePlayable) ([]byte, error)
+	Lyrics(playable media.LyricsPlayable) (map[string]string, error)
 	CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error)
 }
 
 func SupportsMediaType(s Source, mediaType string) bool {
 	switch mediaType {
 	case "music", "track", "album", "artist":
-		return slices.Contains(s.GetMediaTypes(), "music")
+		return slices.Contains(s.MediaTypes(), "music")
 	case "video":
-		return slices.Contains(s.GetMediaTypes(), "video")
+		return slices.Contains(s.MediaTypes(), "video")
 	case "playlist":
-		return slices.Contains(s.GetMediaTypes(), "playlist")
+		return slices.Contains(s.MediaTypes(), "playlist")
 	}
 	return false
 }

@@ -2,7 +2,7 @@ package media
 
 import "strings"
 
-func GetLinkedSourceID(linkedSource string) string {
+func LinkedSourceID(linkedSource string) string {
 	split := strings.Split(linkedSource, "::")
 	if len(split) == 1 {
 		return ""
@@ -10,7 +10,7 @@ func GetLinkedSourceID(linkedSource string) string {
 	return split[0]
 }
 
-func GetLinkedSourceURL(linkedSource string) string {
+func LinkedSourceURL(linkedSource string) string {
 	split := strings.Split(linkedSource, "::")
 	if len(split) == 1 {
 		return split[0]

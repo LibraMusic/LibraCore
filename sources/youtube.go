@@ -30,7 +30,7 @@ var youtubeScript string
 type YouTubeSource struct{}
 
 func InitYouTubeSource() (*YouTubeSource, error) {
-	youtubeLocation := getYouTubeScriptPath()
+	youtubeLocation := youtubeScriptPath()
 
 	if _, err := os.Stat(youtubeLocation); errors.Is(err, fs.ErrNotExist) {
 		err = os.MkdirAll(filepath.Dir(youtubeLocation), os.ModePerm)
@@ -47,7 +47,7 @@ func InitYouTubeSource() (*YouTubeSource, error) {
 	return &YouTubeSource{}, nil
 }
 
-func getYouTubeScriptPath() string {
+func youtubeScriptPath() string {
 	path := config.Conf.SourceScripts.YouTubeLocation
 	if !filepath.IsAbs(path) && config.DataDir != "" {
 		absDataDir, err := filepath.Abs(config.DataDir)
@@ -74,23 +74,23 @@ func (*YouTubeSource) Derive(_ string) (Source, error) {
 	return nil, ErrMultipleInstancesNotSupported
 }
 
-func (*YouTubeSource) GetID() string {
+func (*YouTubeSource) ID() string {
 	return "youtube"
 }
 
-func (*YouTubeSource) GetName() string {
+func (*YouTubeSource) Name() string {
 	return "YouTube"
 }
 
-func (*YouTubeSource) GetVersion() *semver.Version {
+func (*YouTubeSource) Version() *semver.Version {
 	return libracore.LibraVersion
 }
 
-func (*YouTubeSource) GetSourceTypes() []string {
+func (*YouTubeSource) SourceTypes() []string {
 	return []string{"content", "metadata", "lyrics"}
 }
 
-func (*YouTubeSource) GetMediaTypes() []string {
+func (*YouTubeSource) MediaTypes() []string {
 	return []string{"music", "video", "playlist"}
 }
 
@@ -104,7 +104,7 @@ func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]an
 		return results, fmt.Errorf("error encoding filters: %w", err)
 	}
 
-	youtubeLocation := getYouTubeScriptPath()
+	youtubeLocation := youtubeScriptPath()
 
 	command := append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
 		youtubeLocation,
@@ -189,7 +189,7 @@ func (s *YouTubeSource) parseSongResult(v map[string]any) (media.SourcePlayable,
 			"yt_artists":        v["artists"].([]map[string]string),
 			"yt_album":          v["album"].(map[string]string),
 		},
-		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
+		MetadataSource: s.ID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
 	}, nil
 }
 
@@ -222,7 +222,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]any) (media.SourcePlayable
 			"yt_id":             v["browseId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 		},
-		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/browse/" + v["browseId"].(string),
+		MetadataSource: s.ID() + "::" + "https://music.youtube.com/browse/" + v["browseId"].(string),
 	}, nil
 }
 
@@ -271,7 +271,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 				"yt_artists":        v["artists"].([]map[string]string),
 				"yt_album":          album,
 			},
-			MetadataSource: s.GetID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
+			MetadataSource: s.ID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
 		}, nil
 	}
 
@@ -292,7 +292,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 			"yt_id":             v["videoId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 		},
-		MetadataSource: s.GetID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string),
+		MetadataSource: s.ID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string),
 	}, nil
 }
 
@@ -310,7 +310,7 @@ func (s *YouTubeSource) parseArtistResult(v map[string]any) (media.SourcePlayabl
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
 		},
-		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/channel/" + v["browseId"].(string),
+		MetadataSource: s.ID() + "::" + "https://music.youtube.com/channel/" + v["browseId"].(string),
 	}, nil
 }
 
@@ -335,17 +335,17 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (media.SourcePlaya
 			"yt_id":             v["browseId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 		},
-		MetadataSource: s.GetID() + "::" + "https://music.youtube.com/playlist?list=" + v["browseId"].(string),
+		MetadataSource: s.ID() + "::" + "https://music.youtube.com/playlist?list=" + v["browseId"].(string),
 	}, nil
 }
 
-func (s *YouTubeSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
+func (s *YouTubeSource) Content(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
 		return nil, ErrUnsupportedMediaType
 	}
 
 	var command []string
-	youtubeLocation := getYouTubeScriptPath()
+	youtubeLocation := youtubeScriptPath()
 
 	switch playable.GetType() {
 	case "track":
@@ -374,7 +374,7 @@ func (s *YouTubeSource) GetContent(playable media.SourcePlayable) ([]byte, error
 	return out, nil
 }
 
-func (s *YouTubeSource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (s *YouTubeSource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
@@ -382,7 +382,7 @@ func (s *YouTubeSource) GetLyrics(playable media.LyricsPlayable) (map[string]str
 	}
 
 	var command []string
-	youtubeLocation := getYouTubeScriptPath()
+	youtubeLocation := youtubeScriptPath()
 
 	if playable.GetType() == "video" ||
 		playable.GetAdditionalMeta()["is_video"] == true { //revive:disable-line:bool-literal-in-expr Value cannot be used as a boolean
@@ -417,7 +417,7 @@ func (s *YouTubeSource) CompleteMetadata(playable media.SourcePlayable) (media.S
 		return playable, ErrUnsupportedMediaType
 	}
 
-	youtubeLocation := getYouTubeScriptPath()
+	youtubeLocation := youtubeScriptPath()
 
 	command := append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
 		youtubeLocation,
@@ -657,8 +657,8 @@ func (*YouTubeSource) completePlaylistMetadata(
 func init() {
 	source, err := InitYouTubeSource()
 	if err != nil {
-		log.Warn("Source initialization failed", "source", source.GetID(), "error", err)
+		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
 	} else {
-		Registry[source.GetID()] = source
+		Registry[source.ID()] = source
 	}
 }

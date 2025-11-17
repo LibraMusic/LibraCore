@@ -106,7 +106,7 @@ func (db *PostgreSQLDatabase) createMigrationsTable(ctx context.Context) error {
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) getCurrentVersion(ctx context.Context) (uint64, bool, error) {
+func (db *PostgreSQLDatabase) currentVersion(ctx context.Context) (uint64, bool, error) {
 	var version uint64
 	var dirty bool
 	err := db.pool.QueryRow(ctx, `
@@ -133,7 +133,7 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 		return err
 	}
 
-	currentVersion, dirty, err := db.getCurrentVersion(context.Background())
+	currentVersion, dirty, err := db.currentVersion(context.Background())
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -145,7 +145,7 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 	if err != nil {
 		return err
 	}
-	files := GetOrderedMigrationFiles(entries, true)
+	files := OrderedMigrationFiles(entries, true)
 
 	appliedCount := 0
 	for _, file := range files {
@@ -195,7 +195,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 		return err
 	}
 
-	currentVersion, dirty, err := db.getCurrentVersion(context.Background())
+	currentVersion, dirty, err := db.currentVersion(context.Background())
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		return err
 	}
@@ -207,7 +207,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 	if err != nil {
 		return err
 	}
-	files := GetOrderedMigrationFiles(entries, false)
+	files := OrderedMigrationFiles(entries, false)
 
 	appliedCount := 0
 	for _, file := range files {
@@ -260,7 +260,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 	return nil
 }
 
-func (db *PostgreSQLDatabase) GetAllTracks(ctx context.Context) ([]media.Track, error) {
+func (db *PostgreSQLDatabase) AllTracks(ctx context.Context) ([]media.Track, error) {
 	var tracks []media.Track
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -304,7 +304,7 @@ func (db *PostgreSQLDatabase) GetAllTracks(ctx context.Context) ([]media.Track, 
 	return tracks, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetTracks(ctx context.Context, userID string) ([]media.Track, error) {
+func (db *PostgreSQLDatabase) Tracks(ctx context.Context, userID string) ([]media.Track, error) {
 	var tracks []media.Track
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -348,7 +348,7 @@ func (db *PostgreSQLDatabase) GetTracks(ctx context.Context, userID string) ([]m
 	return tracks, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetTrack(ctx context.Context, id string) (media.Track, error) {
+func (db *PostgreSQLDatabase) Track(ctx context.Context, id string) (media.Track, error) {
 	track := media.Track{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -407,7 +407,7 @@ func (db *PostgreSQLDatabase) DeleteTrack(ctx context.Context, id string) error 
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetAllAlbums(ctx context.Context) ([]media.Album, error) {
+func (db *PostgreSQLDatabase) AllAlbums(ctx context.Context) ([]media.Album, error) {
 	var albums []media.Album
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -446,7 +446,7 @@ func (db *PostgreSQLDatabase) GetAllAlbums(ctx context.Context) ([]media.Album, 
 	return albums, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]media.Album, error) {
+func (db *PostgreSQLDatabase) Albums(ctx context.Context, userID string) ([]media.Album, error) {
 	var albums []media.Album
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -485,7 +485,7 @@ func (db *PostgreSQLDatabase) GetAlbums(ctx context.Context, userID string) ([]m
 	return albums, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetAlbum(ctx context.Context, id string) (media.Album, error) {
+func (db *PostgreSQLDatabase) Album(ctx context.Context, id string) (media.Album, error) {
 	album := media.Album{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -538,7 +538,7 @@ func (db *PostgreSQLDatabase) DeleteAlbum(ctx context.Context, id string) error 
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetAllVideos(ctx context.Context) ([]media.Video, error) {
+func (db *PostgreSQLDatabase) AllVideos(ctx context.Context) ([]media.Video, error) {
 	var videos []media.Video
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -578,7 +578,7 @@ func (db *PostgreSQLDatabase) GetAllVideos(ctx context.Context) ([]media.Video, 
 	return videos, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetVideos(ctx context.Context, userID string) ([]media.Video, error) {
+func (db *PostgreSQLDatabase) Videos(ctx context.Context, userID string) ([]media.Video, error) {
 	var videos []media.Video
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -618,7 +618,7 @@ func (db *PostgreSQLDatabase) GetVideos(ctx context.Context, userID string) ([]m
 	return videos, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetVideo(ctx context.Context, id string) (media.Video, error) {
+func (db *PostgreSQLDatabase) Video(ctx context.Context, id string) (media.Video, error) {
 	video := media.Video{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -673,7 +673,7 @@ func (db *PostgreSQLDatabase) DeleteVideo(ctx context.Context, id string) error 
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetAllArtists(ctx context.Context) ([]media.Artist, error) {
+func (db *PostgreSQLDatabase) AllArtists(ctx context.Context) ([]media.Artist, error) {
 	var artists []media.Artist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -710,7 +710,7 @@ func (db *PostgreSQLDatabase) GetAllArtists(ctx context.Context) ([]media.Artist
 	return artists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetArtists(ctx context.Context, userID string) ([]media.Artist, error) {
+func (db *PostgreSQLDatabase) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
 	var artists []media.Artist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -747,7 +747,7 @@ func (db *PostgreSQLDatabase) GetArtists(ctx context.Context, userID string) ([]
 	return artists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetArtist(ctx context.Context, id string) (media.Artist, error) {
+func (db *PostgreSQLDatabase) Artist(ctx context.Context, id string) (media.Artist, error) {
 	artist := media.Artist{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -798,7 +798,7 @@ func (db *PostgreSQLDatabase) DeleteArtist(ctx context.Context, id string) error
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetAllPlaylists(ctx context.Context) ([]media.Playlist, error) {
+func (db *PostgreSQLDatabase) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -833,7 +833,7 @@ func (db *PostgreSQLDatabase) GetAllPlaylists(ctx context.Context) ([]media.Play
 	return playlists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetPlaylists(ctx context.Context, userID string) ([]media.Playlist, error) {
+func (db *PostgreSQLDatabase) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -868,7 +868,7 @@ func (db *PostgreSQLDatabase) GetPlaylists(ctx context.Context, userID string) (
 	return playlists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetPlaylist(ctx context.Context, id string) (media.Playlist, error) {
+func (db *PostgreSQLDatabase) Playlist(ctx context.Context, id string) (media.Playlist, error) {
 	playlist := media.Playlist{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -917,7 +917,7 @@ func (db *PostgreSQLDatabase) DeletePlaylist(ctx context.Context, id string) err
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]media.DatabaseUser, error) {
+func (db *PostgreSQLDatabase) Users(ctx context.Context) ([]media.DatabaseUser, error) {
 	var users []media.DatabaseUser
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -952,7 +952,7 @@ func (db *PostgreSQLDatabase) GetUsers(ctx context.Context) ([]media.DatabaseUse
 	return users, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (media.DatabaseUser, error) {
+func (db *PostgreSQLDatabase) User(ctx context.Context, id string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -976,7 +976,7 @@ func (db *PostgreSQLDatabase) GetUser(ctx context.Context, id string) (media.Dat
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetUserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
+func (db *PostgreSQLDatabase) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
@@ -1025,7 +1025,7 @@ func (db *PostgreSQLDatabase) DeleteUser(ctx context.Context, id string) error {
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) GetProviderUser(
+func (db *PostgreSQLDatabase) ProviderUser(
 	ctx context.Context,
 	provider, providerUserID string,
 ) (media.DatabaseUser, error) {

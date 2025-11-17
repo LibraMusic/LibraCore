@@ -36,22 +36,22 @@ var (
 )
 
 func RegisterMetrics() error {
-	if err := registerTotalCounter(TracksTotal, db.DB.GetAllTracks); err != nil {
+	if err := registerTotalCounter(TracksTotal, db.DB.AllTracks); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(AlbumsTotal, db.DB.GetAllAlbums); err != nil {
+	if err := registerTotalCounter(AlbumsTotal, db.DB.AllAlbums); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(VideosTotal, db.DB.GetAllVideos); err != nil {
+	if err := registerTotalCounter(VideosTotal, db.DB.AllVideos); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(ArtistsTotal, db.DB.GetAllArtists); err != nil {
+	if err := registerTotalCounter(ArtistsTotal, db.DB.AllArtists); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(PlaylistsTotal, db.DB.GetAllPlaylists); err != nil {
+	if err := registerTotalCounter(PlaylistsTotal, db.DB.AllPlaylists); err != nil {
 		return err
 	}
-	return registerTotalCounter(UsersTotal, db.DB.GetUsers)
+	return registerTotalCounter(UsersTotal, db.DB.Users)
 }
 
 func registerTotalCounter[T any](metric prometheus.Counter, fetchFunc func(context.Context) ([]T, error)) error {

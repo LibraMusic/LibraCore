@@ -121,7 +121,7 @@ func Login(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	user, err := db.DB.GetUserByUsername(ctx, req.Username)
+	user, err := db.DB.UserByUsername(ctx, req.Username)
 	if errors.Is(err, db.ErrNotFound) {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"message": "user not found",
@@ -231,7 +231,7 @@ func ProviderCallback(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Check if the provider account is already linked to a user.
-	user, err := db.DB.GetProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	user, err := db.DB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if errors.Is(err, db.ErrNotFound) {
 		return handleNewProviderUser(ctx, c, providerUser)
 	}
@@ -331,7 +331,7 @@ func DisconnectProvider(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	_, err = db.DB.GetProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	_, err = db.DB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if errors.Is(err, db.ErrNotFound) {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"message": "provider account not found",
@@ -350,14 +350,14 @@ func DisconnectProvider(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func GetReservedUsernames() []string {
+func ReservedUsernames() []string {
 	return []string{
 		"default",
 	}
 }
 
 func IsUsernameReserved(username string) bool {
-	return slices.Contains(GetReservedUsernames(), username) ||
+	return slices.Contains(ReservedUsernames(), username) ||
 		slices.ContainsFunc(config.Conf.General.ReservedUsernames, func(s string) bool {
 			return strings.EqualFold(s, username)
 		})

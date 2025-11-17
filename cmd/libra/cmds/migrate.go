@@ -16,7 +16,7 @@ var migrateCmd = &cobra.Command{
 	Long: `Migrate the database.
 Uses your database connection string from the config file.`,
 	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
-		err := db.ConnectDatabase()
+		err := db.Connect()
 		if err != nil {
 			return fmt.Errorf("database connection failed: %w", err)
 		}

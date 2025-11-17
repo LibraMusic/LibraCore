@@ -12,7 +12,7 @@ import (
 	"github.com/libramusic/libracore/config"
 )
 
-func GetOpenAPISpec() echo.Map {
+func OpenAPISpec() echo.Map {
 	v1Spec := loadBaseOpenAPISpec()
 
 	processSchemas(v1Spec)

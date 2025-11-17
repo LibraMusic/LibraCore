@@ -36,11 +36,11 @@ func Enable(sourceStr string) error {
 				if err != nil {
 					return err
 				}
-				Registry[newSource.GetID()] = newSource
-				enabledSources = append(enabledSources, newSource.GetID())
+				Registry[newSource.ID()] = newSource
+				enabledSources = append(enabledSources, newSource.ID())
 				return nil
 			}
-			enabledSources = append(enabledSources, source.GetID())
+			enabledSources = append(enabledSources, source.ID())
 			return nil
 		}
 	}
@@ -49,22 +49,22 @@ func Enable(sourceStr string) error {
 
 // TODO: Implement Search
 
-// TODO: Implement GetContent
+// TODO: Implement Content
 
-// TODO: Implement GetLyrics
+// TODO: Implement Lyrics
 
 // TODO: Implement CompleteMetadata
 
-/* func GetImage(searchResult media.SearchResult) ([]byte, error) {
+/* func Image(searchResult media.SearchResult) ([]byte, error) {
 	if _, ok := Registry[searchResult.ServiceID]; ok {
-		return Registry[searchResult.ServiceID].GetImage(searchResult)
+		return Registry[searchResult.ServiceID].Image(searchResult)
 	}
 	return []byte{}, nil
 }
 
-func GetContent(searchResult media.SearchResult) ([]byte, error) {
+func Content(searchResult media.SearchResult) ([]byte, error) {
 	if _, ok := Registry[searchResult.ServiceID]; ok {
-		return Registry[searchResult.ServiceID].GetContent(searchResult)
+		return Registry[searchResult.ServiceID].Content(searchResult)
 	}
 	return []byte{}, nil
 } */

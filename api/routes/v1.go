@@ -21,7 +21,7 @@ import (
 func V1Playables(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	playables, err := db.GetAllPlayables(ctx)
+	playables, err := db.AllPlayables(ctx)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
@@ -40,7 +40,7 @@ func V1UserPlayables(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	userID := c.Param("id")
-	playables, err := db.GetPlayables(ctx, userID)
+	playables, err := db.Playables(ctx, userID)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
@@ -66,7 +66,7 @@ func V1Track(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	trackID := c.Param("id")
-	track, err := db.DB.GetTrack(ctx, trackID)
+	track, err := db.DB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
@@ -93,7 +93,7 @@ func V1TrackLyrics(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	trackID := c.Param("id")
-	track, err := db.DB.GetTrack(ctx, trackID)
+	track, err := db.DB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
@@ -105,7 +105,7 @@ func V1TrackLyricsLang(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	trackID := c.Param("id")
-	track, err := db.DB.GetTrack(ctx, trackID)
+	track, err := db.DB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
@@ -137,7 +137,7 @@ func V1Video(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	videoID := c.Param("id")
-	video, err := db.DB.GetVideo(ctx, videoID)
+	video, err := db.DB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
@@ -164,7 +164,7 @@ func V1VideoSubtitles(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	videoID := c.Param("id")
-	video, err := db.DB.GetVideo(ctx, videoID)
+	video, err := db.DB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
@@ -176,7 +176,7 @@ func V1VideoSubtitlesLang(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	videoID := c.Param("id")
-	video, err := db.DB.GetVideo(ctx, videoID)
+	video, err := db.DB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})

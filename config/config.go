@@ -130,7 +130,7 @@ func LoadConfig() error {
 		return fmt.Errorf("failed to read default config: %w", err)
 	}
 
-	configFilePath, err := getConfigFilePath()
+	configFilePath, err := configFilePath()
 	if err != nil {
 		return err
 	}
@@ -174,44 +174,44 @@ func setupTypes() {
 	})
 }
 
-func getConfigFilePath() (string, error) {
+func configFilePath() (string, error) {
 	if DataDir != "" {
-		configFilePath, err := filepath.Abs(filepath.Join(DataDir, "config.yaml"))
+		path, err := filepath.Abs(filepath.Join(DataDir, "config.yaml"))
 		if err == nil {
-			err = os.MkdirAll(filepath.Dir(configFilePath), os.ModePerm)
+			err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
 			if err != nil {
 				log.Warn("Failed to create directories for config.yaml in DataDir", "err", err)
 				return "", err
 			}
-			return configFilePath, nil
+			return path, nil
 		}
 		log.Warn("Failed to get absolute path for config.yaml in DataDir", "err", err)
 	}
 
-	configFilePath, err := filepath.Abs("config.yaml")
+	path, err := filepath.Abs("config.yaml")
 	if err != nil {
 		log.Warn("Failed to get absolute path for config.yaml", "err", err)
-	} else if _, err := os.Stat(configFilePath); err == nil {
-		return configFilePath, nil
+	} else if _, err := os.Stat(path); err == nil {
+		return path, nil
 	}
 
-	configFilePath, err = os.UserConfigDir()
+	path, err = os.UserConfigDir()
 	if err != nil {
 		log.Warn("Failed to get user config directory", "err", err)
 	} else {
-		configFilePath = filepath.Join(configFilePath, "libra", "config.yaml")
-		if _, err := os.Stat(configFilePath); err == nil {
-			return configFilePath, nil
+		path = filepath.Join(path, "libra", "config.yaml")
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
 		}
 	}
 
 	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		if _, err := os.Stat(configFilePath); errors.Is(err, fs.ErrNotExist) {
+		if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 			if _, err := os.Stat("/etc/libra/config.yaml"); err == nil {
-				configFilePath = "/etc/libra/config.yaml"
+				path = "/etc/libra/config.yaml"
 			}
 		}
 	}
 
-	return configFilePath, nil
+	return path, nil
 }

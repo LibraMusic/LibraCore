@@ -143,7 +143,7 @@ func New() *echo.Echo {
 	v1Group.GET("/artist/:id/tracks", routes.V1ArtistTracks, middleware.GlobalJWTProtected)
 	// END TO REFRACTOR
 
-	v1Spec := GetOpenAPISpec()
+	v1Spec := OpenAPISpec()
 	v1SpecYAML, err := yaml.Marshal(v1Spec)
 	if err != nil {
 		log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
