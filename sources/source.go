@@ -21,7 +21,7 @@ var (
 type Source interface {
 	Satisfies(id string) bool
 	SupportsMultiple() bool
-	DeriveNew(id string) (Source, error)
+	Derive(id string) (Source, error)
 
 	GetID() string
 	GetName() string

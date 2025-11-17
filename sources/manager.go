@@ -32,7 +32,7 @@ func Enable(sourceStr string) error {
 	for _, source := range Registry {
 		if source.Satisfies(sourceStr) {
 			if source.SupportsMultiple() {
-				newSource, err := source.DeriveNew(sourceStr)
+				newSource, err := source.Derive(sourceStr)
 				if err != nil {
 					return err
 				}

@@ -37,7 +37,7 @@ func (s *LocalFileSource) SupportsMultiple() bool {
 	return s.Path == ""
 }
 
-func (s *LocalFileSource) DeriveNew(id string) (Source, error) {
+func (s *LocalFileSource) Derive(id string) (Source, error) {
 	if s.SupportsMultiple() {
 		return InitLocalFileSource(id)
 	}

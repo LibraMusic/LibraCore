@@ -32,7 +32,7 @@ func (s *WebSource) SupportsMultiple() bool {
 	return s.URL == ""
 }
 
-func (s *WebSource) DeriveNew(id string) (Source, error) {
+func (s *WebSource) Derive(id string) (Source, error) {
 	if s.SupportsMultiple() {
 		return InitWebSource(id)
 	}

@@ -70,7 +70,7 @@ func (*YouTubeSource) SupportsMultiple() bool {
 	return false
 }
 
-func (*YouTubeSource) DeriveNew(_ string) (Source, error) {
+func (*YouTubeSource) Derive(_ string) (Source, error) {
 	return nil, ErrMultipleInstancesNotSupported
 }
 

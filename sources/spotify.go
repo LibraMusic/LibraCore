@@ -30,7 +30,7 @@ func (*SpotifySource) SupportsMultiple() bool {
 	return false
 }
 
-func (*SpotifySource) DeriveNew(_ string) (Source, error) {
+func (*SpotifySource) Derive(_ string) (Source, error) {
 	return nil, ErrMultipleInstancesNotSupported
 }
 
