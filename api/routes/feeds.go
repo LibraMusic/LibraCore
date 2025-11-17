@@ -20,7 +20,7 @@ type FeedRouteDoc struct {
 
 var FeedRoutesDoc []FeedRouteDoc
 
-// Convert from echo format to openapi format.
+// ConvertPathFormat converts from echo format to openapi format.
 // e.g. /path/:param -> /path/{param}.
 func ConvertPathFormat(path string) string {
 	var builder strings.Builder

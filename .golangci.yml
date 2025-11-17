@@ -10,9 +10,10 @@ issues:
 
 formatters:
   enable:
-    - gci
-    - gofumpt
-    - golines
+    - gci # checks if code and import statements are formatted, with additional rules
+    - gofumpt # enforces a stricter format than 'gofmt', while being backwards compatible
+    - golines # checks if code is formatted, and fixes long lines
+    - swaggo # formats swaggo comments
   settings:
     gci:
       sections:
@@ -41,6 +42,7 @@ linters:
     #- dupl # tool for code clone detection
     - decorder # checks declaration order and count of types, constants, variables and functions
     - durationcheck # checks for two durations multiplied together
+    - embeddedstructfieldcheck # checks embedded types in structs
     #- errcheck # checking for unchecked errors, these unchecked errors can be critical bugs in some cases
     - errname # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
     - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
@@ -57,6 +59,7 @@ linters:
     #- goconst # finds repeated strings that could be replaced by a constant
     - gocritic # provides diagnostics that check for bugs, performance and style issues
     - gocyclo # computes and checks the cyclomatic complexity of functions
+    #- godoclint # checks Golang's documentation practice
     - godot # checks if comments end in a period
     - gomoddirectives # manages the use of 'replace', 'retract', and 'excludes' directives in go.mod
     - goprintffuncname # checks that printf-like functions are named with f at the end
@@ -65,10 +68,12 @@ linters:
     - iface # checks the incorrect use of interfaces, helping developers avoid interface pollution
     - ineffassign # detects when assignments to existing variables are not used
     - intrange # finds places where for loops could make use of an integer range
+    - iotamixing # checks if iotas are being used in const blocks with other non-iota declarations
     - loggercheck # checks key value pairs for common logger libraries (kitlog,klog,logr,zap)
     - makezero # finds slice declarations with non-zero initial length
     - mirror # reports wrong mirror patterns of bytes/strings usage
     #- mnd # detects magic numbers
+    - modernize # suggests simplifications to Go code, using modern language and library features
     - musttag # enforces field tags in (un)marshaled structs
     - nakedret # finds naked returns in functions greater than a specified function length
     - nestif # reports deeply nested if statements
@@ -97,6 +102,7 @@ linters:
     - tparallel # detects inappropriate usage of t.Parallel() method in your Go test codes
     - unconvert # removes unnecessary type conversions
     - unparam # reports unused function parameters
+    - unqueryvet # detects SELECT * in SQL queries and SQL builders, encouraging explicit column selection
     - unused # checks for unused constants, variables, functions and types
     - usestdlibvars # detects the possibility to use variables/constants from the Go standard library
     - usetesting # reports uses of functions with replacement inside the testing package
@@ -130,6 +136,11 @@ linters:
 
   # All settings can be found here https://github.com/golangci/golangci-lint/blob/HEAD/.golangci.reference.yml
   settings:
+    embeddedstructfieldcheck:
+      # Checks that sync.Mutex and sync.RWMutex are not used as embedded fields.
+      # Default: false
+      forbid-mutex: true
+
     # errcheck:
     #   # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
     #   # Such cases aren't reported by default.
@@ -176,6 +187,14 @@ linters:
           # Whether to skip (*x).method() calls where x is a pointer receiver.
           # Default: true
           skipRecvDeref: false
+
+    godoclint:
+      # List of rules to enable in addition to the default set.
+      # Default: empty
+      enable:
+        # Assert no unused link in godocs.
+        # https://github.com/godoc-lint/godoc-lint?tab=readme-ov-file#no-unused-link
+        - no-unused-link
 
     godot:
       # List of regexps for excluding particular comment lines from check.

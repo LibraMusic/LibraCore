@@ -18,8 +18,9 @@ var (
 )
 
 type TokenClaims struct {
-	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
+
+	UserID string `json:"user_id"`
 }
 
 func GenerateToken(id string, expiration time.Duration, signingMethod, signingKey string) (string, error) {

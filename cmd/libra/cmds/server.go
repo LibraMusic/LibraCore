@@ -45,8 +45,7 @@ var serverCmd = &cobra.Command{
 		}
 		config.Conf.Auth.JWT.SigningMethod = signingMethod
 
-		if strings.HasPrefix(config.Conf.Auth.JWT.SigningKey, "file:") {
-			keyPath := strings.TrimPrefix(config.Conf.Auth.JWT.SigningKey, "file:")
+		if keyPath, ok := strings.CutPrefix(config.Conf.Auth.JWT.SigningKey, "file:"); ok {
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
 				return fmt.Errorf("failed to get absolute path of JWT signing key file '%s': %w", keyPath, err)

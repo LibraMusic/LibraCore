@@ -85,7 +85,8 @@ func (db *SQLiteDatabase) migrationsTableExists(ctx context.Context) (bool, erro
 
 	var exists bool
 	err = sqlitex.Execute(conn, `
-		SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations';`, &sqlitex.ExecOptions{
+        SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations';
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(_ *sqlite.Stmt) error {
 			exists = true
 			return nil
@@ -105,7 +106,8 @@ func (db *SQLiteDatabase) createMigrationsTable(ctx context.Context) error {
         CREATE TABLE IF NOT EXISTS schema_migrations (
             version BIGINT PRIMARY KEY,
             dirty BOOLEAN
-        );`, nil)
+        );
+    `, nil)
 	return err
 }
 
@@ -122,7 +124,8 @@ func (db *SQLiteDatabase) getCurrentVersion(ctx context.Context) (uint64, bool, 
 
 	err = sqlitex.Execute(conn, `
         SELECT version, dirty FROM schema_migrations 
-        ORDER BY version DESC LIMIT 1;`, &sqlitex.ExecOptions{
+        ORDER BY version DESC LIMIT 1;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			version = uint64(stmt.ColumnInt64(0))
 			dirty = stmt.ColumnBool(1)
@@ -154,7 +157,8 @@ func (db *SQLiteDatabase) setVersion(ctx context.Context, version uint64, dirty 
 	}
 
 	err = sqlitex.Execute(conn, `
-        INSERT INTO schema_migrations (version, dirty) VALUES (?, ?);`, &sqlitex.ExecOptions{
+        INSERT INTO schema_migrations (version, dirty) VALUES (?, ?);
+    `, &sqlitex.ExecOptions{
 		Args: []any{version, dirty},
 	})
 	return err
@@ -311,7 +315,10 @@ func (db *SQLiteDatabase) GetAllTracks(ctx context.Context) ([]media.Track, erro
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM tracks;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM tracks;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			track := media.Track{}
 
@@ -372,7 +379,10 @@ func (db *SQLiteDatabase) GetTracks(ctx context.Context, userID string) ([]media
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM tracks WHERE user_id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM tracks WHERE user_id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			track := media.Track{}
 
@@ -435,7 +445,10 @@ func (db *SQLiteDatabase) GetTrack(ctx context.Context, id string) (media.Track,
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM tracks WHERE id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM tracks WHERE id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -537,11 +550,12 @@ func (db *SQLiteDatabase) AddTrack(ctx context.Context, track media.Track) error
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  INSERT INTO tracks (
-	    id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
-	  ) VALUES (
-	    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );`, &sqlitex.ExecOptions{
+        INSERT INTO tracks (
+            id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			track.ID, track.UserID, track.ISRC, track.Title, string(artistIDs), string(albumIDs),
 			track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
@@ -596,13 +610,14 @@ func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track media.Track) er
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  UPDATE tracks
-	  SET user_id=?, isrc=?, title=?, artist_ids=?, album_ids=?, primary_album_id=?, 
-	      track_number=?, duration=?, description=?, release_date=?, lyrics=?, 
-	      listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?, 
-	      permissions=?, linked_item_ids=?, content_source=?, metadata_source=?, 
-	      lyric_sources=?
-	  WHERE id=?;`, &sqlitex.ExecOptions{
+        UPDATE tracks
+        SET user_id=?, isrc=?, title=?, artist_ids=?, album_ids=?, primary_album_id=?,
+            track_number=?, duration=?, description=?, release_date=?, lyrics=?,
+            listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?,
+            permissions=?, linked_item_ids=?, content_source=?, metadata_source=?,
+            lyric_sources=?
+        WHERE id=?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			track.UserID, track.ISRC, track.Title, string(artistIDs), string(albumIDs),
 			track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
@@ -638,7 +653,10 @@ func (db *SQLiteDatabase) GetAllAlbums(ctx context.Context) ([]media.Album, erro
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM albums;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM albums;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			album := media.Album{}
 
@@ -690,7 +708,10 @@ func (db *SQLiteDatabase) GetAlbums(ctx context.Context, userID string) ([]media
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM albums WHERE user_id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM albums WHERE user_id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			album := media.Album{}
 
@@ -744,7 +765,10 @@ func (db *SQLiteDatabase) GetAlbum(ctx context.Context, id string) (media.Album,
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM albums WHERE id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM albums WHERE id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -829,11 +853,12 @@ func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album media.Album) error
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  INSERT INTO albums (
-	    id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
-	  ) VALUES (
-	    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );`, &sqlitex.ExecOptions{
+        INSERT INTO albums (
+            id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			album.ID, album.UserID, album.UPC, album.EAN, album.Title, string(artistIDs), string(trackIDs),
 			album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
@@ -879,11 +904,12 @@ func (db *SQLiteDatabase) UpdateAlbum(ctx context.Context, album media.Album) er
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  UPDATE albums
-	  SET user_id=?, upc=?, ean=?, title=?, artist_ids=?, track_ids=?, description=?, 
-	      release_date=?, listen_count=?, favorite_count=?, addition_date=?, tags=?, 
-	      additional_meta=?, permissions=?, linked_item_ids=?, metadata_source=?
-	  WHERE id=?;`, &sqlitex.ExecOptions{
+        UPDATE albums
+        SET user_id=?, upc=?, ean=?, title=?, artist_ids=?, track_ids=?, description=?,
+            release_date=?, listen_count=?, favorite_count=?, addition_date=?, tags=?,
+            additional_meta=?, permissions=?, linked_item_ids=?, metadata_source=?
+        WHERE id=?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			album.UserID, album.UPC, album.EAN, album.Title, string(artistIDs), string(trackIDs),
 			album.Description, album.ReleaseDate, album.ListenCount, album.FavoriteCount,
@@ -917,7 +943,10 @@ func (db *SQLiteDatabase) GetAllVideos(ctx context.Context) ([]media.Video, erro
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM videos;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM videos;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			video := media.Video{}
 
@@ -972,7 +1001,10 @@ func (db *SQLiteDatabase) GetVideos(ctx context.Context, userID string) ([]media
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM videos WHERE user_id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM videos WHERE user_id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			video := media.Video{}
 
@@ -1029,7 +1061,10 @@ func (db *SQLiteDatabase) GetVideo(ctx context.Context, id string) (media.Video,
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM videos WHERE id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM videos WHERE id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1121,11 +1156,12 @@ func (db *SQLiteDatabase) AddVideo(ctx context.Context, video media.Video) error
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  INSERT INTO videos (
-	    id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
-	  ) VALUES (
-	   	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );`, &sqlitex.ExecOptions{
+        INSERT INTO videos (
+            id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			video.ID, video.UserID, video.Title, string(artistIDs), video.Duration,
 			video.Description, video.ReleaseDate, string(subtitles), video.WatchCount,
@@ -1176,12 +1212,13 @@ func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video media.Video) er
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  UPDATE videos
-	  SET user_id=?, title=?, artist_ids=?, duration=?, description=?, release_date=?,
-	      subtitles=?, watch_count=?, favorite_count=?, addition_date=?, tags=?,
-	      additional_meta=?, permissions=?, linked_item_ids=?, content_source=?,
-	      metadata_source=?, lyric_sources=?
-	  WHERE id=?;`, &sqlitex.ExecOptions{
+        UPDATE videos
+        SET user_id=?, title=?, artist_ids=?, duration=?, description=?, release_date=?,
+            subtitles=?, watch_count=?, favorite_count=?, addition_date=?, tags=?,
+            additional_meta=?, permissions=?, linked_item_ids=?, content_source=?,
+            metadata_source=?, lyric_sources=?
+        WHERE id=?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			video.UserID, video.Title, string(artistIDs), video.Duration, video.Description,
 			video.ReleaseDate, string(subtitles), video.WatchCount, video.FavoriteCount,
@@ -1216,7 +1253,10 @@ func (db *SQLiteDatabase) GetAllArtists(ctx context.Context) ([]media.Artist, er
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM artists;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM artists;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			artist := media.Artist{}
 
@@ -1266,7 +1306,10 @@ func (db *SQLiteDatabase) GetArtists(ctx context.Context, userID string) ([]medi
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM artists WHERE user_id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM artists WHERE user_id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			artist := media.Artist{}
 
@@ -1318,7 +1361,10 @@ func (db *SQLiteDatabase) GetArtist(ctx context.Context, id string) (media.Artis
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM artists WHERE id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM artists WHERE id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1401,11 +1447,12 @@ func (db *SQLiteDatabase) AddArtist(ctx context.Context, artist media.Artist) er
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  INSERT INTO artists (
-	    id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
-	  ) VALUES (
-	   	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );`, &sqlitex.ExecOptions{
+        INSERT INTO artists (
+            id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			artist.ID, artist.UserID, artist.Name, string(albumIDs), string(trackIDs),
 			artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount,
@@ -1451,11 +1498,12 @@ func (db *SQLiteDatabase) UpdateArtist(ctx context.Context, artist media.Artist)
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  UPDATE artists
-	  SET user_id=?, name=?, album_ids=?, track_ids=?, description=?, creation_date=?,
-	      listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?,
-		  permissions=?, linked_item_ids=?, metadata_source=?
-	  WHERE id=?;`, &sqlitex.ExecOptions{
+        UPDATE artists
+        SET user_id=?, name=?, album_ids=?, track_ids=?, description=?, creation_date=?,
+            listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?,
+            permissions=?, linked_item_ids=?, metadata_source=?
+        WHERE id=?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			artist.UserID, artist.Name, string(albumIDs), string(trackIDs),
 			artist.Description, artist.CreationDate, artist.ListenCount, artist.FavoriteCount,
@@ -1489,7 +1537,10 @@ func (db *SQLiteDatabase) GetAllPlaylists(ctx context.Context) ([]media.Playlist
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM playlists;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM playlists;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			playlist := media.Playlist{}
 
@@ -1533,7 +1584,10 @@ func (db *SQLiteDatabase) GetPlaylists(ctx context.Context, userID string) ([]me
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM playlists WHERE user_id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM playlists WHERE user_id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			playlist := media.Playlist{}
 
@@ -1579,7 +1633,10 @@ func (db *SQLiteDatabase) GetPlaylist(ctx context.Context, id string) (media.Pla
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM playlists WHERE id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM playlists WHERE id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1648,12 +1705,13 @@ func (db *SQLiteDatabase) AddPlaylist(ctx context.Context, playlist media.Playli
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  INSERT INTO playlists (
-	    id, user_id, title, track_ids, listen_count, favorite_count, description, 
-	    creation_date, addition_date, tags, additional_meta, permissions, metadata_source
-	  ) VALUES (
-	   	?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );`, &sqlitex.ExecOptions{
+        INSERT INTO playlists (
+            id, user_id, title, track_ids, listen_count, favorite_count, description,
+            creation_date, addition_date, tags, additional_meta, permissions, metadata_source
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			playlist.ID, playlist.UserID, playlist.Title, string(trackIDs),
 			playlist.ListenCount, playlist.FavoriteCount, playlist.Description,
@@ -1691,11 +1749,12 @@ func (db *SQLiteDatabase) UpdatePlaylist(ctx context.Context, playlist media.Pla
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  UPDATE playlists
-	  SET user_id=?, title=?, track_ids=?, listen_count=?, favorite_count=?, description=?, 
-	      creation_date=?, addition_date=?, tags=?, additional_meta=?, permissions=?, 
-	      metadata_source=?
-	  WHERE id=?;`, &sqlitex.ExecOptions{
+        UPDATE playlists
+        SET user_id=?, title=?, track_ids=?, listen_count=?, favorite_count=?, description=?,
+            creation_date=?, addition_date=?, tags=?, additional_meta=?, permissions=?,
+            metadata_source=?
+        WHERE id=?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			playlist.UserID, playlist.Title, string(trackIDs),
 			playlist.ListenCount, playlist.FavoriteCount, playlist.Description,
@@ -1730,7 +1789,10 @@ func (db *SQLiteDatabase) GetUsers(ctx context.Context) ([]media.DatabaseUser, e
 	}
 	defer db.pool.Put(conn)
 
-	err = sqlitex.Execute(conn, `SELECT * FROM users;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM users;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			user := media.DatabaseUser{}
 
@@ -1775,7 +1837,10 @@ func (db *SQLiteDatabase) GetUser(ctx context.Context, id string) (media.Databas
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM users WHERE id = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM users WHERE id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1828,7 +1893,10 @@ func (db *SQLiteDatabase) GetUserByUsername(ctx context.Context, username string
 	defer db.pool.Put(conn)
 
 	scanned := false
-	err = sqlitex.Execute(conn, `SELECT * FROM users WHERE username = ?;`, &sqlitex.ExecOptions{
+	err = sqlitex.Execute(conn, `
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        FROM users WHERE username = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -1897,13 +1965,14 @@ func (db *SQLiteDatabase) CreateUser(ctx context.Context, user media.DatabaseUse
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  INSERT INTO users (
-	    id, username, email, password_hash, display_name, description, listened_to,
-	    favorites, public_view_count, creation_date, permissions, linked_artist_id,
-	    linked_sources
-	  ) VALUES (
-	   ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-	  );`, &sqlitex.ExecOptions{
+        INSERT INTO users (
+            id, username, email, password_hash, display_name, description, listened_to,
+            favorites, public_view_count, creation_date, permissions, linked_artist_id,
+            linked_sources
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			user.ID, user.Username, user.Email, user.PasswordHash, user.DisplayName,
 			user.Description, string(listenedTo), string(favorites), user.PublicViewCount,
@@ -1940,11 +2009,12 @@ func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user media.DatabaseUse
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-	  UPDATE users
-	  SET username=?, email=?, password_hash=?, display_name=?, description=?, listened_to=?, 
-	      favorites=?, public_view_count=?, creation_date=?, permissions=?, linked_artist_id=?, 
-	      linked_sources=?
-	  WHERE id=?;`, &sqlitex.ExecOptions{
+        UPDATE users
+        SET username=?, email=?, password_hash=?, display_name=?, description=?, listened_to=?,
+            favorites=?, public_view_count=?, creation_date=?, permissions=?, linked_artist_id=?,
+            linked_sources=?
+        WHERE id=?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{
 			user.Username, user.Email, user.PasswordHash, user.DisplayName, user.Description,
 			string(listenedTo), string(favorites), user.PublicViewCount, user.CreationDate,
@@ -1982,9 +2052,11 @@ func (db *SQLiteDatabase) GetProviderUser(
 
 	scanned := false
 	err = sqlitex.Execute(conn, `
-        SELECT u.* FROM users u
+        SELECT u.id, u.user_id, u.isrc, u.title, u.artist_ids, u.album_ids, u.primary_album_id, u.track_number, u.duration, u.description, u.release_date, u.lyrics, u.listen_count, u.favorite_count, u.addition_date, u.tags, u.additional_meta, u.permissions, u.linked_item_ids, u.content_source, u.metadata_source, u.lyric_sources
+        FROM users u
         JOIN auth_providers p ON u.id = p.user_id
-        WHERE p.provider = ? AND p.provider_user_id = ?;`, &sqlitex.ExecOptions{
+        WHERE p.provider = ? AND p.provider_user_id = ?;
+    `, &sqlitex.ExecOptions{
 		ResultFunc: func(stmt *sqlite.Stmt) error {
 			if scanned {
 				return ErrTooMany
@@ -2061,7 +2133,8 @@ func (db *SQLiteDatabase) LinkProviderAccount(ctx context.Context, provider, use
 
 	err = sqlitex.Execute(conn, `
         INSERT INTO auth_providers (user_id, provider, provider_user_id)
-        VALUES (?, ?, ?);`, &sqlitex.ExecOptions{
+        VALUES (?, ?, ?);
+    `, &sqlitex.ExecOptions{
 		Args: []any{userID, provider, providerUserID},
 	})
 
@@ -2076,7 +2149,8 @@ func (db *SQLiteDatabase) DisconnectProviderAccount(ctx context.Context, provide
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        DELETE FROM auth_providers WHERE user_id = ? AND provider = ?;`, &sqlitex.ExecOptions{
+        DELETE FROM auth_providers WHERE user_id = ? AND provider = ?;
+    `, &sqlitex.ExecOptions{
 		Args: []any{userID, provider},
 	})
 

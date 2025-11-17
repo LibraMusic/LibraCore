@@ -52,8 +52,7 @@ func processSchemas(v1Spec echo.Map) {
 
 	// Remove "media." prefix from schema names
 	for key := range schemas {
-		if strings.HasPrefix(key, "media.") {
-			newKey := strings.TrimPrefix(key, "media.")
+		if newKey, ok := strings.CutPrefix(key, "media."); ok {
 			schemas[newKey] = schemas[key]
 			delete(schemas, key)
 		}

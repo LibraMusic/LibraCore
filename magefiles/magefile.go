@@ -78,10 +78,6 @@ func Lint() error {
 		}
 	}
 
-	if err := sh.RunV("go", "tool", "swag", "fmt", "-g", "api/server/server.go"); err != nil {
-		return err
-	}
-
 	if err := sh.Run("ruff", "version"); err != nil {
 		fmt.Println("ruff is not installed. Please install it from https://docs.astral.sh/ruff/installation/")
 	} else {

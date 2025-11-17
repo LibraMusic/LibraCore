@@ -38,6 +38,8 @@ func GetVersionInfo() string {
 }
 
 type buildInfo struct {
+	*debug.BuildInfo
+
 	VersionControlSystem string
 	Revision             string
 	RevisionTime         string
@@ -45,8 +47,6 @@ type buildInfo struct {
 
 	GoOS   string
 	GoArch string
-
-	*debug.BuildInfo
 }
 
 var (
