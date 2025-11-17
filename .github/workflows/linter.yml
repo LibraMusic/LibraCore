@@ -41,6 +41,7 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+          args: --fix
 
       - uses: astral-sh/ruff-action@v3
         with:

@@ -73,7 +73,7 @@ func Lint() error {
 	if err := sh.Run("golangci-lint", "version"); err != nil {
 		fmt.Println("golangci-lint is not installed. Please install it from https://golangci-lint.run/welcome/install/")
 	} else {
-		if err = sh.RunV("golangci-lint", "run"); err != nil {
+		if err = sh.RunV("golangci-lint", "run", "--fix"); err != nil {
 			return err
 		}
 	}
