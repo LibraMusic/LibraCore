@@ -42,7 +42,7 @@ func (s *LocalFileSource) DeriveNew(id string) (Source, error) {
 	if s.SupportsMultiple() {
 		return InitLocalFileSource(id)
 	}
-	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
+	return nil, fmt.Errorf("source %q does not support multiple instances", s.GetID())
 }
 
 func (s *LocalFileSource) GetID() string {

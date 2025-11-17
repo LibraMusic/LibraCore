@@ -32,7 +32,7 @@ func (*SpotifySource) SupportsMultiple() bool {
 }
 
 func (s *SpotifySource) DeriveNew(_ string) (Source, error) {
-	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
+	return nil, fmt.Errorf("source %q does not support multiple instances", s.GetID())
 }
 
 func (*SpotifySource) GetID() string {

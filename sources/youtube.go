@@ -71,7 +71,7 @@ func (*YouTubeSource) SupportsMultiple() bool {
 }
 
 func (s *YouTubeSource) DeriveNew(_ string) (Source, error) {
-	return nil, fmt.Errorf("source '%s' does not support multiple instances", s.GetID())
+	return nil, fmt.Errorf("source %q does not support multiple instances", s.GetID())
 }
 
 func (*YouTubeSource) GetID() string {

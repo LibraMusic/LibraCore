@@ -36,23 +36,23 @@ var serverCmd = &cobra.Command{
 	SilenceUsage:      true,
 	RunE: func(_ *cobra.Command, _ []string) error {
 		if _, err := url.ParseRequestURI(config.Conf.Application.PublicURL); err != nil {
-			return fmt.Errorf("invalid public URL '%s': %w", config.Conf.Application.PublicURL, err)
+			return fmt.Errorf("invalid public URL %q: %w", config.Conf.Application.PublicURL, err)
 		}
 
 		signingMethod := auth.GetCorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
-			return fmt.Errorf("invalid or unsupported JWT signing method '%s'", config.Conf.Auth.JWT.SigningMethod)
+			return fmt.Errorf("invalid or unsupported JWT signing method %q", config.Conf.Auth.JWT.SigningMethod)
 		}
 		config.Conf.Auth.JWT.SigningMethod = signingMethod
 
 		if keyPath, ok := strings.CutPrefix(config.Conf.Auth.JWT.SigningKey, "file:"); ok {
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
-				return fmt.Errorf("failed to get absolute path of JWT signing key file '%s': %w", keyPath, err)
+				return fmt.Errorf("failed to get absolute path of JWT signing key file %q: %w", keyPath, err)
 			}
 			keyData, err := os.ReadFile(keyPath)
 			if err != nil {
-				return fmt.Errorf("failed to read JWT signing key file '%s': %w", keyPath, err)
+				return fmt.Errorf("failed to read JWT signing key file %q: %w", keyPath, err)
 			}
 			config.Conf.Auth.JWT.SigningKey = string(keyData)
 		}
@@ -67,11 +67,11 @@ var serverCmd = &cobra.Command{
 				return errors.New("auth provider ID cannot be empty")
 			}
 			if provider.GetName() == "" {
-				return fmt.Errorf("unsupported auth provider '%s'", provider.ID)
+				return fmt.Errorf("unsupported auth provider %q", provider.ID)
 			}
 			p, err := provider.GetProvider()
 			if err != nil {
-				return fmt.Errorf("failed to initialize auth provider '%s': %w", provider.ID, err)
+				return fmt.Errorf("failed to initialize auth provider %q: %w", provider.ID, err)
 			}
 			goth.UseProviders(p)
 		}

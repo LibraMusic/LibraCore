@@ -8,7 +8,7 @@ type SourceInitializationError struct {
 }
 
 func (e SourceInitializationError) Error() string {
-	return fmt.Sprintf("initialization of source '%s' failed: %s", e.SourceID, e.Err.Error())
+	return fmt.Sprintf("initialization of source %q failed: %s", e.SourceID, e.Err.Error())
 }
 
 func (e SourceInitializationError) Unwrap() error {
