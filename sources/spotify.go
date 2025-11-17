@@ -3,7 +3,6 @@
 package sources
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -31,8 +30,8 @@ func (*SpotifySource) SupportsMultiple() bool {
 	return false
 }
 
-func (s *SpotifySource) DeriveNew(_ string) (Source, error) {
-	return nil, fmt.Errorf("source %q does not support multiple instances", s.GetID())
+func (*SpotifySource) DeriveNew(_ string) (Source, error) {
+	return nil, ErrMultipleInstancesNotSupported
 }
 
 func (*SpotifySource) GetID() string {

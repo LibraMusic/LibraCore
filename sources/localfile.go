@@ -4,7 +4,6 @@ package sources
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -42,7 +41,7 @@ func (s *LocalFileSource) DeriveNew(id string) (Source, error) {
 	if s.SupportsMultiple() {
 		return InitLocalFileSource(id)
 	}
-	return nil, fmt.Errorf("source %q does not support multiple instances", s.GetID())
+	return nil, ErrMultipleInstancesNotSupported
 }
 
 func (s *LocalFileSource) GetID() string {

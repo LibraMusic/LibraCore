@@ -3,7 +3,6 @@
 package sources
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -37,7 +36,7 @@ func (s *WebSource) DeriveNew(id string) (Source, error) {
 	if s.SupportsMultiple() {
 		return InitWebSource(id)
 	}
-	return nil, fmt.Errorf("source %q does not support multiple instances", s.GetID())
+	return nil, ErrMultipleInstancesNotSupported
 }
 
 func (*WebSource) GetID() string {
