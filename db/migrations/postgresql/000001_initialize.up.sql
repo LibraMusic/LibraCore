@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS albums (
   id TEXT PRIMARY KEY,
   user_id TEXT,
   upc TEXT,
+  ean TEXT,
   title TEXT,
   artist_ids TEXT[],
   track_ids TEXT[],
@@ -113,6 +114,13 @@ CREATE TABLE IF NOT EXISTS users (
   permissions jsonb,
   linked_artist_id TEXT,
   linked_sources jsonb
+);
+
+CREATE TABLE IF NOT EXISTS auth_providers (
+  user_id TEXT,
+  provider TEXT,
+  provider_user_id TEXT,
+  UNIQUE (user_id, provider)
 );
 
 CREATE TABLE IF NOT EXISTS blacklisted_tokens (

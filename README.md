@@ -4,6 +4,9 @@ Libra is a new, open, and extensible music service. Libra does what you want, ho
 
 The current goal is to release LibraCore v0.1.0 by the end of 2025.
 
+> [!WARNING]
+> Until a stable v0.1.0 release is made, breaking changes can and will be made. Database migrations will not be provided until then.
+
 ## Setup Steps
 
 Before anything else, you need to set up the database. Install one of the following databases and follow its steps:
