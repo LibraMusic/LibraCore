@@ -74,7 +74,7 @@ func (*WebSource) Search(_ string, _, _ int, _ map[string]any) ([]media.SourcePl
 
 func (s *WebSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")
@@ -86,7 +86,7 @@ func (s *WebSource) GetLyrics(playable media.LyricsPlayable) (map[string]string,
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")
@@ -96,7 +96,7 @@ func (s *WebSource) GetLyrics(playable media.LyricsPlayable) (map[string]string,
 
 func (s *WebSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")

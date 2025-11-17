@@ -4,13 +4,10 @@ import (
 	"context"
 	"embed"
 	"errors"
-	"fmt"
 	"io/fs"
 	"slices"
 	"strings"
 	"time"
-
-	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/media"
@@ -25,8 +22,10 @@ var (
 var migrationsFS embed.FS
 
 var (
-	ErrNotFound = errors.New("not found in database")
-	ErrTooMany  = errors.New("too many found in database")
+	ErrNotFound          = errors.New("not found in database")
+	ErrTooMany           = errors.New("too many found in database")
+	ErrAlreadyConnected  = errors.New("database already connected")
+	ErrUnsupportedEngine = errors.New("unsupported database engine")
 )
 
 type Database interface {
@@ -97,21 +96,16 @@ type Database interface {
 
 func ConnectDatabase() error {
 	if DB != nil {
-		log.Warn("Database already connected")
-		return nil
+		return ErrAlreadyConnected
 	}
 
 	for _, db := range Registry {
 		if db.Satisfies(config.Conf.Database.Engine) {
 			DB = db
-			if err := DB.Connect(); err != nil {
-				return fmt.Errorf("error connecting to database: %w", err)
-			}
-			log.Info("Connected to database", "engine", db.EngineName())
-			return nil
+			return DB.Connect()
 		}
 	}
-	return fmt.Errorf("unsupported database engine: %s", config.Conf.Database.Engine)
+	return ErrUnsupportedEngine
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.

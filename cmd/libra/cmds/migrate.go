@@ -20,6 +20,7 @@ Uses your database connection string from the config file.`,
 		if err != nil {
 			log.Fatal("Error connecting to database", "err", err)
 		}
+		log.Info("Connected to database", "engine", db.DB.EngineName())
 	},
 }
 

@@ -151,7 +151,7 @@ func (s *YouTubeSource) parseSearchResult(v map[string]any) (media.SourcePlayabl
 	case "playlist":
 		result, err = s.parsePlaylistResult(v)
 	default:
-		err = media.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
+		err = ErrUnsupportedMediaType
 	}
 
 	return result, err
@@ -228,7 +228,7 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]any) (media.SourcePlayable
 
 func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable, error) {
 	if !config.Conf.General.IncludeVideoResults {
-		return nil, media.UnsupportedMediaTypeError{MediaType: v["resultType"].(string)}
+		return nil, ErrUnsupportedMediaType
 	}
 
 	var displayArtists []string
@@ -341,7 +341,7 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (media.SourcePlaya
 
 func (s *YouTubeSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, ErrUnsupportedMediaType
 	}
 
 	var command []string
@@ -363,7 +363,7 @@ func (s *YouTubeSource) GetContent(playable media.SourcePlayable) ([]byte, error
 			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
 		}...)
 	default:
-		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, ErrUnsupportedMediaType
 	}
 
 	out, err := execCommand(command)
@@ -378,7 +378,7 @@ func (s *YouTubeSource) GetLyrics(playable media.LyricsPlayable) (map[string]str
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, ErrUnsupportedMediaType
 	}
 
 	var command []string
@@ -414,7 +414,7 @@ func (s *YouTubeSource) GetLyrics(playable media.LyricsPlayable) (map[string]str
 
 func (s *YouTubeSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, ErrUnsupportedMediaType
 	}
 
 	youtubeLocation := getYouTubeScriptPath()

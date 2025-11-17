@@ -6,7 +6,6 @@ import (
 	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/media"
 )
 
 var (
@@ -35,7 +34,7 @@ func EnableSource(sourceStr string) error {
 			if source.SupportsMultiple() {
 				newSource, err := source.DeriveNew(sourceStr)
 				if err != nil {
-					return media.SourceInitializationError{SourceID: sourceStr, Err: err}
+					return err
 				}
 				Registry[newSource.GetID()] = newSource
 				enabledSources = append(enabledSources, newSource.GetID())
@@ -45,7 +44,7 @@ func EnableSource(sourceStr string) error {
 			return nil
 		}
 	}
-	return media.InvalidSourceError{SourceID: sourceStr}
+	return ErrInvalidSource
 }
 
 // TODO: Implement Search

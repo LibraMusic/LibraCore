@@ -86,6 +86,7 @@ var serverCmd = &cobra.Command{
 				log.Error("Error closing database connection", "err", err)
 			}
 		}()
+		log.Info("Connected to database", "engine", db.DB.EngineName())
 
 		if err := db.DB.CleanExpiredTokens(context.Background()); err != nil {
 			log.Error("Error cleaning expired tokens", "err", err)

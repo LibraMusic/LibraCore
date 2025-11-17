@@ -11,7 +11,12 @@ import (
 	"github.com/libramusic/libracore/media"
 )
 
-var ErrMultipleInstancesNotSupported = errors.New("source does not support multiple instances")
+var (
+	ErrInvalidSource                 = errors.New("invalid source")
+	ErrUnsupportedSourceType         = errors.New("unsupported source type")
+	ErrUnsupportedMediaType          = errors.New("unsupported media type")
+	ErrMultipleInstancesNotSupported = errors.New("source does not support multiple instances")
+)
 
 type Source interface {
 	Satisfies(id string) bool

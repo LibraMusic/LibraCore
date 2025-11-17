@@ -63,14 +63,14 @@ func (*SpotifySource) Search(_ string, _, _ int, _ map[string]any) ([]media.Sour
 }
 
 func (*SpotifySource) GetContent(_ media.SourcePlayable) ([]byte, error) {
-	return nil, media.UnsupportedSourceTypeError{SourceType: "content"}
+	return nil, ErrUnsupportedSourceType
 }
 
 func (s *SpotifySource) GetLyrics(playable media.LyricsPlayable) (map[string]string, error) {
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")
@@ -80,7 +80,7 @@ func (s *SpotifySource) GetLyrics(playable media.LyricsPlayable) (map[string]str
 
 func (s *SpotifySource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")

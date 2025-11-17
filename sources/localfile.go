@@ -132,7 +132,7 @@ func (s *LocalFileSource) Search(_ string, _, _ int, filters map[string]any) ([]
 
 func (s *LocalFileSource) GetContent(playable media.SourcePlayable) ([]byte, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return nil, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")
@@ -144,7 +144,7 @@ func (s *LocalFileSource) GetLyrics(playable media.LyricsPlayable) (map[string]s
 	result := map[string]string{}
 
 	if !SupportsMediaType(s, playable.GetType()) {
-		return result, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return result, ErrUnsupportedMediaType
 	}
 
 	log.Error("unimplemented")
@@ -154,7 +154,7 @@ func (s *LocalFileSource) GetLyrics(playable media.LyricsPlayable) (map[string]s
 
 func (s *LocalFileSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
 	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, media.UnsupportedMediaTypeError{MediaType: playable.GetType()}
+		return playable, ErrUnsupportedMediaType
 	}
 
 	out, err := ffmpeg.Probe(s.Path)
