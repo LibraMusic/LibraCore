@@ -3,7 +3,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -105,7 +107,7 @@ func Lint() error {
 func Clean() error {
 	fmt.Println("Cleaning...")
 
-	if err := os.Remove(binaryName); err != nil {
+	if err := os.Remove(binaryName); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 
