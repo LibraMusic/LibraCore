@@ -18,54 +18,9 @@ type User struct {
 }
 
 type DatabaseUser struct {
-	ID              string            `json:"id"`
-	Username        string            `json:"username"`
-	Email           string            `json:"email"`
-	PasswordHash    string            `json:"password_hash"`
-	DisplayName     string            `json:"display_name"`
-	Description     string            `json:"description"`
-	ListenedTo      map[string]int    `json:"listened_to"`
-	Favorites       []string          `json:"favorites"`
-	PublicViewCount int               `json:"public_view_count"`
-	CreationDate    int64             `json:"creation_date"`
-	Permissions     map[string]string `json:"permissions"`
-	LinkedArtistID  string            `json:"linked_artist_id"`
-	LinkedSources   map[string]string `json:"linked_sources"`
-}
+	User
 
-func (du DatabaseUser) ToAPIUser() User {
-	return User{
-		ID:              du.ID,
-		Username:        du.Username,
-		Email:           du.Email,
-		DisplayName:     du.DisplayName,
-		Description:     du.Description,
-		ListenedTo:      du.ListenedTo,
-		Favorites:       du.Favorites,
-		PublicViewCount: du.PublicViewCount,
-		CreationDate:    du.CreationDate,
-		Permissions:     du.Permissions,
-		LinkedArtistID:  du.LinkedArtistID,
-		LinkedSources:   du.LinkedSources,
-	}
-}
-
-func (u User) ToDatabaseUser(passwordHash string) DatabaseUser {
-	return DatabaseUser{
-		ID:              u.ID,
-		Username:        u.Username,
-		Email:           u.Email,
-		PasswordHash:    passwordHash,
-		DisplayName:     u.DisplayName,
-		Description:     u.Description,
-		ListenedTo:      u.ListenedTo,
-		Favorites:       u.Favorites,
-		PublicViewCount: u.PublicViewCount,
-		CreationDate:    u.CreationDate,
-		Permissions:     u.Permissions,
-		LinkedArtistID:  u.LinkedArtistID,
-		LinkedSources:   u.LinkedSources,
-	}
+	PasswordHash string `json:"password_hash"`
 }
 
 func (User) GetType() string {

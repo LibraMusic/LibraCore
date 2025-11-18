@@ -82,9 +82,11 @@ func Register(c echo.Context) error {
 	}
 
 	user := media.DatabaseUser{
-		ID:           media.GenerateID(config.Conf.General.IDLength),
-		Username:     req.Username,
-		Email:        req.Email,
+		User: media.User{
+			ID:       media.GenerateID(config.Conf.General.IDLength),
+			Username: req.Username,
+			Email:    req.Email,
+		},
 		PasswordHash: generatePassword(req.Password),
 	}
 	err = db.DB.CreateUser(ctx, user)
@@ -270,10 +272,12 @@ func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
 
 func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser goth.User) error {
 	newUser := media.DatabaseUser{
-		ID:          media.GenerateID(config.Conf.General.IDLength),
-		Username:    providerUser.UserID,
-		Email:       providerUser.Email,
-		DisplayName: providerUser.Name,
+		User: media.User{
+			ID:          media.GenerateID(config.Conf.General.IDLength),
+			Username:    providerUser.UserID,
+			Email:       providerUser.Email,
+			DisplayName: providerUser.Name,
+		},
 	}
 
 	// TODO: Profile picture.
