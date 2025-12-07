@@ -21,7 +21,7 @@ require (
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 	github.com/swaggo/swag/v2 v2.0.0-rc4
 	github.com/u2takey/ffmpeg-go v0.5.0
 	golang.org/x/crypto v0.45.0
