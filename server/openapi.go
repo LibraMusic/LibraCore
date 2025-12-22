@@ -8,8 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore"
-	"github.com/libramusic/libracore/api/routes"
 	"github.com/libramusic/libracore/config"
+	"github.com/libramusic/libracore/server/routes"
 )
 
 func OpenAPISpec() echo.Map {

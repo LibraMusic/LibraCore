@@ -18,12 +18,12 @@ import (
 
 	"github.com/libramusic/taurus/v2"
 
-	"github.com/libramusic/libracore/api"
-	"github.com/libramusic/libracore/api/metrics"
-	"github.com/libramusic/libracore/api/routes/auth"
-	"github.com/libramusic/libracore/api/server"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/server"
+	"github.com/libramusic/libracore/server/metrics"
+	"github.com/libramusic/libracore/server/routes/auth"
+	"github.com/libramusic/libracore/server/routes/auth/providers"
 	"github.com/libramusic/libracore/storage"
 )
 
@@ -61,7 +61,7 @@ var serverCmd = &cobra.Command{
 			return fmt.Errorf("failed to load private key: %w", err)
 		}
 
-		api.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
+		providers.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
 		for _, provider := range config.Conf.Auth.Providers {
 			if provider.ID == "" {
 				return errors.New("auth provider ID cannot be empty")

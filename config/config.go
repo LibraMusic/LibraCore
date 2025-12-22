@@ -15,8 +15,8 @@ import (
 
 	"github.com/libramusic/taurus/v2"
 
-	"github.com/libramusic/libracore/api"
 	"github.com/libramusic/libracore/media"
+	"github.com/libramusic/libracore/server/routes/auth/providers"
 )
 
 var Conf Config
@@ -44,12 +44,12 @@ type JWTAuthConfig struct {
 }
 
 type AuthConfig struct {
-	JWT                        JWTAuthConfig      `yaml:"jwt"`
-	Providers                  []api.AuthProvider `yaml:"providers"`
-	GlobalAPIRoutesRequireAuth bool               `yaml:"global_api_routes_require_auth"`
-	UserAPIRoutesRequireAuth   bool               `yaml:"user_api_routes_require_auth"`
-	UserAPIRequireSameUseUser  bool               `yaml:"user_api_require_same_user"`
-	DisableAccountCreation     bool               `yaml:"disable_account_creation"`
+	JWT                        JWTAuthConfig            `yaml:"jwt"`
+	Providers                  []providers.AuthProvider `yaml:"providers"`
+	GlobalAPIRoutesRequireAuth bool                     `yaml:"global_api_routes_require_auth"`
+	UserAPIRoutesRequireAuth   bool                     `yaml:"user_api_routes_require_auth"`
+	UserAPIRequireSameUseUser  bool                     `yaml:"user_api_require_same_user"`
+	DisableAccountCreation     bool                     `yaml:"disable_account_creation"`
 }
 
 type GeneralConfig struct {

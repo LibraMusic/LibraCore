@@ -11,15 +11,14 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore"
-	"github.com/libramusic/libracore/api"
-	"github.com/libramusic/libracore/api/middleware"
-	"github.com/libramusic/libracore/api/routes"
-	"github.com/libramusic/libracore/api/routes/auth"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/server/middleware"
+	"github.com/libramusic/libracore/server/routes"
+	"github.com/libramusic/libracore/server/routes/auth"
 )
 
-//go:generate go tool swag init -g server.go -d ./,../routes/,../../media/ -o . --ot go -v3.1
+//go:generate go tool swag init -g server.go -d ./,./routes/,../media/ -o . --ot go -v3.1
 
 //	@title			Libra API
 //	@version		0.1.0-DEV
@@ -56,7 +55,7 @@ func New() *echo.Echo {
 
 	e := echo.New()
 	e.HideBanner = true
-	e.JSONSerializer = &api.GoJSONSerializer{}
+	e.JSONSerializer = &GoJSONSerializer{}
 
 	e.Use(echoprometheus.NewMiddleware("libra"))
 
