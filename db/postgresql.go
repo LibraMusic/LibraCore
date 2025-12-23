@@ -410,7 +410,7 @@ func (db *PostgreSQLDatabase) DeleteTrack(ctx context.Context, id string) error 
 func (db *PostgreSQLDatabase) AllAlbums(ctx context.Context) ([]media.Album, error) {
 	var albums []media.Album
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
         FROM albums;
     `)
 	if err != nil {
@@ -449,7 +449,7 @@ func (db *PostgreSQLDatabase) AllAlbums(ctx context.Context) ([]media.Album, err
 func (db *PostgreSQLDatabase) Albums(ctx context.Context, userID string) ([]media.Album, error) {
 	var albums []media.Album
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
         FROM albums WHERE user_id=$1;
     `, userID)
 	if err != nil {
@@ -488,7 +488,7 @@ func (db *PostgreSQLDatabase) Albums(ctx context.Context, userID string) ([]medi
 func (db *PostgreSQLDatabase) Album(ctx context.Context, id string) (media.Album, error) {
 	album := media.Album{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
         FROM albums WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -541,7 +541,7 @@ func (db *PostgreSQLDatabase) DeleteAlbum(ctx context.Context, id string) error 
 func (db *PostgreSQLDatabase) AllVideos(ctx context.Context) ([]media.Video, error) {
 	var videos []media.Video
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
         FROM videos;
     `)
 	if err != nil {
@@ -581,7 +581,7 @@ func (db *PostgreSQLDatabase) AllVideos(ctx context.Context) ([]media.Video, err
 func (db *PostgreSQLDatabase) Videos(ctx context.Context, userID string) ([]media.Video, error) {
 	var videos []media.Video
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
         FROM videos WHERE user_id=$1;
     `, userID)
 	if err != nil {
@@ -621,7 +621,7 @@ func (db *PostgreSQLDatabase) Videos(ctx context.Context, userID string) ([]medi
 func (db *PostgreSQLDatabase) Video(ctx context.Context, id string) (media.Video, error) {
 	video := media.Video{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
         FROM videos WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -676,7 +676,7 @@ func (db *PostgreSQLDatabase) DeleteVideo(ctx context.Context, id string) error 
 func (db *PostgreSQLDatabase) AllArtists(ctx context.Context) ([]media.Artist, error) {
 	var artists []media.Artist
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
         FROM artists;
     `)
 	if err != nil {
@@ -713,7 +713,7 @@ func (db *PostgreSQLDatabase) AllArtists(ctx context.Context) ([]media.Artist, e
 func (db *PostgreSQLDatabase) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
 	var artists []media.Artist
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
         FROM artists WHERE user_id=$1;
     `, userID)
 	if err != nil {
@@ -750,7 +750,7 @@ func (db *PostgreSQLDatabase) Artists(ctx context.Context, userID string) ([]med
 func (db *PostgreSQLDatabase) Artist(ctx context.Context, id string) (media.Artist, error) {
 	artist := media.Artist{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
         FROM artists WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -801,7 +801,7 @@ func (db *PostgreSQLDatabase) DeleteArtist(ctx context.Context, id string) error
 func (db *PostgreSQLDatabase) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
         FROM playlists;
     `)
 	if err != nil {
@@ -836,7 +836,7 @@ func (db *PostgreSQLDatabase) AllPlaylists(ctx context.Context) ([]media.Playlis
 func (db *PostgreSQLDatabase) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
         FROM playlists WHERE user_id=$1;
     `, userID)
 	if err != nil {
@@ -871,7 +871,7 @@ func (db *PostgreSQLDatabase) Playlists(ctx context.Context, userID string) ([]m
 func (db *PostgreSQLDatabase) Playlist(ctx context.Context, id string) (media.Playlist, error) {
 	playlist := media.Playlist{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
         FROM playlists WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -920,7 +920,7 @@ func (db *PostgreSQLDatabase) DeletePlaylist(ctx context.Context, id string) err
 func (db *PostgreSQLDatabase) Users(ctx context.Context) ([]media.DatabaseUser, error) {
 	var users []media.DatabaseUser
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
         FROM users;
     `)
 	if err != nil {
@@ -955,7 +955,7 @@ func (db *PostgreSQLDatabase) Users(ctx context.Context) ([]media.DatabaseUser, 
 func (db *PostgreSQLDatabase) User(ctx context.Context, id string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
         FROM users WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -979,7 +979,7 @@ func (db *PostgreSQLDatabase) User(ctx context.Context, id string) (media.Databa
 func (db *PostgreSQLDatabase) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
         FROM users WHERE username=$1 OR email=$1;
     `, strings.ToLower(username))
 	err := row.Scan(
@@ -1031,7 +1031,7 @@ func (db *PostgreSQLDatabase) ProviderUser(
 ) (media.DatabaseUser, error) {
 	var user media.DatabaseUser
 	row := db.pool.QueryRow(ctx, `
-        SELECT u.id, u.user_id, u.isrc, u.title, u.artist_ids, u.album_ids, u.primary_album_id, u.track_number, u.duration, u.description, u.release_date, u.lyrics, u.listen_count, u.favorite_count, u.addition_date, u.tags, u.additional_meta, u.permissions, u.linked_item_ids, u.content_source, u.metadata_source, u.lyric_sources
+        SELECT u.id, u.username, u.email, u.password_hash, u.display_name, u.description, u.listened_to, u.favorites, u.public_view_count, u.creation_date, u.permissions, u.linked_artist_id, u.linked_sources
         FROM users u
         JOIN auth_providers p ON u.id = p.user_id
         WHERE p.provider = $1 AND p.provider_user_id = $2;
