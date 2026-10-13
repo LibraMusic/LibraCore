@@ -3,10 +3,7 @@ application:
   public_url: http://127.0.0.1:8080 # Currently used for authentication provider redirects and OpenAPI.
   source_id: libra
   source_name: Libra
-  media_types:
-    - music
-    - video
-    - playlist
+  source_formats: [music, video, playlist]
 auth:
   jwt:
     signing_method: HS256 # Supported algorithms: HS256, HS384, HS512, RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512, EdDSA
@@ -20,8 +17,6 @@ auth:
   disable_account_creation: false
 general:
   id_length: 11 # Adjust this value if there (somehow) aren't enough unique IDs. The calculation is 62^id_length, so a value of 11 gives about 52 quintillion unique IDs. See https://zelark.github.io/nano-id-cc/ for ID collision probability.
-  include_video_results: true # Determines whether video results are included in search results from sources that support video.
-  video_audio_only: true # If true, only the audio of videos is downloaded and they are treated as tracks.
   inherit_listen_counts: false # If true, the listen count for newly added content is initially set to the listen count from the source. If false, the listen count is initially set to 0.
   artist_listen_counts_by_track: true # If true, the listen count for an artist is the sum of the listen counts for all of their content. If false, the listen count for an artist is the number of times a user has played the artist as a whole (i.e., pressing "Play" on the artist page).
   user_artist_linking: true # If true, users can link their accounts to artists. A linked account will allow the user to view analytics for the artist.
@@ -33,28 +28,44 @@ general:
   custom_display_names: true # If true, users can set a custom display name. If false, the display name is locked to only case changes.
   reserve_display_names: true # If true, display names follow the same rules as usernames.
   admin_permissions: {}
-  enabled_sources:
-    - spotify
-    - youtube
   document_feed_routes: true # Whether to include feed routes in OpenAPI documentation.
-source_scripts:
-  python_command: python3
-  youtube_location: source_scripts/youtube.py # Where youtube.py will be downladed to as well as what will be run.
-logs:
-  level: info # Supported levels: debug, info, warn, error, fatal. Default is info.
-  format: text # Possible values, text, json, or logfmt. Default is text.
+sources:
+  definitions:
+    - type: spotify # If no alias is specified, the type will be used instead. If the source type supports multiple instances, the instance number will also be appended to the alias (e.g., spotify_1, spotify_2, etc.).
+    - type: youtube
+      options:
+        python_command: python3
+        script_path: source_scripts/youtube.py # Where youtube.py will be downladed to as well as what will be run.
+        include_video_results: true # Determines whether video results are included in search results from sources that support video.
+        video_audio_only: true # If true, only the audio of videos is downloaded and they are treated as tracks.
+    # - alias: spotify
+    #   type: spotify
+    #   options: {}
+  priorities: # The actual order of sources with support for complex priority rules using aliases.
+    - alias: spotify
+    - alias: youtube
+    #   categories: [media]
+    # - alias: youtube
+    #   categories: [metadata, lyrics] # A whitelist of which content categories to enable for this source. If not specified, all supported categories will be enabled. This is useful if you want a source to have a higher priority for specific categories.
+    #   formats: [music, video, playlist] # A whitelist of which content formats to enable for this source. If not specified, all supported formats will be enabled. This is useful if you want a source to have a higher priority for specific formats.
 storage:
   location: ./storage
   size_limit: 0B # A value of 0 means no limit.
   minimum_age_threshold: 1w # The minimum age of a file before it can be deleted when the storage size limit is reached. A value of 0 means no minimum age. Default is 1 week.
-database:
-  engine: sqlite
-  sqlite:
-    path: libra.db
-  postgresql:
-    host: localhost
-    port: 5432
-    user: libra
-    pass: password
-    db_name: libra
-    params: sslmode=disable # Additional parameters for the PostgreSQL connection string. See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-KEYWORD-VALUE
+databases:
+  - engine: sqlite
+    purposes: [media, auth]
+    options:
+      # SQLite options
+      path: libra.db
+
+      # PostgreSQL options
+      # host: localhost
+      # port: 5432
+      # user: libra
+      # pass: password
+      # db_name: libra
+      # params: sslmode=disable # Additional parameters for the PostgreSQL connection string. See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-KEYWORD-VALUE
+logs:
+  level: info # Supported levels: debug, info, warn, error, fatal. Default is info.
+  format: text # Possible values, text, json, or logfmt. Default is text.

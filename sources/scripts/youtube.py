@@ -2,8 +2,8 @@ import json
 import os
 import sys
 
-from ytmusicapi import YTMusic
 import yt_dlp
+from ytmusicapi import YTMusic
 
 if len(sys.argv) < 2:
     print("Error: Missing action argument")
@@ -34,22 +34,26 @@ if action == "search":
     filters = json.loads(args.get("filters", "{}"))
     allow_videos = filters.get("allow_videos", False)
 
-    searched_types = filters.get("types", ["tracks", "albums", "artists"])
-    if "tracks" in searched_types and allow_videos and "videos" not in searched_types:
-        searched_types.append("videos")
+    searched_formats = filters.get("formats", ["tracks", "albums", "artists"])
+    if (
+        "tracks" in searched_formats
+        and allow_videos
+        and "videos" not in searched_formats
+    ):
+        searched_formats.append("videos")
 
     search_result_lists = []
-    for searched_type in searched_types:
+    for searched_format in searched_formats:
         search_result_lists.append(
             ytmusic.search(
                 query,
-                filter=searched_type if searched_type != "tracks" else "songs",
+                filter=searched_format if searched_format != "tracks" else "songs",
                 limit=limit,
                 ignore_spelling=True,
             )
         )
 
-    # Merge the results evenly (e.g. 1st result from each type, then 2nd result from each type, etc.)
+    # Merge the results evenly (e.g. 1st result from each format, then 2nd result from each format, etc.)
     search_results = []
     while len(search_results) < limit:
         for search_result_list in search_result_lists:
@@ -116,15 +120,15 @@ elif action == "subtitles":
         os.rmdir(video_directory)
 
     print(json.dumps(subtitles))
-elif action == "content":
+elif action == "media":
     if "id" not in args:
         print("Error: Missing id argument")
         sys.exit()
     video_id = args["id"]
 
-    content_type = args.get("type", "audio")
+    media_format = args.get("format", "audio")
 
-    if content_type == "audio":
+    if media_format == "audio":
         ydl_opts = {
             "format": "bestaudio/best",
             "multiple_audiostreams": True,

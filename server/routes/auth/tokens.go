@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	RSAPrivateKey   *rsa.PrivateKey
-	ECDSAPrivateKey *ecdsa.PrivateKey
-	EdDSAPrivateKey ed25519.PrivateKey
+	rsaPrivateKey   *rsa.PrivateKey
+	ecdsaPrivateKey *ecdsa.PrivateKey
+	eddsaPrivateKey ed25519.PrivateKey
 )
 
 type TokenClaims struct {
@@ -46,13 +46,13 @@ func LoadPrivateKey(signingMethod, signingKey string) error {
 
 	switch signingMethod {
 	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
-		RSAPrivateKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(signingKey))
+		rsaPrivateKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(signingKey))
 	case "ES256", "ES384", "ES512":
-		ECDSAPrivateKey, err = jwt.ParseECPrivateKeyFromPEM([]byte(signingKey))
+		ecdsaPrivateKey, err = jwt.ParseECPrivateKeyFromPEM([]byte(signingKey))
 	case "EdDSA":
 		var key crypto.PrivateKey
 		key, err = jwt.ParseEdPrivateKeyFromPEM([]byte(signingKey))
-		EdDSAPrivateKey = key.(ed25519.PrivateKey)
+		eddsaPrivateKey = key.(ed25519.PrivateKey)
 	}
 	return err
 }
@@ -63,11 +63,11 @@ func SigningKey(signingMethod, configSigningKey string) any {
 	case "HS256", "HS384", "HS512":
 		key = []byte(configSigningKey)
 	case "RS256", "RS384", "RS512", "PS256", "PS384", "PS512":
-		key = RSAPrivateKey.Public()
+		key = rsaPrivateKey.Public()
 	case "ES256", "ES384", "ES512":
-		key = ECDSAPrivateKey.Public()
+		key = ecdsaPrivateKey.Public()
 	case "EdDSA":
-		key = EdDSAPrivateKey.Public()
+		key = eddsaPrivateKey.Public()
 	}
 	return key
 }

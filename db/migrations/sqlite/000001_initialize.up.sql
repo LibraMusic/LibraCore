@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS tracks (
   additional_meta BLOB, -- JSONB (json object)
   permissions BLOB, -- JSONB (json object)
   linked_item_ids TEXT, -- JSON (json array)
-  content_source TEXT,
+  media_source TEXT,
   metadata_source TEXT,
   lyric_sources BLOB -- JSONB (json object)
 );
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS videos (
   additional_meta BLOB, -- JSONB (json object)
   permissions BLOB, -- JSONB (json object)
   linked_item_ids TEXT, -- JSON (json array)
-  content_source TEXT,
+  media_source TEXT,
   metadata_source TEXT,
   lyric_sources BLOB -- JSONB (json object)
 );

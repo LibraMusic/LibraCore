@@ -15,103 +15,136 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 
-	"github.com/libramusic/libracore"
-	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/storage"
+	"github.com/libramusic/libracore/versions"
 )
 
 //go:embed scripts/youtube.py
 var youtubeScript string
 
-type YouTubeSource struct{}
+type YouTubeFactory struct{}
 
-func InitYouTubeSource() (*YouTubeSource, error) {
-	youtubeLocation := youtubeScriptPath()
-
-	if _, err := os.Stat(youtubeLocation); errors.Is(err, fs.ErrNotExist) {
-		err = os.MkdirAll(filepath.Dir(youtubeLocation), os.ModePerm)
-		if err != nil {
-			return &YouTubeSource{}, err
-		}
-
-		err = os.WriteFile(youtubeLocation, []byte(youtubeScript), 0o644)
-		if err != nil {
-			return &YouTubeSource{}, err
-		}
-	}
-
-	return &YouTubeSource{}, nil
+func (YouTubeFactory) ID() string {
+	return "youtube"
 }
 
-func youtubeScriptPath() string {
-	path := config.Conf.SourceScripts.YouTubeLocation
-	if !filepath.IsAbs(path) && config.DataDir != "" {
-		absDataDir, err := filepath.Abs(config.DataDir)
-		if err != nil {
-			return filepath.Join(config.DataDir, path)
-		}
-		return filepath.Join(absDataDir, path)
-	}
-	return path
-}
-
-func (*YouTubeSource) Satisfies(id string) bool {
+func (YouTubeFactory) Satisfies(id string) bool {
 	return slices.Contains([]string{
 		"youtube",
 		"yt",
 	}, strings.ToLower(id))
 }
 
-func (*YouTubeSource) SupportsMultiple() bool {
+func (YouTubeFactory) SupportsMultiple() bool {
 	return false
 }
 
-func (*YouTubeSource) Derive(_ string) (Source, error) {
-	return nil, ErrMultipleInstancesNotSupported
+func (YouTubeFactory) New(alias string, options map[string]any, info SharedInfo) (Source, error) {
+	opts := parseYouTubeOptions(options)
+	source := &YouTube{alias: alias, options: opts, info: info}
+
+	// Ensure script exists at script path.
+	youtubeLocation := source.scriptPath()
+	if _, err := os.Stat(youtubeLocation); errors.Is(err, fs.ErrNotExist) {
+		if err := os.MkdirAll(filepath.Dir(youtubeLocation), os.ModePerm); err != nil {
+			return source, err
+		}
+		if err := os.WriteFile(youtubeLocation, []byte(youtubeScript), 0o644); err != nil {
+			return source, err
+		}
+	}
+
+	return source, nil
 }
 
-func (*YouTubeSource) ID() string {
+type YouTubeOptions struct {
+	PythonCommand  string
+	ScriptPath     string
+	VideoAudioOnly bool
+}
+
+func parseYouTubeOptions(options map[string]any) YouTubeOptions {
+	opts := YouTubeOptions{
+		PythonCommand:  "python3",
+		ScriptPath:     "source_scripts/youtube.py",
+		VideoAudioOnly: true,
+	}
+
+	if pythonCommand, ok := options["python_command"].(string); ok {
+		opts.PythonCommand = pythonCommand
+	}
+	if scriptPath, ok := options["script_path"].(string); ok {
+		opts.ScriptPath = scriptPath
+	}
+	if videoAudioOnly, ok := options["video_audio_only"].(bool); ok {
+		opts.VideoAudioOnly = videoAudioOnly
+	}
+
+	return opts
+}
+
+type YouTube struct {
+	alias   string
+	options YouTubeOptions
+	info    SharedInfo
+}
+
+func (s *YouTube) scriptPath() string {
+	path := s.options.ScriptPath
+	if path == "" {
+		path = "source_scripts/youtube.py"
+	}
+	if s.info.DataDir != "" && !filepath.IsAbs(path) {
+		absDataDir, err := filepath.Abs(s.info.DataDir)
+		if err != nil {
+			return filepath.Join(s.info.DataDir, path)
+		}
+		return filepath.Join(absDataDir, path)
+	}
+	return path
+}
+
+func (*YouTube) ID() string {
 	return "youtube"
 }
 
-func (*YouTubeSource) Name() string {
+func (*YouTube) Name() string {
 	return "YouTube"
 }
 
-func (*YouTubeSource) Version() *semver.Version {
-	return libracore.LibraVersion
+func (*YouTube) Version() *semver.Version {
+	return versions.Libra
 }
 
-func (*YouTubeSource) SourceTypes() []string {
-	return []string{"content", "metadata", "lyrics"}
+func (*YouTube) Categories() []Category {
+	return []Category{CategoryMedia, CategoryMetadata, CategoryLyrics}
 }
 
-func (*YouTubeSource) MediaTypes() []string {
-	return []string{"music", "video", "playlist"}
+func (*YouTube) Formats() []media.Format {
+	return []media.Format{media.FormatMusic, media.FormatVideo, media.FormatPlaylist}
 }
 
-func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]any) ([]media.SourcePlayable, error) {
+func (s *YouTube) Search(query string, limit, _ int, filter Filter, _ BindingInfo) ([]media.SourcePlayable, error) {
 	var results []media.SourcePlayable
 
 	// TODO: Implement pagination if possible.
 
-	filtersJSON, err := json.Marshal(filters)
+	filterJSON, err := json.Marshal(filter)
 	if err != nil {
 		return results, fmt.Errorf("error encoding filters: %w", err)
 	}
 
-	youtubeLocation := youtubeScriptPath()
+	youtubeLocation := s.scriptPath()
 
-	command := append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
+	command := append(strings.Split(s.options.PythonCommand, " "), []string{
 		youtubeLocation,
-		`search`,
-		fmt.Sprintf(`query="%s"`, strings.ReplaceAll(query, `"`, `\"`)),
-		fmt.Sprintf(`limit=%d`, limit),
-		fmt.Sprintf(`filters="%s"`, strings.ReplaceAll(string(filtersJSON), `"`, `\"`)),
+		"search",
+		fmt.Sprintf("query=%s", query),
+		fmt.Sprintf("limit=%d", limit),
+		fmt.Sprintf("filters=%s", filterJSON),
 	}...)
 	out, err := execCommand(command)
 	if err != nil {
@@ -135,7 +168,7 @@ func (s *YouTubeSource) Search(query string, limit, _ int, filters map[string]an
 	return results, nil
 }
 
-func (s *YouTubeSource) parseSearchResult(v map[string]any) (media.SourcePlayable, error) {
+func (s *YouTube) parseSearchResult(v map[string]any) (media.SourcePlayable, error) {
 	var result media.SourcePlayable
 	var err error
 
@@ -151,13 +184,13 @@ func (s *YouTubeSource) parseSearchResult(v map[string]any) (media.SourcePlayabl
 	case "playlist":
 		result, err = s.parsePlaylistResult(v)
 	default:
-		err = ErrUnsupportedMediaType
+		err = ErrUnsupportedFormat
 	}
 
 	return result, err
 }
 
-func (s *YouTubeSource) parseSongResult(v map[string]any) (media.SourcePlayable, error) {
+func (s *YouTube) parseSongResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -188,12 +221,13 @@ func (s *YouTubeSource) parseSongResult(v map[string]any) (media.SourcePlayable,
 			"yt_id":             v["videoId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
 			"yt_album":          v["album"].(map[string]string),
+			"url":               "https://music.youtube.com/watch?v=" + v["videoId"].(string),
 		},
-		MetadataSource: s.ID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
+		MetadataSource: s.alias, // TODO?
 	}, nil
 }
 
-func (s *YouTubeSource) parseAlbumResult(v map[string]any) (media.SourcePlayable, error) {
+func (s *YouTube) parseAlbumResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -221,16 +255,13 @@ func (s *YouTubeSource) parseAlbumResult(v map[string]any) (media.SourcePlayable
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
+			"url":               "https://music.youtube.com/browse/" + v["browseId"].(string),
 		},
-		MetadataSource: s.ID() + "::" + "https://music.youtube.com/browse/" + v["browseId"].(string),
+		MetadataSource: s.alias, // TODO?
 	}, nil
 }
 
-func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable, error) {
-	if !config.Conf.General.IncludeVideoResults {
-		return nil, ErrUnsupportedMediaType
-	}
-
+func (s *YouTube) parseVideoResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -243,7 +274,7 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 		year = strconv.Itoa(v["year"].(int))
 	}
 
-	if config.Conf.General.VideoAudioOnly {
+	if s.options.VideoAudioOnly {
 		var album string
 		if v["album"] == nil {
 			album = ""
@@ -270,8 +301,9 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 				"yt_id":             v["videoId"].(string),
 				"yt_artists":        v["artists"].([]map[string]string),
 				"yt_album":          album,
+				"url":               "https://music.youtube.com/watch?v=" + v["videoId"].(string),
 			},
-			MetadataSource: s.ID() + "::" + "https://music.youtube.com/watch?v=" + v["videoId"].(string),
+			MetadataSource: s.alias, // TODO?
 		}, nil
 	}
 
@@ -291,12 +323,13 @@ func (s *YouTubeSource) parseVideoResult(v map[string]any) (media.SourcePlayable
 			"display_thumbnail": thumbnail,
 			"yt_id":             v["videoId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
+			"url":               "https://www.youtube.com/watch?v=" + v["videoId"].(string),
 		},
-		MetadataSource: s.ID() + "::" + "https://www.youtube.com/watch?v=" + v["videoId"].(string),
+		MetadataSource: s.alias, // TODO?
 	}, nil
 }
 
-func (s *YouTubeSource) parseArtistResult(v map[string]any) (media.SourcePlayable, error) {
+func (s *YouTube) parseArtistResult(v map[string]any) (media.SourcePlayable, error) {
 	thumbnails := v["thumbnails"].([]map[string]any)
 	thumbnailURL := thumbnails[len(thumbnails)-1]["url"].(string)
 	thumbnail, err := storage.DownloadFile(thumbnailURL)
@@ -309,12 +342,13 @@ func (s *YouTubeSource) parseArtistResult(v map[string]any) (media.SourcePlayabl
 		AdditionalMeta: map[string]any{
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
+			"url":               "https://music.youtube.com/channel/" + v["browseId"].(string),
 		},
-		MetadataSource: s.ID() + "::" + "https://music.youtube.com/channel/" + v["browseId"].(string),
+		MetadataSource: s.alias, // TODO?
 	}, nil
 }
 
-func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (media.SourcePlayable, error) {
+func (s *YouTube) parsePlaylistResult(v map[string]any) (media.SourcePlayable, error) {
 	var displayArtists []string
 	for _, artist := range v["artists"].([]map[string]string) {
 		displayArtists = append(displayArtists, artist["name"])
@@ -334,36 +368,33 @@ func (s *YouTubeSource) parsePlaylistResult(v map[string]any) (media.SourcePlaya
 			"display_cover_art": thumbnail,
 			"yt_id":             v["browseId"].(string),
 			"yt_artists":        v["artists"].([]map[string]string),
+			"url":               "https://music.youtube.com/playlist?list=" + v["browseId"].(string),
 		},
-		MetadataSource: s.ID() + "::" + "https://music.youtube.com/playlist?list=" + v["browseId"].(string),
+		MetadataSource: s.alias, // TODO?
 	}, nil
 }
 
-func (s *YouTubeSource) Content(playable media.SourcePlayable) ([]byte, error) {
-	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, ErrUnsupportedMediaType
-	}
-
+func (s *YouTube) Media(playable media.SourcePlayable, _ BindingInfo) ([]byte, error) {
 	var command []string
-	youtubeLocation := youtubeScriptPath()
+	youtubeLocation := s.scriptPath()
 
-	switch playable.GetType() {
-	case "track":
-		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
+	switch playable.GetFormat() {
+	case media.FormatTrack:
+		command = append(strings.Split(s.options.PythonCommand, " "), []string{
 			youtubeLocation,
-			`content`,
-			`type=audio`,
-			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
+			"media",
+			"format=audio",
+			fmt.Sprintf("id=%s", playable.GetAdditionalMeta()["yt_id"]),
 		}...)
-	case "video":
-		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
+	case media.FormatVideo:
+		command = append(strings.Split(s.options.PythonCommand, " "), []string{
 			youtubeLocation,
-			`content`,
-			`type=video`,
-			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
+			"media",
+			"format=video",
+			fmt.Sprintf("id=%s", playable.GetAdditionalMeta()["yt_id"]),
 		}...)
 	default:
-		return nil, ErrUnsupportedMediaType
+		return nil, ErrUnsupportedFormat
 	}
 
 	out, err := execCommand(command)
@@ -374,28 +405,24 @@ func (s *YouTubeSource) Content(playable media.SourcePlayable) ([]byte, error) {
 	return out, nil
 }
 
-func (s *YouTubeSource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (s *YouTube) Lyrics(playable media.LyricsPlayable, _ BindingInfo) (map[string]string, error) {
 	result := map[string]string{}
 
-	if !SupportsMediaType(s, playable.GetType()) {
-		return result, ErrUnsupportedMediaType
-	}
-
 	var command []string
-	youtubeLocation := youtubeScriptPath()
+	youtubeLocation := s.scriptPath()
 
-	if playable.GetType() == "video" ||
+	if playable.GetFormat() == media.FormatVideo ||
 		playable.GetAdditionalMeta()["is_video"] == true { //revive:disable-line:bool-literal-in-expr Value cannot be used as a boolean
-		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
+		command = append(strings.Split(s.options.PythonCommand, " "), []string{
 			youtubeLocation,
-			`subtitles`,
-			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
+			"subtitles",
+			fmt.Sprintf("id=%s", playable.GetAdditionalMeta()["yt_id"]),
 		}...)
 	} else {
-		command = append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
+		command = append(strings.Split(s.options.PythonCommand, " "), []string{
 			youtubeLocation,
-			`lyrics`,
-			`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
+			"lyrics",
+			fmt.Sprintf("id=%s", playable.GetAdditionalMeta()["yt_id"]),
 		}...)
 	}
 
@@ -412,17 +439,13 @@ func (s *YouTubeSource) Lyrics(playable media.LyricsPlayable) (map[string]string
 	return result, nil
 }
 
-func (s *YouTubeSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
-	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, ErrUnsupportedMediaType
-	}
+func (s *YouTube) CompleteMetadata(playable media.SourcePlayable, _ BindingInfo) (media.SourcePlayable, error) {
+	youtubeLocation := s.scriptPath()
 
-	youtubeLocation := youtubeScriptPath()
-
-	command := append(strings.Split(config.Conf.SourceScripts.PythonCommand, " "), []string{
+	command := append(strings.Split(s.options.PythonCommand, " "), []string{
 		youtubeLocation,
-		playable.GetType(),
-		`id=` + playable.GetAdditionalMeta()["yt_id"].(string),
+		string(playable.GetFormat()),
+		fmt.Sprintf("id=%s", playable.GetAdditionalMeta()["yt_id"]),
 	}...)
 
 	out, err := execCommand(command)
@@ -436,23 +459,23 @@ func (s *YouTubeSource) CompleteMetadata(playable media.SourcePlayable) (media.S
 		return playable, err
 	}
 
-	switch playable.GetType() {
-	case "track":
+	switch playable.GetFormat() {
+	case media.FormatTrack:
 		return s.completeTrackMetadata(playable, output)
-	case "album":
+	case media.FormatAlbum:
 		return s.completeAlbumMetadata(playable, output)
-	case "video":
+	case media.FormatVideo:
 		return s.completeVideoMetadata(playable, output)
-	case "artist":
+	case media.FormatArtist:
 		return s.completeArtistMetadata(playable, output)
-	case "playlist":
+	case media.FormatPlaylist:
 		return s.completePlaylistMetadata(playable, output)
+	default:
+		return playable, nil
 	}
-
-	return playable, nil
 }
 
-func (*YouTubeSource) completeTrackMetadata(
+func (s *YouTube) completeTrackMetadata(
 	playable media.SourcePlayable,
 	output map[string]any,
 ) (media.SourcePlayable, error) {
@@ -479,7 +502,7 @@ func (*YouTubeSource) completeTrackMetadata(
 		result.ReleaseDate = t.Format(time.DateTime)
 	}
 
-	if config.Conf.General.InheritListenCounts {
+	if s.info.InheritListenCounts {
 		viewCountObj := output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["viewCount"]
 		if viewCountObj != nil {
 			viewCountStr := viewCountObj.(string)
@@ -502,7 +525,7 @@ func (*YouTubeSource) completeTrackMetadata(
 	return result, nil
 }
 
-func (*YouTubeSource) completeAlbumMetadata(
+func (*YouTube) completeAlbumMetadata(
 	playable media.SourcePlayable,
 	output map[string]any,
 ) (media.SourcePlayable, error) {
@@ -525,7 +548,7 @@ func (*YouTubeSource) completeAlbumMetadata(
 	return result, nil
 }
 
-func (*YouTubeSource) completeVideoMetadata(
+func (s *YouTube) completeVideoMetadata(
 	playable media.SourcePlayable,
 	output map[string]any,
 ) (media.SourcePlayable, error) {
@@ -543,7 +566,7 @@ func (*YouTubeSource) completeVideoMetadata(
 		result.ReleaseDate = t.Format(time.DateTime)
 	}
 
-	if config.Conf.General.InheritListenCounts {
+	if s.info.InheritListenCounts {
 		viewCountObj := output["video"].(map[string]any)["microformat"].(map[string]any)["microformatDataRenderer"].(map[string]any)["viewCount"]
 		if viewCountObj != nil {
 			viewCountStr := viewCountObj.(string)
@@ -566,7 +589,7 @@ func (*YouTubeSource) completeVideoMetadata(
 	return result, nil
 }
 
-func (*YouTubeSource) completeArtistMetadata(
+func (s *YouTube) completeArtistMetadata(
 	playable media.SourcePlayable,
 	output map[string]any,
 ) (media.SourcePlayable, error) {
@@ -574,7 +597,7 @@ func (*YouTubeSource) completeArtistMetadata(
 
 	result.Description = output["description"].(string)
 
-	if config.Conf.General.InheritListenCounts && !config.Conf.General.ArtistListenCountsByTrack {
+	if s.info.InheritListenCounts && !s.info.ArtistListenCountsByTrack {
 		viewCountObj := output["views"]
 		if viewCountObj != nil {
 			viewCountStr := viewCountObj.(string)
@@ -613,7 +636,7 @@ func (*YouTubeSource) completeArtistMetadata(
 	return result, nil
 }
 
-func (*YouTubeSource) completePlaylistMetadata(
+func (s *YouTube) completePlaylistMetadata(
 	playable media.SourcePlayable,
 	output map[string]any,
 ) (media.SourcePlayable, error) {
@@ -627,7 +650,7 @@ func (*YouTubeSource) completePlaylistMetadata(
 		result.CreationDate = yearStr
 	}
 
-	if config.Conf.General.InheritListenCounts {
+	if s.info.InheritListenCounts {
 		viewCountObj := output["views"]
 		if viewCountObj != nil {
 			viewCountStr := viewCountObj.(string)
@@ -655,10 +678,5 @@ func (*YouTubeSource) completePlaylistMetadata(
 }
 
 func init() {
-	source, err := InitYouTubeSource()
-	if err != nil {
-		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
-	} else {
-		Registry[source.ID()] = source
-	}
+	Register(YouTubeFactory{})
 }

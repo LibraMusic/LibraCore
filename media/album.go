@@ -20,8 +20,8 @@ type Album struct {
 	MetadataSource string            `json:"metadata_source"`
 }
 
-func (Album) GetType() string {
-	return "album"
+func (Album) GetFormat() Format {
+	return FormatAlbum
 }
 
 func (a Album) GetID() string {

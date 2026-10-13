@@ -3,8 +3,6 @@ package sources
 import (
 	"errors"
 	"os/exec"
-	"slices"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 
@@ -12,51 +10,28 @@ import (
 )
 
 var (
-	ErrInvalidSource                 = errors.New("invalid source")
-	ErrUnsupportedSourceType         = errors.New("unsupported source type")
-	ErrUnsupportedMediaType          = errors.New("unsupported media type")
-	ErrMultipleInstancesNotSupported = errors.New("source does not support multiple instances")
+	ErrUnknownSource       = errors.New("unknown source")
+	ErrUnsupportedCategory = errors.New("unsupported source category")
+	ErrUnsupportedFormat   = errors.New("unsupported content format")
 )
 
-type Source interface {
-	Satisfies(id string) bool
-	SupportsMultiple() bool
-	Derive(id string) (Source, error)
+type SharedInfo struct {
+	DataDir                   string
+	InheritListenCounts       bool
+	ArtistListenCountsByTrack bool
+}
 
+type Source interface {
 	ID() string
 	Name() string
 	Version() *semver.Version
-	SourceTypes() []string
-	MediaTypes() []string
+	Categories() []Category
+	Formats() []media.Format
 
-	Search(query string, limit, page int, filters map[string]any) ([]media.SourcePlayable, error)
-	Content(playable media.SourcePlayable) ([]byte, error)
-	Lyrics(playable media.LyricsPlayable) (map[string]string, error)
-	CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error)
-}
-
-func SupportsMediaType(s Source, mediaType string) bool {
-	switch mediaType {
-	case "music", "track", "album", "artist":
-		return slices.Contains(s.MediaTypes(), "music")
-	case "video":
-		return slices.Contains(s.MediaTypes(), "video")
-	case "playlist":
-		return slices.Contains(s.MediaTypes(), "playlist")
-	}
-	return false
-}
-
-func IsValidSourceURL(urlStr string) bool {
-	return HasSupportedScheme(urlStr)
-}
-
-func HasSupportedScheme(urlStr string) bool {
-	if strings.HasPrefix(urlStr, "http://") || strings.HasPrefix(urlStr, "https://") ||
-		!strings.Contains(urlStr, "://") {
-		return true
-	}
-	return false
+	Search(query string, limit, page int, filter Filter, info BindingInfo) ([]media.SourcePlayable, error)
+	Media(playable media.SourcePlayable, info BindingInfo) ([]byte, error)
+	Lyrics(playable media.LyricsPlayable, info BindingInfo) (map[string]string, error)
+	CompleteMetadata(playable media.SourcePlayable, info BindingInfo) (media.SourcePlayable, error)
 }
 
 func execCommand(command []string) ([]byte, error) {

@@ -16,8 +16,8 @@ type Playlist struct {
 	MetadataSource string            `json:"metadata_source"`
 }
 
-func (Playlist) GetType() string {
-	return "playlist"
+func (Playlist) GetFormat() Format {
+	return FormatPlaylist
 }
 
 func (p Playlist) GetID() string {

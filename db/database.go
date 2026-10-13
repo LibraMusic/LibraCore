@@ -9,28 +9,52 @@ import (
 	"strings"
 	"time"
 
-	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/media"
-)
-
-var (
-	Registry = map[string]Database{}
-	DB       Database
 )
 
 //go:embed migrations
 var migrationsFS embed.FS
 
 var (
-	ErrNotFound          = errors.New("not found in database")
-	ErrTooMany           = errors.New("too many found in database")
-	ErrAlreadyConnected  = errors.New("database already connected")
-	ErrUnsupportedEngine = errors.New("unsupported database engine")
+	ErrNotFound      = errors.New("not found in database")
+	ErrTooMany       = errors.New("too many found in database")
+	ErrUnknownEngine = errors.New("unknown database engine")
 )
+
+// Factory provides methods for database driver registration and instantiation.
+// Each driver registers a matcher with Register() during init().
+type Factory interface {
+	// EngineName returns the human-readable name of the database engine.
+	EngineName() string
+	// Satisfies checks if this driver can handle the given engine identifier.
+	Satisfies(engine string) bool
+	// New creates a new Database instance with the given options and dataDir.
+	// The dataDir parameter is passed for drivers that need it (e.g., SQLite).
+	New(options map[string]any, dataDir string) (Database, error)
+}
+
+// registry holds all registered database drivers.
+var registry []Factory
+
+// Register adds a database driver to the registry.
+// This should be called from init() in the driver package.
+func Register(driver Factory) {
+	registry = append(registry, driver)
+}
+
+// New creates a new Database instance for the given engine and options.
+// The dataDir parameter is passed for drivers that need it (e.g., SQLite).
+func New(engine string, options map[string]any, dataDir string) (Database, error) {
+	for _, driver := range registry {
+		if driver.Satisfies(engine) {
+			return driver.New(options, dataDir)
+		}
+	}
+	return nil, ErrUnknownEngine
+}
 
 type Database interface {
 	EngineName() string
-	Satisfies(engine string) bool
 
 	Connect() error
 	// Closes the database connection.
@@ -94,25 +118,11 @@ type Database interface {
 	IsTokenBlacklisted(ctx context.Context, token string) (bool, error)
 }
 
-func Connect() error {
-	if DB != nil {
-		return ErrAlreadyConnected
-	}
-
-	for _, db := range Registry {
-		if db.Satisfies(config.Conf.Database.Engine) {
-			DB = db
-			return DB.Connect()
-		}
-	}
-	return ErrUnsupportedEngine
-}
-
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.
-func AllPlayables(ctx context.Context) ([]media.Playable, error) {
+func AllPlayables(ctx context.Context, db Database) ([]media.Playable, error) {
 	var playables []media.Playable
 
-	tracks, err := DB.AllTracks(ctx)
+	tracks, err := db.AllTracks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +130,7 @@ func AllPlayables(ctx context.Context) ([]media.Playable, error) {
 		playables = append(playables, track)
 	}
 
-	albums, err := DB.AllAlbums(ctx)
+	albums, err := db.AllAlbums(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +138,7 @@ func AllPlayables(ctx context.Context) ([]media.Playable, error) {
 		playables = append(playables, album)
 	}
 
-	videos, err := DB.AllVideos(ctx)
+	videos, err := db.AllVideos(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +146,7 @@ func AllPlayables(ctx context.Context) ([]media.Playable, error) {
 		playables = append(playables, video)
 	}
 
-	artists, err := DB.AllArtists(ctx)
+	artists, err := db.AllArtists(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +154,7 @@ func AllPlayables(ctx context.Context) ([]media.Playable, error) {
 		playables = append(playables, artist)
 	}
 
-	playlists, err := DB.AllPlaylists(ctx)
+	playlists, err := db.AllPlaylists(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -156,10 +166,10 @@ func AllPlayables(ctx context.Context) ([]media.Playable, error) {
 }
 
 // TODO: Add a way to filter the types of playables that are returned so we don't perform unnecessary database queries.
-func Playables(ctx context.Context, userID string) ([]media.Playable, error) {
+func Playables(ctx context.Context, db Database, userID string) ([]media.Playable, error) {
 	var playables []media.Playable
 
-	tracks, err := DB.Tracks(ctx, userID)
+	tracks, err := db.Tracks(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +177,7 @@ func Playables(ctx context.Context, userID string) ([]media.Playable, error) {
 		playables = append(playables, track)
 	}
 
-	albums, err := DB.Albums(ctx, userID)
+	albums, err := db.Albums(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +185,7 @@ func Playables(ctx context.Context, userID string) ([]media.Playable, error) {
 		playables = append(playables, album)
 	}
 
-	videos, err := DB.Videos(ctx, userID)
+	videos, err := db.Videos(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +193,7 @@ func Playables(ctx context.Context, userID string) ([]media.Playable, error) {
 		playables = append(playables, video)
 	}
 
-	artists, err := DB.Artists(ctx, userID)
+	artists, err := db.Artists(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +201,7 @@ func Playables(ctx context.Context, userID string) ([]media.Playable, error) {
 		playables = append(playables, artist)
 	}
 
-	playlists, err := DB.Playlists(ctx, userID)
+	playlists, err := db.Playlists(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

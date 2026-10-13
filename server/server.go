@@ -11,11 +11,12 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore"
-	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/internal/httpcontext"
 	"github.com/libramusic/libracore/server/middleware"
 	"github.com/libramusic/libracore/server/routes"
 	"github.com/libramusic/libracore/server/routes/auth"
+	"github.com/libramusic/libracore/sources"
+	"github.com/libramusic/libracore/versions"
 )
 
 //go:generate go tool swag init -g server.go -d ./,./routes/,../media/ -o . --ot go -v3.1
@@ -32,30 +33,45 @@ import (
 
 //	@servers.url	http://localhost:8080/api/v1
 
-func New() *echo.Echo {
+func New(l *libracore.Libra) *echo.Echo {
 	libraSource := echo.Map{
-		"id":           config.Conf.Application.SourceID,
-		"name":         config.Conf.Application.SourceName,
-		"version":      libracore.LibraVersion.String(),
-		"source_types": []string{"content", "metadata", "lyrics"},
-		"media_types":  config.Conf.Application.MediaTypes,
+		"id":      l.Config.Application.SourceID,
+		"name":    l.Config.Application.SourceName,
+		"version": versions.Libra.String(),
+		"categories": []sources.Category{
+			sources.CategoryMedia,
+			sources.CategoryMetadata,
+			sources.CategoryLyrics,
+		},
+		"formats": l.Config.Application.SourceFormats,
 	}
 
 	libraMeta := echo.Map{
-		"version":  libracore.LibraVersion.String(),
-		"database": db.DB.EngineName(),
+		"version":  versions.Libra.String(),
+		"database": l.MediaDB.EngineName(),
 	}
 
 	//nolint:forbidigo // Basic information on startup
 	{
 		fmt.Println()
-		fmt.Printf("Libra v%s\n", libracore.LibraVersion.String())
-		fmt.Printf("Database: %s\n", db.DB.EngineName())
+		fmt.Printf("Libra v%s\n", versions.Libra.String())
+		fmt.Printf("Media Database: %s\n", l.MediaDB.EngineName())
+		fmt.Printf("Auth Database: %s\n", l.AuthDB.EngineName())
 	}
 
 	e := echo.New()
 	e.HideBanner = true
 	e.JSONSerializer = &GoJSONSerializer{}
+
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			cc := &httpcontext.Context{
+				Context: c,
+				Libra:   l,
+			}
+			return next(cc)
+		}
+	})
 
 	e.Use(echoprometheus.NewMiddleware("libra"))
 
@@ -93,10 +109,10 @@ func New() *echo.Echo {
 	authGroup.POST("/register", auth.Register)
 	authGroup.POST("/login", auth.Login)
 	authGroup.POST("/login/:provider", auth.LoginProvider)
-	authGroup.POST("/logout", auth.Logout, middleware.JWTProtected)
-	authGroup.GET("/connect/:provider", auth.ConnectProvider, middleware.JWTProtected)
+	authGroup.POST("/logout", auth.Logout, middleware.JWTProtected(l))
+	authGroup.GET("/connect/:provider", auth.ConnectProvider, middleware.JWTProtected(l))
 	authGroup.GET("/callback/:provider", auth.ProviderCallback)
-	authGroup.POST("/disconnect/:provider", auth.DisconnectProvider, middleware.JWTProtected)
+	authGroup.POST("/disconnect/:provider", auth.DisconnectProvider, middleware.JWTProtected(l))
 
 	v1Group := apiGroup.Group("/v1")
 
@@ -109,40 +125,40 @@ func New() *echo.Echo {
 	routes.CreateFeedRoutes(v1Group, "/playables", "{} feed for all playables")
 	v1Group.GET("/playables/:id", routes.V1UserPlayables)
 	routes.CreateFeedRoutes(v1Group, "/playables/:id", "{} feed for user's playables")
-	v1Group.GET("/search", routes.V1Search, middleware.GlobalJWTProtected)
+	v1Group.GET("/search", routes.V1Search, middleware.GlobalJWTProtected(l))
 
 	// START TO REFRACTOR
-	v1Group.GET("/track/:id", routes.V1Track, middleware.GlobalJWTProtected)
-	v1Group.GET("/track/:id/is_stored", routes.V1TrackIsStored, middleware.GlobalJWTProtected)
-	v1Group.GET("/track/:id/stream", routes.V1TrackStream, middleware.GlobalJWTProtected)
-	v1Group.GET("/track/:id/cover", routes.V1TrackCover, middleware.GlobalJWTProtected)
-	v1Group.GET("/track/:id/lyrics", routes.V1TrackLyrics, middleware.GlobalJWTProtected)
-	v1Group.GET("/track/:id/lyrics/:lang", routes.V1TrackLyricsLang, middleware.GlobalJWTProtected)
+	v1Group.GET("/track/:id", routes.V1Track, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/track/:id/is_stored", routes.V1TrackIsStored, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/track/:id/stream", routes.V1TrackStream, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/track/:id/cover", routes.V1TrackCover, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/track/:id/lyrics", routes.V1TrackLyrics, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/track/:id/lyrics/:lang", routes.V1TrackLyricsLang, middleware.GlobalJWTProtected(l))
 
-	v1Group.GET("/album/:id", routes.V1Album, middleware.GlobalJWTProtected)
-	v1Group.GET("/album/:id/cover", routes.V1AlbumCover, middleware.GlobalJWTProtected)
-	v1Group.GET("/album/:id/tracks", routes.V1AlbumTracks, middleware.GlobalJWTProtected)
+	v1Group.GET("/album/:id", routes.V1Album, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/album/:id/cover", routes.V1AlbumCover, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/album/:id/tracks", routes.V1AlbumTracks, middleware.GlobalJWTProtected(l))
 
-	v1Group.GET("/video/:id", routes.V1Video, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/is_stored", routes.V1VideoIsStored, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/stream", routes.V1VideoStream, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/cover", routes.V1VideoCover, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/subtitles", routes.V1VideoSubtitles, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/subtitles/:lang", routes.V1VideoSubtitlesLang, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/lyrics", routes.V1VideoSubtitles, middleware.GlobalJWTProtected)
-	v1Group.GET("/video/:id/lyrics/:lang", routes.V1VideoSubtitlesLang, middleware.GlobalJWTProtected)
+	v1Group.GET("/video/:id", routes.V1Video, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/is_stored", routes.V1VideoIsStored, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/stream", routes.V1VideoStream, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/cover", routes.V1VideoCover, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/subtitles", routes.V1VideoSubtitles, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/subtitles/:lang", routes.V1VideoSubtitlesLang, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/lyrics", routes.V1VideoSubtitles, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/video/:id/lyrics/:lang", routes.V1VideoSubtitlesLang, middleware.GlobalJWTProtected(l))
 
-	v1Group.GET("/playlist/:id", routes.V1Playlist, middleware.GlobalJWTProtected)
-	v1Group.GET("/playlist/:id/cover", routes.V1PlaylistCover, middleware.GlobalJWTProtected)
-	v1Group.GET("/playlist/:id/tracks", routes.V1PlaylistTracks, middleware.GlobalJWTProtected)
+	v1Group.GET("/playlist/:id", routes.V1Playlist, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/playlist/:id/cover", routes.V1PlaylistCover, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/playlist/:id/tracks", routes.V1PlaylistTracks, middleware.GlobalJWTProtected(l))
 
-	v1Group.GET("/artist/:id", routes.V1Artist, middleware.GlobalJWTProtected)
-	v1Group.GET("/artist/:id/cover", routes.V1ArtistCover, middleware.GlobalJWTProtected)
-	v1Group.GET("/artist/:id/albums", routes.V1ArtistAlbums, middleware.GlobalJWTProtected)
-	v1Group.GET("/artist/:id/tracks", routes.V1ArtistTracks, middleware.GlobalJWTProtected)
+	v1Group.GET("/artist/:id", routes.V1Artist, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/artist/:id/cover", routes.V1ArtistCover, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/artist/:id/albums", routes.V1ArtistAlbums, middleware.GlobalJWTProtected(l))
+	v1Group.GET("/artist/:id/tracks", routes.V1ArtistTracks, middleware.GlobalJWTProtected(l))
 	// END TO REFRACTOR
 
-	v1Spec := OpenAPISpec()
+	v1Spec := OpenAPISpec(l)
 	v1SpecYAML, err := yaml.Marshal(v1Spec)
 	if err != nil {
 		log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)

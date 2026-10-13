@@ -18,8 +18,8 @@ type Artist struct {
 	MetadataSource string            `json:"metadata_source"`
 }
 
-func (Artist) GetType() string {
-	return "artist"
+func (Artist) GetFormat() Format {
+	return FormatArtist
 }
 
 func (a Artist) GetID() string {

@@ -23,8 +23,8 @@ type DatabaseUser struct {
 	PasswordHash string `json:"password_hash"`
 }
 
-func (User) GetType() string {
-	return "user"
+func (User) GetFormat() Format {
+	return FormatUser
 }
 
 func (u User) GetID() string {

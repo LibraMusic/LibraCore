@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/internal/httpcontext"
 	"github.com/libramusic/libracore/storage"
 )
 
@@ -20,8 +21,9 @@ import (
 // @Router		/playables [get]
 func V1Playables(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
-	playables, err := db.AllPlayables(ctx)
+	playables, err := db.AllPlayables(ctx, cc.Libra.MediaDB)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
@@ -38,9 +40,10 @@ func V1Playables(c echo.Context) error {
 // @Router		/playables/{id} [get]
 func V1UserPlayables(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	userID := c.Param("id")
-	playables, err := db.Playables(ctx, userID)
+	playables, err := db.Playables(ctx, cc.Libra.MediaDB, userID)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
@@ -64,9 +67,10 @@ func V1Search(c echo.Context) error {
 
 func V1Track(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	trackID := c.Param("id")
-	track, err := db.DB.Track(ctx, trackID)
+	track, err := cc.Libra.MediaDB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
@@ -75,8 +79,10 @@ func V1Track(c echo.Context) error {
 }
 
 func V1TrackIsStored(c echo.Context) error {
+	cc := c.(*httpcontext.Context)
+
 	trackID := c.Param("id")
-	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored("track", trackID)})
+	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored(cc.Libra.Config.Storage, "track", trackID)})
 }
 
 func V1TrackStream(c echo.Context) error {
@@ -91,9 +97,10 @@ func V1TrackCover(c echo.Context) error {
 
 func V1TrackLyrics(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	trackID := c.Param("id")
-	track, err := db.DB.Track(ctx, trackID)
+	track, err := cc.Libra.MediaDB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
@@ -103,9 +110,10 @@ func V1TrackLyrics(c echo.Context) error {
 
 func V1TrackLyricsLang(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	trackID := c.Param("id")
-	track, err := db.DB.Track(ctx, trackID)
+	track, err := cc.Libra.MediaDB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
@@ -135,9 +143,10 @@ func V1AlbumTracks(c echo.Context) error {
 
 func V1Video(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	videoID := c.Param("id")
-	video, err := db.DB.Video(ctx, videoID)
+	video, err := cc.Libra.MediaDB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
@@ -146,8 +155,10 @@ func V1Video(c echo.Context) error {
 }
 
 func V1VideoIsStored(c echo.Context) error {
+	cc := c.(*httpcontext.Context)
+
 	videoID := c.Param("id")
-	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored("video", videoID)})
+	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored(cc.Libra.Config.Storage, "video", videoID)})
 }
 
 func V1VideoStream(c echo.Context) error {
@@ -162,9 +173,10 @@ func V1VideoCover(c echo.Context) error {
 
 func V1VideoSubtitles(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	videoID := c.Param("id")
-	video, err := db.DB.Video(ctx, videoID)
+	video, err := cc.Libra.MediaDB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
@@ -174,9 +186,10 @@ func V1VideoSubtitles(c echo.Context) error {
 
 func V1VideoSubtitlesLang(c echo.Context) error {
 	ctx := c.Request().Context()
+	cc := c.(*httpcontext.Context)
 
 	videoID := c.Param("id")
-	video, err := db.DB.Video(ctx, videoID)
+	video, err := cc.Libra.MediaDB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
 		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})

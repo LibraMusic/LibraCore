@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/charmbracelet/log"
 
-	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/media"
 )
@@ -23,16 +23,24 @@ const (
 	CoversPath  = "covers"
 )
 
-func getStoragePath() (string, error) {
-	path := config.Conf.Storage.Location
-	if !filepath.IsAbs(path) && config.DataDir != "" {
-		path = filepath.Join(config.DataDir, path)
+type Options struct {
+	Location            string            `yaml:"location"`
+	SizeLimit           datasize.ByteSize `yaml:"size_limit"`
+	MinimumAgeThreshold time.Duration     `yaml:"minimum_age_threshold"`
+
+	DataDir string `yaml:"-"`
+}
+
+func getStoragePath(options Options) (string, error) {
+	path := options.Location
+	if !filepath.IsAbs(path) && options.DataDir != "" {
+		path = filepath.Join(options.DataDir, path)
 	}
 	return filepath.Abs(path)
 }
 
-func CleanOverfilledStorage(ctx context.Context) {
-	path, err := getStoragePath()
+func CleanOverfilledStorage(ctx context.Context, options Options, database db.Database) {
+	path, err := getStoragePath(options)
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
 		return
@@ -48,14 +56,14 @@ func CleanOverfilledStorage(ctx context.Context) {
 
 	dirs := getDirectories(files)
 	contentFiles := getContentFiles(path, dirs)
-	playables := getPlayables(ctx, contentFiles)
+	playables := getPlayables(ctx, options, database, contentFiles)
 
 	sort.Slice(playables, func(i, j int) bool {
 		return playables[i].GetViewCount() >= playables[j].GetViewCount()
 	})
 
 	var sum uint64
-	storagePath, err := getStoragePath()
+	storagePath, err := getStoragePath(options)
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
 		return
@@ -74,7 +82,7 @@ func CleanOverfilledStorage(ctx context.Context) {
 		log.Error("Error walking storage path", "err", err)
 	}
 
-	for sum > config.Conf.Storage.SizeLimit.Bytes() {
+	for sum > options.SizeLimit.Bytes() {
 		if len(playables) == 0 {
 			log.Warn(
 				"Storage is overfilled, but no playables are old enough to delete. Consider increasing the storage limit or decreasing the minimum age threshold",
@@ -129,30 +137,35 @@ func getContentFiles(path string, dirs []os.FileInfo) []string {
 	return contentFiles
 }
 
-func getPlayables(ctx context.Context, contentFiles []string) []media.SourcePlayable {
+func getPlayables(
+	ctx context.Context,
+	options Options,
+	database db.Database,
+	contentFiles []string,
+) []media.SourcePlayable {
 	var playables []media.SourcePlayable
 
-	tracks, err := db.DB.AllTracks(ctx)
+	tracks, err := database.AllTracks(ctx)
 	if err != nil {
 		log.Error("Error getting all tracks from database", "err", err)
 	}
 	for _, track := range tracks {
 		if slices.Contains(contentFiles, "track_"+track.GetID()) {
 			difference := time.Since(time.Unix(track.GetAdditionDate(), 0))
-			if difference >= config.Conf.Storage.MinimumAgeThreshold {
+			if difference >= options.MinimumAgeThreshold {
 				playables = append(playables, track)
 			}
 		}
 	}
 
-	videos, err := db.DB.AllVideos(ctx)
+	videos, err := database.AllVideos(ctx)
 	if err != nil {
 		log.Error("Error getting all videos from database", "err", err)
 	}
 	for _, video := range videos {
 		if slices.Contains(contentFiles, "video_"+video.GetID()) {
 			difference := time.Since(time.Unix(video.GetAdditionDate(), 0))
-			if difference >= config.Conf.Storage.MinimumAgeThreshold {
+			if difference >= options.MinimumAgeThreshold {
 				playables = append(playables, video)
 			}
 		}
@@ -162,10 +175,10 @@ func getPlayables(ctx context.Context, contentFiles []string) []media.SourcePlay
 }
 
 func removePlayableFiles(storagePath string, playable media.SourcePlayable) {
-	playableType := playable.GetType()
+	playableType := playable.GetFormat()
 	playableID := playable.GetID()
 
-	baseContentPath := filepath.Join(storagePath, ContentPath, playableType+"s")
+	baseContentPath := filepath.Join(storagePath, ContentPath, string(playableType)+"s")
 	files, err := os.ReadDir(baseContentPath)
 	if err != nil {
 		log.Error("Error reading directory", "err", err)
@@ -183,7 +196,7 @@ func removePlayableFiles(storagePath string, playable media.SourcePlayable) {
 		}
 	}
 
-	baseCoverPath := filepath.Join(storagePath, CoversPath, playableType+"s")
+	baseCoverPath := filepath.Join(storagePath, CoversPath, string(playableType)+"s")
 	files, err = os.ReadDir(baseCoverPath)
 	if err != nil {
 		log.Error("Error reading directory", "err", err)
@@ -202,8 +215,8 @@ func removePlayableFiles(storagePath string, playable media.SourcePlayable) {
 	}
 }
 
-func IsContentStored(contentType, playableID string) bool {
-	path, err := getStoragePath()
+func IsContentStored(options Options, contentType, playableID string) bool {
+	path, err := getStoragePath(options)
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
 		return false
@@ -229,8 +242,8 @@ func IsContentStored(contentType, playableID string) bool {
 	return false
 }
 
-func StoreContent(contentType, playableID string, data []byte, fileExtension string) {
-	path, err := getStoragePath()
+func StoreContent(options Options, contentType, playableID string, data []byte, fileExtension string) {
+	path, err := getStoragePath(options)
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
 		return
@@ -243,8 +256,8 @@ func StoreContent(contentType, playableID string, data []byte, fileExtension str
 	}
 }
 
-func StoreCover(contentType, playableID string, data []byte, fileExtension string) {
-	path, err := getStoragePath()
+func StoreCover(options Options, contentType, playableID string, data []byte, fileExtension string) {
+	path, err := getStoragePath(options)
 	if err != nil {
 		log.Error("Error getting storage path", "err", err)
 		return

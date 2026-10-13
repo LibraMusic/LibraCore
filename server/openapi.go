@@ -8,17 +8,17 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore"
-	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/server/routes"
+	"github.com/libramusic/libracore/versions"
 )
 
-func OpenAPISpec() echo.Map {
-	v1Spec := loadBaseOpenAPISpec()
+func OpenAPISpec(l *libracore.Libra) echo.Map {
+	v1Spec := loadBaseOpenAPISpec(l)
 
 	processSchemas(v1Spec)
 	processPaths(v1Spec)
 
-	if config.Conf.General.DocumentFeedRoutes {
+	if l.Config.General.DocumentFeedRoutes {
 		addFeedRoutesDocumentation(v1Spec)
 	}
 
@@ -26,8 +26,8 @@ func OpenAPISpec() echo.Map {
 }
 
 // loadBaseOpenAPISpec loads the OpenAPI spec and updates version and server URL info.
-func loadBaseOpenAPISpec() echo.Map {
-	SwaggerInfo.Version = libracore.LibraVersion.String()
+func loadBaseOpenAPISpec(l *libracore.Libra) echo.Map {
+	SwaggerInfo.Version = versions.Libra.String()
 	v1SpecJSON := SwaggerInfo.ReadDoc()
 	var v1Spec echo.Map
 	if err := json.Unmarshal([]byte(v1SpecJSON), &v1Spec); err != nil {
@@ -40,7 +40,7 @@ func loadBaseOpenAPISpec() echo.Map {
 	server["url"] = strings.ReplaceAll(
 		server["url"].(string),
 		"http://localhost:8080",
-		config.Conf.Application.PublicURL,
+		l.Config.Application.PublicURL,
 	)
 
 	return v1Spec

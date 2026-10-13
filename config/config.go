@@ -3,44 +3,47 @@ package config
 import (
 	_ "embed"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/taurus/v2"
 
 	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/server/routes/auth/providers"
+	"github.com/libramusic/libracore/sources"
+	"github.com/libramusic/libracore/storage"
 )
-
-var Conf Config
 
 //go:embed default_config.yaml
 var defaultConfig string
 
 const EnvPrefix = "LIBRA"
 
-var DataDir string
+type Config struct {
+	Application ApplicationConfig `yaml:"application"`
+	Auth        AuthConfig        `yaml:"auth"`
+	General     GeneralConfig     `yaml:"general"`
+	Sources     SourcesConfig     `yaml:"sources"`
+	Storage     storage.Options   `yaml:"storage"`
+	Databases   []DatabaseConfig  `yaml:"databases"`
+	Logs        LogsConfig        `yaml:"logs"`
 
-type ApplicationConfig struct {
-	Port       int      `yaml:"port"`
-	PublicURL  string   `yaml:"public_url"`
-	SourceID   string   `yaml:"source_id"`
-	SourceName string   `yaml:"source_name"`
-	MediaTypes []string `yaml:"media_types"`
+	// DataDir is the persistent data directory for this configuration.
+	// Since it's used to locate the config, it isn't serialized to/from YAML.
+	DataDir string `yaml:"-"`
 }
 
-type JWTAuthConfig struct {
-	SigningMethod          string        `yaml:"signing_method"`
-	SigningKey             string        `yaml:"signing_key"`
-	RefreshTokenExpiration time.Duration `yaml:"refresh_token_expiration"`
-	AccessTokenExpiration  time.Duration `yaml:"access_token_expiration"`
+type ApplicationConfig struct {
+	Port          int            `yaml:"port"`
+	PublicURL     string         `yaml:"public_url"`
+	SourceID      string         `yaml:"source_id"`
+	SourceName    string         `yaml:"source_name"`
+	SourceFormats []media.Format `yaml:"source_formats"`
 }
 
 type AuthConfig struct {
@@ -52,10 +55,15 @@ type AuthConfig struct {
 	DisableAccountCreation     bool                     `yaml:"disable_account_creation"`
 }
 
+type JWTAuthConfig struct {
+	SigningMethod          string        `yaml:"signing_method"`
+	SigningKey             string        `yaml:"signing_key"`
+	RefreshTokenExpiration time.Duration `yaml:"refresh_token_expiration"`
+	AccessTokenExpiration  time.Duration `yaml:"access_token_expiration"`
+}
+
 type GeneralConfig struct {
 	IDLength                  int                               `yaml:"id_length"`
-	IncludeVideoResults       bool                              `yaml:"include_video_results"`
-	VideoAudioOnly            bool                              `yaml:"video_audio_only"`
 	InheritListenCounts       bool                              `yaml:"inherit_listen_counts"`
 	ArtistListenCountsByTrack bool                              `yaml:"artist_listen_counts_by_track"`
 	UserArtistLinking         bool                              `yaml:"user_artist_linking"`
@@ -65,13 +73,24 @@ type GeneralConfig struct {
 	CustomDisplayNames        bool                              `yaml:"custom_display_names"`
 	ReserveDisplayNames       bool                              `yaml:"reserve_display_names"`
 	AdminPermissions          map[string]media.AdminPermissions `yaml:"admin_permissions"`
-	EnabledSources            []string                          `yaml:"enabled_sources"`
 	DocumentFeedRoutes        bool                              `yaml:"document_feed_routes"`
 }
 
-type SourceScriptsConfig struct {
-	PythonCommand   string `yaml:"python_command"`
-	YouTubeLocation string `yaml:"youtube_location"`
+type SourcesConfig struct {
+	Definitions []SourceDefinition    `yaml:"definitions"`
+	Priorities  []sources.BindingInfo `yaml:"priorities"`
+}
+
+type SourceDefinition struct {
+	Type    string         `yaml:"type"`
+	Alias   string         `yaml:"alias"`
+	Options map[string]any `yaml:"options"`
+}
+
+type DatabaseConfig struct {
+	Engine   string         `yaml:"engine"`
+	Purposes []string       `yaml:"purposes"`
+	Options  map[string]any `yaml:"options"`
 }
 
 type LogsConfig struct {
@@ -79,42 +98,7 @@ type LogsConfig struct {
 	Format string    `yaml:"format"`
 }
 
-type StorageConfig struct {
-	Location            string            `yaml:"location"`
-	SizeLimit           datasize.ByteSize `yaml:"size_limit"`
-	MinimumAgeThreshold time.Duration     `yaml:"minimum_age_threshold"`
-}
-
-type SQLiteDatabaseConfig struct {
-	Path string `yaml:"path"`
-}
-
-type PostgreSQLDatabaseConfig struct {
-	Host   string `yaml:"host"`
-	Port   int    `yaml:"port"`
-	User   string `yaml:"user"`
-	Pass   string `yaml:"pass"`
-	DBName string `yaml:"db_name"`
-	Params string `yaml:"params"`
-}
-
-type DatabaseConfig struct {
-	Engine     string                   `yaml:"engine"`
-	SQLite     SQLiteDatabaseConfig     `yaml:"sqlite"`
-	PostgreSQL PostgreSQLDatabaseConfig `yaml:"postgresql"`
-}
-
-type Config struct {
-	Application   ApplicationConfig   `yaml:"application"`
-	Auth          AuthConfig          `yaml:"auth"`
-	General       GeneralConfig       `yaml:"general"`
-	SourceScripts SourceScriptsConfig `yaml:"source_scripts"`
-	Logs          LogsConfig          `yaml:"logs"`
-	Storage       StorageConfig       `yaml:"storage"`
-	Database      DatabaseConfig      `yaml:"database"`
-}
-
-func LoadConfig() error {
+func LoadConfig(dataDir string) (Config, error) {
 	taurus.SetEnvPrefix(EnvPrefix)
 	taurus.SetExpandEnv(true)
 	taurus.BindEnvAlias("APPLICATION_PORT", "PORT")
@@ -122,17 +106,17 @@ func LoadConfig() error {
 	taurus.BindEnvAlias("LOGS_FORMAT", "LOG_FORMAT")
 	setupTypes()
 
-	if DataDir == "" {
-		DataDir = os.Getenv(EnvPrefix + "_DATA_DIR")
-	}
+	conf := LoadDefaultConfig()
 
-	if err := taurus.Load(defaultConfig, &Conf); err != nil {
-		return fmt.Errorf("failed to read default config: %w", err)
+	if dataDir == "" {
+		dataDir = os.Getenv(EnvPrefix + "_DATA_DIR")
 	}
+	conf.DataDir = dataDir
+	conf.Storage.DataDir = dataDir
 
-	configFilePath, err := configFilePath()
+	configFilePath, err := configFilePath(dataDir)
 	if err != nil {
-		return err
+		return conf, err
 	}
 
 	if _, err := os.Stat(configFilePath); errors.Is(err, fs.ErrNotExist) {
@@ -141,20 +125,28 @@ func LoadConfig() error {
 		}
 	}
 
-	if err := taurus.LoadFile(configFilePath, &Conf); err != nil {
+	if err := taurus.LoadFile(configFilePath, &conf); err != nil {
 		log.Warn("Failed to read config", "err", err)
 		log.Info("Using default config")
 	}
 
-	if err := taurus.LoadEnv(EnvPrefix, &Conf); err != nil {
+	if err := taurus.LoadEnv(EnvPrefix, &conf); err != nil {
 		log.Warn("Failed to read and merge environment variables", "err", err)
 	}
 
-	if err := taurus.LoadFlags(&Conf); err != nil {
+	if err := taurus.LoadFlags(&conf); err != nil {
 		log.Warn("Failed to read and merge flags", "err", err)
 	}
 
-	return nil
+	return conf, nil
+}
+
+func LoadDefaultConfig() Config {
+	var conf Config
+	if err := taurus.Load(defaultConfig, &conf); err != nil {
+		log.Fatal("Failed to load default config", "err", err)
+	}
+	return conf
 }
 
 func setupTypes() {
@@ -174,18 +166,24 @@ func setupTypes() {
 	})
 }
 
-func configFilePath() (string, error) {
-	if DataDir != "" {
-		path, err := filepath.Abs(filepath.Join(DataDir, "config.yaml"))
+func configFilePath(dataDir string) (string, error) {
+	if dataDir != "" {
+		path, err := filepath.Abs(filepath.Join(dataDir, "config.yaml"))
 		if err == nil {
 			err = os.MkdirAll(filepath.Dir(path), os.ModePerm)
 			if err != nil {
-				log.Warn("Failed to create directories for config.yaml in DataDir", "err", err)
+				log.Warn(
+					"Failed to create directories for config.yaml in data directory",
+					"dataDir",
+					dataDir,
+					"err",
+					err,
+				)
 				return "", err
 			}
 			return path, nil
 		}
-		log.Warn("Failed to get absolute path for config.yaml in DataDir", "err", err)
+		log.Warn("Failed to get absolute path for config.yaml in data directory", "dataDir", dataDir, "err", err)
 	}
 
 	path, err := filepath.Abs("config.yaml")

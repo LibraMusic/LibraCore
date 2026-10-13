@@ -17,20 +17,59 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/media"
 )
 
-type PostgreSQLDatabase struct {
-	pool      *pgxpool.Pool
-	closeOnce sync.Once
+// PostgreSQLOptions contains the configuration options for PostgreSQL connections.
+type PostgreSQLOptions struct {
+	Host   string `yaml:"host"`
+	Port   int    `yaml:"port"`
+	User   string `yaml:"user"`
+	Pass   string `yaml:"pass"`
+	DBName string `yaml:"db_name"`
+	Params string `yaml:"params"`
 }
 
-func (*PostgreSQLDatabase) EngineName() string {
+func parsePostgreSQLOptions(options map[string]any) PostgreSQLOptions {
+	opts := PostgreSQLOptions{
+		Host:   "localhost",
+		Port:   5432,
+		User:   "libra",
+		Pass:   "password",
+		DBName: "libra",
+		Params: "sslmode=disable",
+	}
+
+	if host, ok := options["host"].(string); ok {
+		opts.Host = host
+	}
+	if port, ok := options["port"].(int); ok {
+		opts.Port = port
+	}
+	if user, ok := options["user"].(string); ok {
+		opts.User = user
+	}
+	if pass, ok := options["pass"].(string); ok {
+		opts.Pass = pass
+	}
+	if dbName, ok := options["db_name"].(string); ok {
+		opts.DBName = dbName
+	}
+	if params, ok := options["params"].(string); ok {
+		opts.Params = params
+	}
+
+	return opts
+}
+
+// PostgreSQLFactory is a factory for creating PostgreSQL database instances.
+type PostgreSQLFactory struct{}
+
+func (PostgreSQLFactory) EngineName() string {
 	return "PostgreSQL"
 }
 
-func (*PostgreSQLDatabase) Satisfies(engine string) bool {
+func (PostgreSQLFactory) Satisfies(engine string) bool {
 	return slices.Contains([]string{
 		"postgresql",
 		"postgres",
@@ -40,16 +79,31 @@ func (*PostgreSQLDatabase) Satisfies(engine string) bool {
 	}, strings.ToLower(engine))
 }
 
-func (db *PostgreSQLDatabase) Connect() error {
+func (PostgreSQLFactory) New(options map[string]any, _ string) (Database, error) {
+	opts := parsePostgreSQLOptions(options)
+	return &PostgreSQL{options: opts}, nil
+}
+
+type PostgreSQL struct {
+	options   PostgreSQLOptions
+	pool      *pgxpool.Pool
+	closeOnce sync.Once
+}
+
+func (*PostgreSQL) EngineName() string {
+	return "PostgreSQL"
+}
+
+func (db *PostgreSQL) Connect() error {
 	log.Info("Connecting to PostgreSQL...")
 	connStr := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s %s",
-		config.Conf.Database.PostgreSQL.Host,
-		config.Conf.Database.PostgreSQL.Port,
-		config.Conf.Database.PostgreSQL.User,
-		config.Conf.Database.PostgreSQL.Pass,
-		config.Conf.Database.PostgreSQL.DBName,
-		config.Conf.Database.PostgreSQL.Params,
+		db.options.Host,
+		db.options.Port,
+		db.options.User,
+		db.options.Pass,
+		db.options.DBName,
+		db.options.Params,
 	)
 	pool, err := pgxpool.New(context.Background(), connStr)
 	db.pool = pool
@@ -74,7 +128,12 @@ func (db *PostgreSQLDatabase) Connect() error {
 	return nil
 }
 
-func (db *PostgreSQLDatabase) Close() error {
+func (db *PostgreSQL) Close() error {
+	// Don't attempt to close if not connected.
+	if db.pool == nil {
+		return nil
+	}
+
 	db.closeOnce.Do(func() {
 		log.Info("Closing PostgreSQL connection...")
 		db.pool.Close()
@@ -82,7 +141,7 @@ func (db *PostgreSQLDatabase) Close() error {
 	return nil
 }
 
-func (db *PostgreSQLDatabase) migrationsTableExists(ctx context.Context) (bool, error) {
+func (db *PostgreSQL) migrationsTableExists(ctx context.Context) (bool, error) {
 	var exists bool
 	err := db.pool.QueryRow(ctx, `
         SELECT EXISTS (
@@ -96,7 +155,7 @@ func (db *PostgreSQLDatabase) migrationsTableExists(ctx context.Context) (bool, 
 	return exists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) createMigrationsTable(ctx context.Context) error {
+func (db *PostgreSQL) createMigrationsTable(ctx context.Context) error {
 	_, err := db.pool.Exec(ctx, `
         CREATE TABLE IF NOT EXISTS schema_migrations (
             version BIGINT PRIMARY KEY,
@@ -106,7 +165,7 @@ func (db *PostgreSQLDatabase) createMigrationsTable(ctx context.Context) error {
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) currentVersion(ctx context.Context) (uint64, bool, error) {
+func (db *PostgreSQL) currentVersion(ctx context.Context) (uint64, bool, error) {
 	var version uint64
 	var dirty bool
 	err := db.pool.QueryRow(ctx, `
@@ -120,7 +179,7 @@ func (db *PostgreSQLDatabase) currentVersion(ctx context.Context) (uint64, bool,
 	return version, dirty, nil
 }
 
-func (db *PostgreSQLDatabase) setVersion(ctx context.Context, version uint64, dirty bool) error {
+func (db *PostgreSQL) setVersion(ctx context.Context, version uint64, dirty bool) error {
 	_, err := db.pool.Exec(ctx, `
         DELETE FROM schema_migrations;
         INSERT INTO schema_migrations (version, dirty) VALUES ($1, $2);
@@ -128,7 +187,7 @@ func (db *PostgreSQLDatabase) setVersion(ctx context.Context, version uint64, di
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
+func (db *PostgreSQL) MigrateUp(steps int) error {
 	if err := db.createMigrationsTable(context.Background()); err != nil {
 		return err
 	}
@@ -149,7 +208,7 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 
 	appliedCount := 0
 	for _, file := range files {
-		versionStr := strings.Split(file, "_")[0]
+		versionStr, _, _ := strings.Cut(file, "_")
 		version, err := strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
 			return err
@@ -190,7 +249,7 @@ func (db *PostgreSQLDatabase) MigrateUp(steps int) error {
 	return nil
 }
 
-func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
+func (db *PostgreSQL) MigrateDown(steps int) error {
 	if err := db.createMigrationsTable(context.Background()); err != nil {
 		return err
 	}
@@ -211,7 +270,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 
 	appliedCount := 0
 	for _, file := range files {
-		versionStr := strings.Split(file, "_")[0]
+		versionStr, _, _ := strings.Cut(file, "_")
 		version, err := strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
 			return err
@@ -244,7 +303,7 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 		// Set version to previous migration and clear dirty flag.
 		prevVersion := uint64(0)
 		if appliedCount < len(files)-1 {
-			prevVersionStr := strings.Split(files[appliedCount+1], "_")[0]
+			prevVersionStr, _, _ := strings.Cut(files[appliedCount+1], "_")
 			prevVersion, err = strconv.ParseUint(prevVersionStr, 10, 64)
 			if err != nil {
 				return err
@@ -260,10 +319,10 @@ func (db *PostgreSQLDatabase) MigrateDown(steps int) error {
 	return nil
 }
 
-func (db *PostgreSQLDatabase) AllTracks(ctx context.Context) ([]media.Track, error) {
+func (db *PostgreSQL) AllTracks(ctx context.Context) ([]media.Track, error) {
 	var tracks []media.Track
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM tracks;
     `)
 	if err != nil {
@@ -292,7 +351,7 @@ func (db *PostgreSQLDatabase) AllTracks(ctx context.Context) ([]media.Track, err
 			&track.AdditionalMeta,
 			&track.Permissions,
 			&track.LinkedItemIDs,
-			&track.ContentSource,
+			&track.MediaSource,
 			&track.MetadataSource,
 			&track.LyricSources,
 		)
@@ -304,10 +363,10 @@ func (db *PostgreSQLDatabase) AllTracks(ctx context.Context) ([]media.Track, err
 	return tracks, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Tracks(ctx context.Context, userID string) ([]media.Track, error) {
+func (db *PostgreSQL) Tracks(ctx context.Context, userID string) ([]media.Track, error) {
 	var tracks []media.Track
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM tracks WHERE user_id=$1;
     `, userID)
 	if err != nil {
@@ -336,7 +395,7 @@ func (db *PostgreSQLDatabase) Tracks(ctx context.Context, userID string) ([]medi
 			&track.AdditionalMeta,
 			&track.Permissions,
 			&track.LinkedItemIDs,
-			&track.ContentSource,
+			&track.MediaSource,
 			&track.MetadataSource,
 			&track.LyricSources,
 		)
@@ -348,10 +407,10 @@ func (db *PostgreSQLDatabase) Tracks(ctx context.Context, userID string) ([]medi
 	return tracks, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Track(ctx context.Context, id string) (media.Track, error) {
+func (db *PostgreSQL) Track(ctx context.Context, id string) (media.Track, error) {
 	track := media.Track{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM tracks WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -374,7 +433,7 @@ func (db *PostgreSQLDatabase) Track(ctx context.Context, id string) (media.Track
 		&track.AdditionalMeta,
 		&track.Permissions,
 		&track.LinkedItemIDs,
-		&track.ContentSource,
+		&track.MediaSource,
 		&track.MetadataSource,
 		&track.LyricSources,
 	)
@@ -382,32 +441,32 @@ func (db *PostgreSQLDatabase) Track(ctx context.Context, id string) (media.Track
 	return track, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AddTrack(ctx context.Context, track media.Track) error {
+func (db *PostgreSQL) AddTrack(ctx context.Context, track media.Track) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO tracks (
-            id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+            id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22
         );
-    `, track.ID, track.UserID, track.ISRC, track.Title, track.ArtistIDs, track.AlbumIDs, track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description, track.ReleaseDate, track.Lyrics, track.ListenCount, track.FavoriteCount, track.AdditionDate, track.Tags, track.AdditionalMeta, track.Permissions, track.LinkedItemIDs, track.ContentSource, track.MetadataSource, track.LyricSources)
+    `, track.ID, track.UserID, track.ISRC, track.Title, track.ArtistIDs, track.AlbumIDs, track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description, track.ReleaseDate, track.Lyrics, track.ListenCount, track.FavoriteCount, track.AdditionDate, track.Tags, track.AdditionalMeta, track.Permissions, track.LinkedItemIDs, track.MediaSource, track.MetadataSource, track.LyricSources)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdateTrack(ctx context.Context, track media.Track) error {
+func (db *PostgreSQL) UpdateTrack(ctx context.Context, track media.Track) error {
 	_, err := db.pool.Exec(ctx, `
         UPDATE tracks
-        SET user_id=$2, isrc=$3, title=$4, artist_ids=$5, album_ids=$6, primary_album_id=$7, track_number=$8, duration=$9, description=$10, release_date=$11, lyrics=$12, listen_count=$13, favorite_count=$14, addition_date=$15, tags=$16, additional_meta=$17, permissions=$18, linked_item_ids=$19, content_source=$20, metadata_source=$21, lyric_sources=$22
+        SET user_id=$2, isrc=$3, title=$4, artist_ids=$5, album_ids=$6, primary_album_id=$7, track_number=$8, duration=$9, description=$10, release_date=$11, lyrics=$12, listen_count=$13, favorite_count=$14, addition_date=$15, tags=$16, additional_meta=$17, permissions=$18, linked_item_ids=$19, media_source=$20, metadata_source=$21, lyric_sources=$22
         WHERE id=$1;
-    `, track.ID, track.UserID, track.ISRC, track.Title, track.ArtistIDs, track.AlbumIDs, track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description, track.ReleaseDate, track.Lyrics, track.ListenCount, track.FavoriteCount, track.AdditionDate, track.Tags, track.AdditionalMeta, track.Permissions, track.LinkedItemIDs, track.ContentSource, track.MetadataSource, track.LyricSources)
+    `, track.ID, track.UserID, track.ISRC, track.Title, track.ArtistIDs, track.AlbumIDs, track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description, track.ReleaseDate, track.Lyrics, track.ListenCount, track.FavoriteCount, track.AdditionDate, track.Tags, track.AdditionalMeta, track.Permissions, track.LinkedItemIDs, track.MediaSource, track.MetadataSource, track.LyricSources)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DeleteTrack(ctx context.Context, id string) error {
+func (db *PostgreSQL) DeleteTrack(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM tracks WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AllAlbums(ctx context.Context) ([]media.Album, error) {
+func (db *PostgreSQL) AllAlbums(ctx context.Context) ([]media.Album, error) {
 	var albums []media.Album
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -446,7 +505,7 @@ func (db *PostgreSQLDatabase) AllAlbums(ctx context.Context) ([]media.Album, err
 	return albums, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Albums(ctx context.Context, userID string) ([]media.Album, error) {
+func (db *PostgreSQL) Albums(ctx context.Context, userID string) ([]media.Album, error) {
 	var albums []media.Album
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -485,7 +544,7 @@ func (db *PostgreSQLDatabase) Albums(ctx context.Context, userID string) ([]medi
 	return albums, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Album(ctx context.Context, id string) (media.Album, error) {
+func (db *PostgreSQL) Album(ctx context.Context, id string) (media.Album, error) {
 	album := media.Album{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -513,7 +572,7 @@ func (db *PostgreSQLDatabase) Album(ctx context.Context, id string) (media.Album
 	return album, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AddAlbum(ctx context.Context, album media.Album) error {
+func (db *PostgreSQL) AddAlbum(ctx context.Context, album media.Album) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO albums (
             id, user_id, upc, ean, title, artist_ids, track_ids, description, release_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -524,7 +583,7 @@ func (db *PostgreSQLDatabase) AddAlbum(ctx context.Context, album media.Album) e
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdateAlbum(ctx context.Context, album media.Album) error {
+func (db *PostgreSQL) UpdateAlbum(ctx context.Context, album media.Album) error {
 	_, err := db.pool.Exec(ctx, `
         UPDATE albums
         SET user_id=$2, upc=$3, ean=$4, title=$5, artist_ids=$6, track_ids=$7, description=$8, release_date=$9, listen_count=$10, favorite_count=$11, addition_date=$12, tags=$13, additional_meta=$14, permissions=$15, linked_item_ids=$16, metadata_source=$17
@@ -533,15 +592,15 @@ func (db *PostgreSQLDatabase) UpdateAlbum(ctx context.Context, album media.Album
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DeleteAlbum(ctx context.Context, id string) error {
+func (db *PostgreSQL) DeleteAlbum(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM albums WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AllVideos(ctx context.Context) ([]media.Video, error) {
+func (db *PostgreSQL) AllVideos(ctx context.Context) ([]media.Video, error) {
 	var videos []media.Video
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM videos;
     `)
 	if err != nil {
@@ -566,7 +625,7 @@ func (db *PostgreSQLDatabase) AllVideos(ctx context.Context) ([]media.Video, err
 			&video.AdditionalMeta,
 			&video.Permissions,
 			&video.LinkedItemIDs,
-			&video.ContentSource,
+			&video.MediaSource,
 			&video.MetadataSource,
 			&video.LyricSources,
 		)
@@ -578,10 +637,10 @@ func (db *PostgreSQLDatabase) AllVideos(ctx context.Context) ([]media.Video, err
 	return videos, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Videos(ctx context.Context, userID string) ([]media.Video, error) {
+func (db *PostgreSQL) Videos(ctx context.Context, userID string) ([]media.Video, error) {
 	var videos []media.Video
 	rows, err := db.pool.Query(ctx, `
-        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM videos WHERE user_id=$1;
     `, userID)
 	if err != nil {
@@ -606,7 +665,7 @@ func (db *PostgreSQLDatabase) Videos(ctx context.Context, userID string) ([]medi
 			&video.AdditionalMeta,
 			&video.Permissions,
 			&video.LinkedItemIDs,
-			&video.ContentSource,
+			&video.MediaSource,
 			&video.MetadataSource,
 			&video.LyricSources,
 		)
@@ -618,10 +677,10 @@ func (db *PostgreSQLDatabase) Videos(ctx context.Context, userID string) ([]medi
 	return videos, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Video(ctx context.Context, id string) (media.Video, error) {
+func (db *PostgreSQL) Video(ctx context.Context, id string) (media.Video, error) {
 	video := media.Video{}
 	row := db.pool.QueryRow(ctx, `
-        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM videos WHERE id=$1;
     `, id)
 	err := row.Scan(
@@ -640,7 +699,7 @@ func (db *PostgreSQLDatabase) Video(ctx context.Context, id string) (media.Video
 		&video.AdditionalMeta,
 		&video.Permissions,
 		&video.LinkedItemIDs,
-		&video.ContentSource,
+		&video.MediaSource,
 		&video.MetadataSource,
 		&video.LyricSources,
 	)
@@ -648,32 +707,32 @@ func (db *PostgreSQLDatabase) Video(ctx context.Context, id string) (media.Video
 	return video, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AddVideo(ctx context.Context, video media.Video) error {
+func (db *PostgreSQL) AddVideo(ctx context.Context, video media.Video) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO videos (
-            id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+            id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
         );
-    `, video.ID, video.UserID, video.Title, video.ArtistIDs, video.Duration, video.Description, video.ReleaseDate, video.Subtitles, video.WatchCount, video.FavoriteCount, video.AdditionDate, video.Tags, video.AdditionalMeta, video.Permissions, video.LinkedItemIDs, video.ContentSource, video.MetadataSource, video.LyricSources)
+    `, video.ID, video.UserID, video.Title, video.ArtistIDs, video.Duration, video.Description, video.ReleaseDate, video.Subtitles, video.WatchCount, video.FavoriteCount, video.AdditionDate, video.Tags, video.AdditionalMeta, video.Permissions, video.LinkedItemIDs, video.MediaSource, video.MetadataSource, video.LyricSources)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdateVideo(ctx context.Context, video media.Video) error {
+func (db *PostgreSQL) UpdateVideo(ctx context.Context, video media.Video) error {
 	_, err := db.pool.Exec(ctx, `
         UPDATE videos
-        SET user_id=$2, title=$3, artist_ids=$4, duration=$5, description=$6, release_date=$7, subtitles=$8, watch_count=$9, favorite_count=$10, addition_date=$11, tags=$12, additional_meta=$13, permissions=$14, linked_item_ids=$15, content_source=$16, metadata_source=$17, lyric_sources=$18
+        SET user_id=$2, title=$3, artist_ids=$4, duration=$5, description=$6, release_date=$7, subtitles=$8, watch_count=$9, favorite_count=$10, addition_date=$11, tags=$12, additional_meta=$13, permissions=$14, linked_item_ids=$15, media_source=$16, metadata_source=$17, lyric_sources=$18
         WHERE id=$1;
-    `, video.ID, video.UserID, video.Title, video.ArtistIDs, video.Duration, video.Description, video.ReleaseDate, video.Subtitles, video.WatchCount, video.FavoriteCount, video.AdditionDate, video.Tags, video.AdditionalMeta, video.Permissions, video.LinkedItemIDs, video.ContentSource, video.MetadataSource, video.LyricSources)
+    `, video.ID, video.UserID, video.Title, video.ArtistIDs, video.Duration, video.Description, video.ReleaseDate, video.Subtitles, video.WatchCount, video.FavoriteCount, video.AdditionDate, video.Tags, video.AdditionalMeta, video.Permissions, video.LinkedItemIDs, video.MediaSource, video.MetadataSource, video.LyricSources)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DeleteVideo(ctx context.Context, id string) error {
+func (db *PostgreSQL) DeleteVideo(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM videos WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AllArtists(ctx context.Context) ([]media.Artist, error) {
+func (db *PostgreSQL) AllArtists(ctx context.Context) ([]media.Artist, error) {
 	var artists []media.Artist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -710,7 +769,7 @@ func (db *PostgreSQLDatabase) AllArtists(ctx context.Context) ([]media.Artist, e
 	return artists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
+func (db *PostgreSQL) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
 	var artists []media.Artist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -747,7 +806,7 @@ func (db *PostgreSQLDatabase) Artists(ctx context.Context, userID string) ([]med
 	return artists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Artist(ctx context.Context, id string) (media.Artist, error) {
+func (db *PostgreSQL) Artist(ctx context.Context, id string) (media.Artist, error) {
 	artist := media.Artist{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -773,7 +832,7 @@ func (db *PostgreSQLDatabase) Artist(ctx context.Context, id string) (media.Arti
 	return artist, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AddArtist(ctx context.Context, artist media.Artist) error {
+func (db *PostgreSQL) AddArtist(ctx context.Context, artist media.Artist) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO artists (
             id, user_id, name, album_ids, track_ids, description, creation_date, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, metadata_source
@@ -784,7 +843,7 @@ func (db *PostgreSQLDatabase) AddArtist(ctx context.Context, artist media.Artist
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdateArtist(ctx context.Context, artist media.Artist) error {
+func (db *PostgreSQL) UpdateArtist(ctx context.Context, artist media.Artist) error {
 	_, err := db.pool.Exec(ctx, `
         UPDATE artists
         SET user_id=$2, name=$3, album_ids=$4, track_ids=$5, description=$6, creation_date=$7, listen_count=$8, favorite_count=$9, addition_date=$10, tags=$11, additional_meta=$12, permissions=$13, linked_item_ids=$14, metadata_source=$15
@@ -793,12 +852,12 @@ func (db *PostgreSQLDatabase) UpdateArtist(ctx context.Context, artist media.Art
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DeleteArtist(ctx context.Context, id string) error {
+func (db *PostgreSQL) DeleteArtist(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM artists WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
+func (db *PostgreSQL) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
@@ -833,7 +892,7 @@ func (db *PostgreSQLDatabase) AllPlaylists(ctx context.Context) ([]media.Playlis
 	return playlists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
+func (db *PostgreSQL) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 	rows, err := db.pool.Query(ctx, `
         SELECT id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
@@ -868,7 +927,7 @@ func (db *PostgreSQLDatabase) Playlists(ctx context.Context, userID string) ([]m
 	return playlists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Playlist(ctx context.Context, id string) (media.Playlist, error) {
+func (db *PostgreSQL) Playlist(ctx context.Context, id string) (media.Playlist, error) {
 	playlist := media.Playlist{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
@@ -892,7 +951,7 @@ func (db *PostgreSQLDatabase) Playlist(ctx context.Context, id string) (media.Pl
 	return playlist, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) AddPlaylist(ctx context.Context, playlist media.Playlist) error {
+func (db *PostgreSQL) AddPlaylist(ctx context.Context, playlist media.Playlist) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO playlists (
             id, user_id, title, track_ids, listen_count, favorite_count, description, creation_date, addition_date, tags, additional_meta, permissions, metadata_source
@@ -903,7 +962,7 @@ func (db *PostgreSQLDatabase) AddPlaylist(ctx context.Context, playlist media.Pl
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdatePlaylist(ctx context.Context, playlist media.Playlist) error {
+func (db *PostgreSQL) UpdatePlaylist(ctx context.Context, playlist media.Playlist) error {
 	_, err := db.pool.Exec(ctx, `
         UPDATE playlists
         SET user_id=$2, title=$3, track_ids=$4, listen_count=$5, favorite_count=$6, description=$7, creation_date=$8, addition_date=$9, tags=$10, additional_meta=$11, permissions=$12, metadata_source=$13
@@ -912,12 +971,12 @@ func (db *PostgreSQLDatabase) UpdatePlaylist(ctx context.Context, playlist media
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DeletePlaylist(ctx context.Context, id string) error {
+func (db *PostgreSQL) DeletePlaylist(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM playlists WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) Users(ctx context.Context) ([]media.DatabaseUser, error) {
+func (db *PostgreSQL) Users(ctx context.Context) ([]media.DatabaseUser, error) {
 	var users []media.DatabaseUser
 	rows, err := db.pool.Query(ctx, `
         SELECT id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
@@ -952,7 +1011,7 @@ func (db *PostgreSQLDatabase) Users(ctx context.Context) ([]media.DatabaseUser, 
 	return users, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) User(ctx context.Context, id string) (media.DatabaseUser, error) {
+func (db *PostgreSQL) User(ctx context.Context, id string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
@@ -976,7 +1035,7 @@ func (db *PostgreSQLDatabase) User(ctx context.Context, id string) (media.Databa
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
+func (db *PostgreSQL) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 	row := db.pool.QueryRow(ctx, `
         SELECT id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
@@ -1000,7 +1059,7 @@ func (db *PostgreSQLDatabase) UserByUsername(ctx context.Context, username strin
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) CreateUser(ctx context.Context, user media.DatabaseUser) error {
+func (db *PostgreSQL) CreateUser(ctx context.Context, user media.DatabaseUser) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO users (
             id, username, email, password_hash, display_name, description, listened_to, favorites, public_view_count, creation_date, permissions, linked_artist_id, linked_sources
@@ -1011,7 +1070,7 @@ func (db *PostgreSQLDatabase) CreateUser(ctx context.Context, user media.Databas
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UpdateUser(ctx context.Context, user media.DatabaseUser) error {
+func (db *PostgreSQL) UpdateUser(ctx context.Context, user media.DatabaseUser) error {
 	_, err := db.pool.Exec(ctx, `
         UPDATE users
         SET username=$2, email=$3, password_hash=$4, display_name=$5, description=$6, listened_to=$7, favorites=$8, public_view_count=$9, creation_date=$10, permissions=$11, linked_artist_id=$12, linked_sources=$13
@@ -1020,12 +1079,12 @@ func (db *PostgreSQLDatabase) UpdateUser(ctx context.Context, user media.Databas
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DeleteUser(ctx context.Context, id string) error {
+func (db *PostgreSQL) DeleteUser(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM users WHERE id=$1;`, id)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) ProviderUser(
+func (db *PostgreSQL) ProviderUser(
 	ctx context.Context,
 	provider, providerUserID string,
 ) (media.DatabaseUser, error) {
@@ -1054,7 +1113,7 @@ func (db *PostgreSQLDatabase) ProviderUser(
 	return user, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
+func (db *PostgreSQL) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
 	var exists bool
 	err := db.pool.QueryRow(ctx, `
         SELECT EXISTS(
@@ -1064,7 +1123,7 @@ func (db *PostgreSQLDatabase) IsProviderLinked(ctx context.Context, provider, us
 	return exists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
+func (db *PostgreSQL) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
 	_, err := db.pool.Exec(ctx, `
         INSERT INTO auth_providers (user_id, provider, provider_user_id)
         VALUES ($1, $2, $3);
@@ -1072,28 +1131,28 @@ func (db *PostgreSQLDatabase) LinkProviderAccount(ctx context.Context, provider,
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
+func (db *PostgreSQL) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
 	_, err := db.pool.Exec(ctx, `
         DELETE FROM auth_providers WHERE user_id = $1 AND provider = $2;
     `, userID, provider)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) UsernameExists(ctx context.Context, username string) (bool, error) {
+func (db *PostgreSQL) UsernameExists(ctx context.Context, username string) (bool, error) {
 	var exists bool
 	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE username=$1);`, strings.ToLower(username)).
 		Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) EmailExists(ctx context.Context, email string) (bool, error) {
+func (db *PostgreSQL) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
 	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE email=$1);`, strings.ToLower(email)).
 		Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
+func (db *PostgreSQL) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
 	_, err := db.pool.Exec(
 		ctx,
 		`INSERT INTO blacklisted_tokens (token, expiration) VALUES ($1, $2);`,
@@ -1103,12 +1162,12 @@ func (db *PostgreSQLDatabase) BlacklistToken(ctx context.Context, token string, 
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) CleanExpiredTokens(ctx context.Context) error {
+func (db *PostgreSQL) CleanExpiredTokens(ctx context.Context) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM blacklisted_tokens WHERE expiration < NOW();`)
 	return normalizePostgreSQLError(err)
 }
 
-func (db *PostgreSQLDatabase) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
+func (db *PostgreSQL) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
 	var exists bool
 	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token=$1);`, token).Scan(&exists)
 	return exists, normalizePostgreSQLError(err)
@@ -1122,6 +1181,5 @@ func normalizePostgreSQLError(err error) error {
 }
 
 func init() {
-	db := &PostgreSQLDatabase{}
-	Registry["postgresql"] = db
+	Register(&PostgreSQLFactory{})
 }

@@ -3,68 +3,109 @@
 package sources
 
 import (
+	"errors"
+	"slices"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
-	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/media"
+	"github.com/libramusic/libracore/versions"
 )
 
-type WebSource struct {
-	URL string
-}
+type WebFactory struct{}
 
-func InitWebSource(url string) (*WebSource, error) {
-	log.Error("unimplemented")
-
-	return &WebSource{
-		URL: url,
-	}, nil
-}
-
-func (*WebSource) Satisfies(id string) bool {
-	return !strings.HasPrefix(id, "file:") && IsValidSourceURL(id)
-}
-
-func (s *WebSource) SupportsMultiple() bool {
-	return s.URL == ""
-}
-
-func (s *WebSource) Derive(id string) (Source, error) {
-	if s.SupportsMultiple() {
-		return InitWebSource(id)
-	}
-	return nil, ErrMultipleInstancesNotSupported
-}
-
-func (*WebSource) ID() string {
-	log.Error("unimplemented")
+func (WebFactory) ID() string {
 	return "web"
 }
 
-func (*WebSource) Name() string {
+func (WebFactory) Satisfies(id string) bool {
+	return slices.Contains([]string{
+		"web",
+		"http",
+		"https",
+	}, strings.ToLower(id))
+}
+
+func (WebFactory) SupportsMultiple() bool {
+	return true
+}
+
+func (WebFactory) New(alias string, options map[string]any, info SharedInfo) (Source, error) {
+	opts, err := parseWebOptions(options)
+	if err != nil {
+		return nil, err
+	}
+	source := &Web{alias: alias, options: opts, info: info}
+	return source, nil
+}
+
+type WebOptions struct {
+	URL string
+}
+
+func parseWebOptions(options map[string]any) (WebOptions, error) {
+	opts := WebOptions{
+		URL: "",
+	}
+
+	if url, ok := options["url"].(string); ok {
+		opts.URL = url
+	}
+	if !isValidSourceURL(opts.URL) {
+		return opts, errors.New("invalid value for option 'url'")
+	}
+
+	return opts, nil
+}
+
+func isValidSourceURL(urlStr string) bool {
+	if strings.TrimSpace(urlStr) == "" {
+		return false
+	}
+	return hasSupportedScheme(urlStr)
+}
+
+func hasSupportedScheme(urlStr string) bool {
+	if strings.HasPrefix(urlStr, "http://") || strings.HasPrefix(urlStr, "https://") ||
+		!strings.Contains(urlStr, "://") {
+		return true
+	}
+	return false
+}
+
+type Web struct {
+	alias   string
+	options WebOptions
+	info    SharedInfo
+}
+
+func (*Web) ID() string {
+	return "web"
+}
+
+func (*Web) Name() string {
 	log.Error("unimplemented")
 	return "Web"
 }
 
-func (*WebSource) Version() *semver.Version {
+func (*Web) Version() *semver.Version {
 	log.Error("unimplemented")
-	return libracore.LibraVersion
+	return versions.Libra
 }
 
-func (*WebSource) SourceTypes() []string {
+func (*Web) Categories() []Category {
 	log.Error("unimplemented")
-	return []string{"content", "metadata", "lyrics"}
+	return []Category{CategoryMedia, CategoryMetadata, CategoryLyrics}
 }
 
-func (*WebSource) MediaTypes() []string {
+func (*Web) Formats() []media.Format {
 	log.Error("unimplemented")
-	return []string{"music", "video", "playlist"}
+	return []media.Format{media.FormatMusic, media.FormatVideo, media.FormatPlaylist}
 }
 
-func (*WebSource) Search(_ string, _, _ int, _ map[string]any) ([]media.SourcePlayable, error) {
+func (*Web) Search(_ string, _, _ int, _ Filter, _ BindingInfo) ([]media.SourcePlayable, error) {
 	var results []media.SourcePlayable
 
 	log.Error("unimplemented")
@@ -72,43 +113,26 @@ func (*WebSource) Search(_ string, _, _ int, _ map[string]any) ([]media.SourcePl
 	return results, nil
 }
 
-func (s *WebSource) Content(playable media.SourcePlayable) ([]byte, error) {
-	if !SupportsMediaType(s, playable.GetType()) {
-		return nil, ErrUnsupportedMediaType
-	}
-
+func (*Web) Media(_ media.SourcePlayable, _ BindingInfo) ([]byte, error) {
 	log.Error("unimplemented")
 
 	return nil, nil
 }
 
-func (s *WebSource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (*Web) Lyrics(_ media.LyricsPlayable, _ BindingInfo) (map[string]string, error) {
 	result := map[string]string{}
-
-	if !SupportsMediaType(s, playable.GetType()) {
-		return result, ErrUnsupportedMediaType
-	}
 
 	log.Error("unimplemented")
 
 	return result, nil
 }
 
-func (s *WebSource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
-	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, ErrUnsupportedMediaType
-	}
-
+func (*Web) CompleteMetadata(playable media.SourcePlayable, _ BindingInfo) (media.SourcePlayable, error) {
 	log.Error("unimplemented")
 
 	return playable, nil
 }
 
 func init() {
-	source, err := InitWebSource("")
-	if err != nil {
-		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
-	} else {
-		Registry[source.ID()] = source
-	}
+	Register(WebFactory{})
 }

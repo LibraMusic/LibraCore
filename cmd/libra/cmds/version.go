@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/libramusic/libracore"
+	"github.com/libramusic/libracore/versions"
 )
 
 var versionCmd = &cobra.Command{
@@ -14,7 +14,7 @@ var versionCmd = &cobra.Command{
 	Args:              cobra.NoArgs,
 	ValidArgsFunction: cobra.NoFileCompletions,
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println(libracore.VersionInfo())
+		fmt.Println(versions.LibraInfo())
 	},
 }
 

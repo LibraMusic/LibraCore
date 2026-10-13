@@ -15,6 +15,7 @@ import (
 
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore/internal/httpcontext"
 	"github.com/libramusic/libracore/media"
 )
 
@@ -32,7 +33,9 @@ type loginRequest struct {
 }
 
 func Register(c echo.Context) error {
-	if config.Conf.Auth.DisableAccountCreation {
+	cc := c.(*httpcontext.Context)
+
+	if cc.Libra.Config.Auth.DisableAccountCreation {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"message": "account creation is disabled",
 		})
@@ -45,7 +48,7 @@ func Register(c echo.Context) error {
 		})
 	}
 
-	if IsUsernameReserved(req.Username) {
+	if IsUsernameReserved(&cc.Libra.Config, req.Username) {
 		return c.JSON(http.StatusBadRequest, echo.Map{
 			"message": "username is reserved",
 		})
@@ -53,7 +56,7 @@ func Register(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	usernameExists, err := db.DB.UsernameExists(ctx, req.Username)
+	usernameExists, err := cc.Libra.AuthDB.UsernameExists(ctx, req.Username)
 	if err != nil {
 		log.Error("error checking if username exists", "err", err)
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -67,7 +70,7 @@ func Register(c echo.Context) error {
 	}
 
 	if req.Email != "" {
-		emailExists, err := db.DB.EmailExists(ctx, req.Email)
+		emailExists, err := cc.Libra.AuthDB.EmailExists(ctx, req.Email)
 		if err != nil {
 			log.Error("error checking if email exists", "err", err)
 			return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -83,13 +86,13 @@ func Register(c echo.Context) error {
 
 	user := media.DatabaseUser{
 		User: media.User{
-			ID:       media.GenerateID(config.Conf.General.IDLength),
+			ID:       media.GenerateID(cc.Libra.Config.General.IDLength),
 			Username: req.Username,
 			Email:    req.Email,
 		},
 		PasswordHash: generatePassword(req.Password),
 	}
-	err = db.DB.CreateUser(ctx, user)
+	err = cc.Libra.AuthDB.CreateUser(ctx, user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -98,9 +101,9 @@ func Register(c echo.Context) error {
 
 	token, err := GenerateToken(
 		user.ID,
-		config.Conf.Auth.JWT.AccessTokenExpiration,
-		config.Conf.Auth.JWT.SigningMethod,
-		config.Conf.Auth.JWT.SigningKey,
+		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
+		cc.Libra.Config.Auth.JWT.SigningMethod,
+		cc.Libra.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -114,6 +117,8 @@ func Register(c echo.Context) error {
 }
 
 func Login(c echo.Context) error {
+	cc := c.(*httpcontext.Context)
+
 	var req loginRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
@@ -123,7 +128,7 @@ func Login(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	user, err := db.DB.UserByUsername(ctx, req.Username)
+	user, err := cc.Libra.AuthDB.UserByUsername(ctx, req.Username)
 	if errors.Is(err, db.ErrNotFound) {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"message": "user not found",
@@ -141,9 +146,9 @@ func Login(c echo.Context) error {
 
 	token, err := GenerateToken(
 		user.ID,
-		config.Conf.Auth.JWT.AccessTokenExpiration,
-		config.Conf.Auth.JWT.SigningMethod,
-		config.Conf.Auth.JWT.SigningKey,
+		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
+		cc.Libra.Config.Auth.JWT.SigningMethod,
+		cc.Libra.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -179,6 +184,8 @@ func LoginProvider(c echo.Context) error {
 }
 
 func Logout(c echo.Context) error {
+	cc := c.(*httpcontext.Context)
+
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(*TokenClaims)
 	expiration, err := claims.GetExpirationTime()
@@ -190,7 +197,7 @@ func Logout(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	err = db.DB.BlacklistToken(ctx, user.Raw, expiration.Time)
+	err = cc.Libra.AuthDB.BlacklistToken(ctx, user.Raw, expiration.Time)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -223,6 +230,8 @@ func ConnectProvider(c echo.Context) error {
 }
 
 func ProviderCallback(c echo.Context) error {
+	cc := c.(*httpcontext.Context)
+
 	providerUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
@@ -233,7 +242,7 @@ func ProviderCallback(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Check if the provider account is already linked to a user.
-	user, err := db.DB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	user, err := cc.Libra.AuthDB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if errors.Is(err, db.ErrNotFound) {
 		return handleNewProviderUser(ctx, c, providerUser)
 	}
@@ -247,6 +256,8 @@ func ProviderCallback(c echo.Context) error {
 }
 
 func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
+	cc := c.(*httpcontext.Context)
+
 	redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
 	if err != nil || redirectURI == "" {
 		return c.JSON(http.StatusBadRequest, echo.Map{
@@ -256,9 +267,9 @@ func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
 
 	token, err := GenerateToken(
 		user.ID,
-		config.Conf.Auth.JWT.AccessTokenExpiration,
-		config.Conf.Auth.JWT.SigningMethod,
-		config.Conf.Auth.JWT.SigningKey,
+		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
+		cc.Libra.Config.Auth.JWT.SigningMethod,
+		cc.Libra.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -271,9 +282,11 @@ func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
 }
 
 func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser goth.User) error {
+	cc := c.(*httpcontext.Context)
+
 	newUser := media.DatabaseUser{
 		User: media.User{
-			ID:          media.GenerateID(config.Conf.General.IDLength),
+			ID:          media.GenerateID(cc.Libra.Config.General.IDLength),
 			Username:    providerUser.UserID,
 			Email:       providerUser.Email,
 			DisplayName: providerUser.Name,
@@ -282,13 +295,18 @@ func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser got
 
 	// TODO: Profile picture.
 
-	if err := db.DB.CreateUser(ctx, newUser); err != nil {
+	if err := cc.Libra.AuthDB.CreateUser(ctx, newUser); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})
 	}
 
-	if err := db.DB.LinkProviderAccount(ctx, providerUser.Provider, newUser.ID, providerUser.UserID); err != nil {
+	if err := cc.Libra.AuthDB.LinkProviderAccount(
+		ctx,
+		providerUser.Provider,
+		newUser.ID,
+		providerUser.UserID,
+	); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})
@@ -303,9 +321,9 @@ func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser got
 
 	token, err := GenerateToken(
 		newUser.ID,
-		config.Conf.Auth.JWT.AccessTokenExpiration,
-		config.Conf.Auth.JWT.SigningMethod,
-		config.Conf.Auth.JWT.SigningKey,
+		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
+		cc.Libra.Config.Auth.JWT.SigningMethod,
+		cc.Libra.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
@@ -325,6 +343,8 @@ func buildRedirectURL(redirectURI, token string) string {
 }
 
 func DisconnectProvider(c echo.Context) error {
+	cc := c.(*httpcontext.Context)
+
 	providerUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
@@ -335,7 +355,7 @@ func DisconnectProvider(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	_, err = db.DB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	_, err = cc.Libra.AuthDB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if errors.Is(err, db.ErrNotFound) {
 		return c.JSON(http.StatusNotFound, echo.Map{
 			"message": "provider account not found",
@@ -345,7 +365,7 @@ func DisconnectProvider(c echo.Context) error {
 			"message": err.Error(),
 		})
 	}
-	if err := db.DB.DisconnectProviderAccount(ctx, providerUser.Provider, providerUser.UserID); err != nil {
+	if err := cc.Libra.AuthDB.DisconnectProviderAccount(ctx, providerUser.Provider, providerUser.UserID); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})
@@ -360,9 +380,9 @@ func ReservedUsernames() []string {
 	}
 }
 
-func IsUsernameReserved(username string) bool {
+func IsUsernameReserved(conf *config.Config, username string) bool {
 	return slices.Contains(ReservedUsernames(), username) ||
-		slices.ContainsFunc(config.Conf.General.ReservedUsernames, func(s string) bool {
+		slices.ContainsFunc(conf.General.ReservedUsernames, func(s string) bool {
 			return strings.EqualFold(s, username)
 		})
 }

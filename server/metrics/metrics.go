@@ -5,7 +5,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/libramusic/libracore/db"
+	"github.com/libramusic/libracore"
 )
 
 var (
@@ -35,23 +35,23 @@ var (
 	})
 )
 
-func RegisterMetrics() error {
-	if err := registerTotalCounter(TracksTotal, db.DB.AllTracks); err != nil {
+func RegisterMetrics(l *libracore.Libra) error {
+	if err := registerTotalCounter(TracksTotal, l.MediaDB.AllTracks); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(AlbumsTotal, db.DB.AllAlbums); err != nil {
+	if err := registerTotalCounter(AlbumsTotal, l.MediaDB.AllAlbums); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(VideosTotal, db.DB.AllVideos); err != nil {
+	if err := registerTotalCounter(VideosTotal, l.MediaDB.AllVideos); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(ArtistsTotal, db.DB.AllArtists); err != nil {
+	if err := registerTotalCounter(ArtistsTotal, l.MediaDB.AllArtists); err != nil {
 		return err
 	}
-	if err := registerTotalCounter(PlaylistsTotal, db.DB.AllPlaylists); err != nil {
+	if err := registerTotalCounter(PlaylistsTotal, l.MediaDB.AllPlaylists); err != nil {
 		return err
 	}
-	return registerTotalCounter(UsersTotal, db.DB.Users)
+	return registerTotalCounter(UsersTotal, l.AuthDB.Users)
 }
 
 func registerTotalCounter[T any](metric prometheus.Counter, fetchFunc func(context.Context) ([]T, error)) error {

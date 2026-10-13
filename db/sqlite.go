@@ -18,31 +18,61 @@ import (
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 
-	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/media"
 )
 
-type SQLiteDatabase struct {
-	pool      *sqlitex.Pool
-	closeOnce sync.Once
+// SQLiteOptions contains the configuration options for SQLite connections.
+type SQLiteOptions struct {
+	Path string `yaml:"path"`
 }
 
-func (*SQLiteDatabase) EngineName() string {
+func parseSQLiteOptions(options map[string]any) SQLiteOptions {
+	opts := SQLiteOptions{
+		Path: "libra.db",
+	}
+
+	if path, ok := options["path"].(string); ok {
+		opts.Path = path
+	}
+
+	return opts
+}
+
+// SQLiteFactory is a factory for creating SQLite database instances.
+type SQLiteFactory struct{}
+
+func (SQLiteFactory) EngineName() string {
 	return "SQLite"
 }
 
-func (*SQLiteDatabase) Satisfies(engine string) bool {
+func (SQLiteFactory) Satisfies(engine string) bool {
 	return slices.Contains([]string{
 		"sqlite",
 		"sqlite3",
 	}, strings.ToLower(engine))
 }
 
-func (db *SQLiteDatabase) Connect() error {
+func (SQLiteFactory) New(options map[string]any, dataDir string) (Database, error) {
+	opts := parseSQLiteOptions(options)
+	return &SQLite{options: opts, dataDir: dataDir}, nil
+}
+
+type SQLite struct {
+	options   SQLiteOptions
+	dataDir   string
+	pool      *sqlitex.Pool
+	closeOnce sync.Once
+}
+
+func (*SQLite) EngineName() string {
+	return "SQLite"
+}
+
+func (db *SQLite) Connect() error {
 	log.Info("Connecting to SQLite...")
-	dbPath := config.Conf.Database.SQLite.Path
-	if !filepath.IsAbs(dbPath) && config.DataDir != "" {
-		dbPath = filepath.Join(config.DataDir, dbPath)
+	dbPath := db.options.Path
+	if !filepath.IsAbs(dbPath) && db.dataDir != "" {
+		dbPath = filepath.Join(db.dataDir, dbPath)
 	}
 	pool, err := sqlitex.NewPool(dbPath, sqlitex.PoolOptions{})
 	db.pool = pool
@@ -67,7 +97,12 @@ func (db *SQLiteDatabase) Connect() error {
 	return nil
 }
 
-func (db *SQLiteDatabase) Close() error {
+func (db *SQLite) Close() error {
+	// Don't attempt to close if not connected.
+	if db.pool == nil {
+		return nil
+	}
+
 	var err error
 	db.closeOnce.Do(func() {
 		log.Info("Closing SQLite connection...")
@@ -76,7 +111,7 @@ func (db *SQLiteDatabase) Close() error {
 	return err
 }
 
-func (db *SQLiteDatabase) migrationsTableExists(ctx context.Context) (bool, error) {
+func (db *SQLite) migrationsTableExists(ctx context.Context) (bool, error) {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return false, err
@@ -96,7 +131,7 @@ func (db *SQLiteDatabase) migrationsTableExists(ctx context.Context) (bool, erro
 	return exists, err
 }
 
-func (db *SQLiteDatabase) createMigrationsTable(ctx context.Context) error {
+func (db *SQLite) createMigrationsTable(ctx context.Context) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -113,7 +148,7 @@ func (db *SQLiteDatabase) createMigrationsTable(ctx context.Context) error {
 	return err
 }
 
-func (db *SQLiteDatabase) currentVersion(ctx context.Context) (uint64, bool, error) {
+func (db *SQLite) currentVersion(ctx context.Context) (uint64, bool, error) {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return 0, false, err
@@ -147,7 +182,7 @@ func (db *SQLiteDatabase) currentVersion(ctx context.Context) (uint64, bool, err
 	return version, dirty, nil
 }
 
-func (db *SQLiteDatabase) setVersion(ctx context.Context, version uint64, dirty bool) error {
+func (db *SQLite) setVersion(ctx context.Context, version uint64, dirty bool) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -171,7 +206,7 @@ func (db *SQLiteDatabase) setVersion(ctx context.Context, version uint64, dirty 
 	return err
 }
 
-func (db *SQLiteDatabase) MigrateUp(steps int) error {
+func (db *SQLite) MigrateUp(steps int) error {
 	if err := db.createMigrationsTable(context.Background()); err != nil {
 		return err
 	}
@@ -192,7 +227,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 
 	appliedCount := 0
 	for _, file := range files {
-		versionStr := strings.Split(file, "_")[0]
+		versionStr, _, _ := strings.Cut(file, "_")
 		version, err := strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
 			return err
@@ -238,7 +273,7 @@ func (db *SQLiteDatabase) MigrateUp(steps int) error {
 	return nil
 }
 
-func (db *SQLiteDatabase) MigrateDown(steps int) error {
+func (db *SQLite) MigrateDown(steps int) error {
 	if err := db.createMigrationsTable(context.Background()); err != nil {
 		return err
 	}
@@ -259,7 +294,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 
 	appliedCount := 0
 	for _, file := range files {
-		versionStr := strings.Split(file, "_")[0]
+		versionStr, _, _ := strings.Cut(file, "_")
 		version, err := strconv.ParseUint(versionStr, 10, 64)
 		if err != nil {
 			return err
@@ -297,7 +332,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 		// Set version to previous migration and clear dirty flag.
 		prevVersion := uint64(0)
 		if appliedCount < len(files)-1 {
-			prevVersionStr := strings.Split(files[appliedCount+1], "_")[0]
+			prevVersionStr, _, _ := strings.Cut(files[appliedCount+1], "_")
 			prevVersion, err = strconv.ParseUint(prevVersionStr, 10, 64)
 			if err != nil {
 				return err
@@ -313,7 +348,7 @@ func (db *SQLiteDatabase) MigrateDown(steps int) error {
 	return nil
 }
 
-func (db *SQLiteDatabase) AllTracks(ctx context.Context) ([]media.Track, error) {
+func (db *SQLite) AllTracks(ctx context.Context) ([]media.Track, error) {
 	var tracks []media.Track
 
 	conn, err := db.pool.Take(ctx)
@@ -323,7 +358,7 @@ func (db *SQLiteDatabase) AllTracks(ctx context.Context) ([]media.Track, error) 
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM tracks;`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -362,7 +397,7 @@ func (db *SQLiteDatabase) AllTracks(ctx context.Context) ([]media.Track, error) 
 				if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 					return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 				}
-				track.ContentSource = stmt.ColumnText(19)
+				track.MediaSource = stmt.ColumnText(19)
 				track.MetadataSource = stmt.ColumnText(20)
 				if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 					return fmt.Errorf("failed to parse lyric_sources: %w", err)
@@ -378,7 +413,7 @@ func (db *SQLiteDatabase) AllTracks(ctx context.Context) ([]media.Track, error) 
 	return tracks, err
 }
 
-func (db *SQLiteDatabase) Tracks(ctx context.Context, userID string) ([]media.Track, error) {
+func (db *SQLite) Tracks(ctx context.Context, userID string) ([]media.Track, error) {
 	var tracks []media.Track
 
 	conn, err := db.pool.Take(ctx)
@@ -388,7 +423,7 @@ func (db *SQLiteDatabase) Tracks(ctx context.Context, userID string) ([]media.Tr
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM tracks WHERE user_id = ?;`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -427,7 +462,7 @@ func (db *SQLiteDatabase) Tracks(ctx context.Context, userID string) ([]media.Tr
 				if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 					return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 				}
-				track.ContentSource = stmt.ColumnText(19)
+				track.MediaSource = stmt.ColumnText(19)
 				track.MetadataSource = stmt.ColumnText(20)
 				if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 					return fmt.Errorf("failed to parse lyric_sources: %w", err)
@@ -444,7 +479,7 @@ func (db *SQLiteDatabase) Tracks(ctx context.Context, userID string) ([]media.Tr
 	return tracks, err
 }
 
-func (db *SQLiteDatabase) Track(ctx context.Context, id string) (media.Track, error) {
+func (db *SQLite) Track(ctx context.Context, id string) (media.Track, error) {
 	track := media.Track{}
 
 	conn, err := db.pool.Take(ctx)
@@ -455,7 +490,7 @@ func (db *SQLiteDatabase) Track(ctx context.Context, id string) (media.Track, er
 
 	scanned := false
 	err = sqlitex.Execute(conn, `
-        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM tracks WHERE id = ?;`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -497,7 +532,7 @@ func (db *SQLiteDatabase) Track(ctx context.Context, id string) (media.Track, er
 				if err = json.Unmarshal([]byte(stmt.ColumnText(18)), &track.LinkedItemIDs); err != nil {
 					return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 				}
-				track.ContentSource = stmt.ColumnText(19)
+				track.MediaSource = stmt.ColumnText(19)
 				track.MetadataSource = stmt.ColumnText(20)
 				if err = json.Unmarshal([]byte(stmt.ColumnText(21)), &track.LyricSources); err != nil {
 					return fmt.Errorf("failed to parse lyric_sources: %w", err)
@@ -518,7 +553,7 @@ func (db *SQLiteDatabase) Track(ctx context.Context, id string) (media.Track, er
 	return track, nil
 }
 
-func (db *SQLiteDatabase) AddTrack(ctx context.Context, track media.Track) error {
+func (db *SQLite) AddTrack(ctx context.Context, track media.Track) error {
 	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
@@ -561,7 +596,7 @@ func (db *SQLiteDatabase) AddTrack(ctx context.Context, track media.Track) error
 
 	err = sqlitex.Execute(conn, `
         INSERT INTO tracks (
-            id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+            id, user_id, isrc, title, artist_ids, album_ids, primary_album_id, track_number, duration, description, release_date, lyrics, listen_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         );`,
@@ -571,7 +606,7 @@ func (db *SQLiteDatabase) AddTrack(ctx context.Context, track media.Track) error
 				track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
 				track.ReleaseDate, string(lyrics), track.ListenCount, track.FavoriteCount,
 				track.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-				string(linkedItemIDs), track.ContentSource, track.MetadataSource, string(lyricSources),
+				string(linkedItemIDs), track.MediaSource, track.MetadataSource, string(lyricSources),
 			},
 		},
 	)
@@ -579,7 +614,7 @@ func (db *SQLiteDatabase) AddTrack(ctx context.Context, track media.Track) error
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track media.Track) error {
+func (db *SQLite) UpdateTrack(ctx context.Context, track media.Track) error {
 	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(track.ArtistIDs)
 	if err != nil {
@@ -625,7 +660,7 @@ func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track media.Track) er
         SET user_id=?, isrc=?, title=?, artist_ids=?, album_ids=?, primary_album_id=?,
             track_number=?, duration=?, description=?, release_date=?, lyrics=?,
             listen_count=?, favorite_count=?, addition_date=?, tags=?, additional_meta=?,
-            permissions=?, linked_item_ids=?, content_source=?, metadata_source=?,
+            permissions=?, linked_item_ids=?, media_source=?, metadata_source=?,
             lyric_sources=?
         WHERE id=?;`,
 		&sqlitex.ExecOptions{
@@ -634,7 +669,7 @@ func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track media.Track) er
 				track.PrimaryAlbumID, track.TrackNumber, track.Duration, track.Description,
 				track.ReleaseDate, string(lyrics), track.ListenCount, track.FavoriteCount,
 				track.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-				string(linkedItemIDs), track.ContentSource, track.MetadataSource,
+				string(linkedItemIDs), track.MediaSource, track.MetadataSource,
 				string(lyricSources), track.ID,
 			},
 		},
@@ -643,7 +678,7 @@ func (db *SQLiteDatabase) UpdateTrack(ctx context.Context, track media.Track) er
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteTrack(ctx context.Context, id string) error {
+func (db *SQLite) DeleteTrack(ctx context.Context, id string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -659,7 +694,7 @@ func (db *SQLiteDatabase) DeleteTrack(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) AllAlbums(ctx context.Context) ([]media.Album, error) {
+func (db *SQLite) AllAlbums(ctx context.Context) ([]media.Album, error) {
 	var albums []media.Album
 
 	conn, err := db.pool.Take(ctx)
@@ -715,7 +750,7 @@ func (db *SQLiteDatabase) AllAlbums(ctx context.Context) ([]media.Album, error) 
 	return albums, err
 }
 
-func (db *SQLiteDatabase) Albums(ctx context.Context, userID string) ([]media.Album, error) {
+func (db *SQLite) Albums(ctx context.Context, userID string) ([]media.Album, error) {
 	var albums []media.Album
 
 	conn, err := db.pool.Take(ctx)
@@ -772,7 +807,7 @@ func (db *SQLiteDatabase) Albums(ctx context.Context, userID string) ([]media.Al
 	return albums, err
 }
 
-func (db *SQLiteDatabase) Album(ctx context.Context, id string) (media.Album, error) {
+func (db *SQLite) Album(ctx context.Context, id string) (media.Album, error) {
 	album := media.Album{}
 
 	conn, err := db.pool.Take(ctx)
@@ -837,7 +872,7 @@ func (db *SQLiteDatabase) Album(ctx context.Context, id string) (media.Album, er
 	return album, nil
 }
 
-func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album media.Album) error {
+func (db *SQLite) AddAlbum(ctx context.Context, album media.Album) error {
 	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
@@ -889,7 +924,7 @@ func (db *SQLiteDatabase) AddAlbum(ctx context.Context, album media.Album) error
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateAlbum(ctx context.Context, album media.Album) error {
+func (db *SQLite) UpdateAlbum(ctx context.Context, album media.Album) error {
 	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(album.ArtistIDs)
 	if err != nil {
@@ -941,7 +976,7 @@ func (db *SQLiteDatabase) UpdateAlbum(ctx context.Context, album media.Album) er
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteAlbum(ctx context.Context, id string) error {
+func (db *SQLite) DeleteAlbum(ctx context.Context, id string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -957,7 +992,7 @@ func (db *SQLiteDatabase) DeleteAlbum(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) AllVideos(ctx context.Context) ([]media.Video, error) {
+func (db *SQLite) AllVideos(ctx context.Context) ([]media.Video, error) {
 	var videos []media.Video
 
 	conn, err := db.pool.Take(ctx)
@@ -967,7 +1002,7 @@ func (db *SQLiteDatabase) AllVideos(ctx context.Context) ([]media.Video, error) 
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM videos;`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -1000,7 +1035,7 @@ func (db *SQLiteDatabase) AllVideos(ctx context.Context) ([]media.Video, error) 
 				if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
 					return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 				}
-				video.ContentSource = stmt.ColumnText(15)
+				video.MediaSource = stmt.ColumnText(15)
 				video.MetadataSource = stmt.ColumnText(16)
 				if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
 					return fmt.Errorf("failed to parse lyric_sources: %w", err)
@@ -1016,7 +1051,7 @@ func (db *SQLiteDatabase) AllVideos(ctx context.Context) ([]media.Video, error) 
 	return videos, err
 }
 
-func (db *SQLiteDatabase) Videos(ctx context.Context, userID string) ([]media.Video, error) {
+func (db *SQLite) Videos(ctx context.Context, userID string) ([]media.Video, error) {
 	var videos []media.Video
 
 	conn, err := db.pool.Take(ctx)
@@ -1026,7 +1061,7 @@ func (db *SQLiteDatabase) Videos(ctx context.Context, userID string) ([]media.Vi
 	defer db.pool.Put(conn)
 
 	err = sqlitex.Execute(conn, `
-        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM videos WHERE user_id = ?;`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -1059,7 +1094,7 @@ func (db *SQLiteDatabase) Videos(ctx context.Context, userID string) ([]media.Vi
 				if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
 					return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 				}
-				video.ContentSource = stmt.ColumnText(15)
+				video.MediaSource = stmt.ColumnText(15)
 				video.MetadataSource = stmt.ColumnText(16)
 				if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
 					return fmt.Errorf("failed to parse lyric_sources: %w", err)
@@ -1076,7 +1111,7 @@ func (db *SQLiteDatabase) Videos(ctx context.Context, userID string) ([]media.Vi
 	return videos, err
 }
 
-func (db *SQLiteDatabase) Video(ctx context.Context, id string) (media.Video, error) {
+func (db *SQLite) Video(ctx context.Context, id string) (media.Video, error) {
 	video := media.Video{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1087,7 +1122,7 @@ func (db *SQLiteDatabase) Video(ctx context.Context, id string) (media.Video, er
 
 	scanned := false
 	err = sqlitex.Execute(conn, `
-        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+        SELECT id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         FROM videos WHERE id = ?;`,
 		&sqlitex.ExecOptions{
 			ResultFunc: func(stmt *sqlite.Stmt) error {
@@ -1123,7 +1158,7 @@ func (db *SQLiteDatabase) Video(ctx context.Context, id string) (media.Video, er
 				if err := json.Unmarshal([]byte(stmt.ColumnText(14)), &video.LinkedItemIDs); err != nil {
 					return fmt.Errorf("failed to parse linked_item_ids: %w", err)
 				}
-				video.ContentSource = stmt.ColumnText(15)
+				video.MediaSource = stmt.ColumnText(15)
 				video.MetadataSource = stmt.ColumnText(16)
 				if err := json.Unmarshal([]byte(stmt.ColumnText(17)), &video.LyricSources); err != nil {
 					return fmt.Errorf("failed to parse lyric_sources: %w", err)
@@ -1144,7 +1179,7 @@ func (db *SQLiteDatabase) Video(ctx context.Context, id string) (media.Video, er
 	return video, nil
 }
 
-func (db *SQLiteDatabase) AddVideo(ctx context.Context, video media.Video) error {
+func (db *SQLite) AddVideo(ctx context.Context, video media.Video) error {
 	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
@@ -1183,7 +1218,7 @@ func (db *SQLiteDatabase) AddVideo(ctx context.Context, video media.Video) error
 
 	err = sqlitex.Execute(conn, `
         INSERT INTO videos (
-            id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, content_source, metadata_source, lyric_sources
+            id, user_id, title, artist_ids, duration, description, release_date, subtitles, watch_count, favorite_count, addition_date, tags, additional_meta, permissions, linked_item_ids, media_source, metadata_source, lyric_sources
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         );`,
@@ -1192,7 +1227,7 @@ func (db *SQLiteDatabase) AddVideo(ctx context.Context, video media.Video) error
 				video.ID, video.UserID, video.Title, string(artistIDs), video.Duration,
 				video.Description, video.ReleaseDate, string(subtitles), video.WatchCount,
 				video.FavoriteCount, video.AdditionDate, string(tags), string(additionalMeta),
-				string(permissions), string(linkedItemIDs), video.ContentSource,
+				string(permissions), string(linkedItemIDs), video.MediaSource,
 				video.MetadataSource, string(lyricSources),
 			},
 		},
@@ -1201,7 +1236,7 @@ func (db *SQLiteDatabase) AddVideo(ctx context.Context, video media.Video) error
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video media.Video) error {
+func (db *SQLite) UpdateVideo(ctx context.Context, video media.Video) error {
 	// Convert JSON fields to strings.
 	artistIDs, err := json.Marshal(video.ArtistIDs)
 	if err != nil {
@@ -1242,7 +1277,7 @@ func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video media.Video) er
         UPDATE videos
         SET user_id=?, title=?, artist_ids=?, duration=?, description=?, release_date=?,
             subtitles=?, watch_count=?, favorite_count=?, addition_date=?, tags=?,
-            additional_meta=?, permissions=?, linked_item_ids=?, content_source=?,
+            additional_meta=?, permissions=?, linked_item_ids=?, media_source=?,
             metadata_source=?, lyric_sources=?
         WHERE id=?;`,
 		&sqlitex.ExecOptions{
@@ -1250,7 +1285,7 @@ func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video media.Video) er
 				video.UserID, video.Title, string(artistIDs), video.Duration, video.Description,
 				video.ReleaseDate, string(subtitles), video.WatchCount, video.FavoriteCount,
 				video.AdditionDate, string(tags), string(additionalMeta), string(permissions),
-				string(linkedItemIDs), video.ContentSource, video.MetadataSource,
+				string(linkedItemIDs), video.MediaSource, video.MetadataSource,
 				string(lyricSources), video.ID,
 			},
 		},
@@ -1259,7 +1294,7 @@ func (db *SQLiteDatabase) UpdateVideo(ctx context.Context, video media.Video) er
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteVideo(ctx context.Context, id string) error {
+func (db *SQLite) DeleteVideo(ctx context.Context, id string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -1275,7 +1310,7 @@ func (db *SQLiteDatabase) DeleteVideo(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) AllArtists(ctx context.Context) ([]media.Artist, error) {
+func (db *SQLite) AllArtists(ctx context.Context) ([]media.Artist, error) {
 	var artists []media.Artist
 
 	conn, err := db.pool.Take(ctx)
@@ -1329,7 +1364,7 @@ func (db *SQLiteDatabase) AllArtists(ctx context.Context) ([]media.Artist, error
 	return artists, err
 }
 
-func (db *SQLiteDatabase) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
+func (db *SQLite) Artists(ctx context.Context, userID string) ([]media.Artist, error) {
 	var artists []media.Artist
 
 	conn, err := db.pool.Take(ctx)
@@ -1384,7 +1419,7 @@ func (db *SQLiteDatabase) Artists(ctx context.Context, userID string) ([]media.A
 	return artists, err
 }
 
-func (db *SQLiteDatabase) Artist(ctx context.Context, id string) (media.Artist, error) {
+func (db *SQLite) Artist(ctx context.Context, id string) (media.Artist, error) {
 	artist := media.Artist{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1447,7 +1482,7 @@ func (db *SQLiteDatabase) Artist(ctx context.Context, id string) (media.Artist, 
 	return artist, nil
 }
 
-func (db *SQLiteDatabase) AddArtist(ctx context.Context, artist media.Artist) error {
+func (db *SQLite) AddArtist(ctx context.Context, artist media.Artist) error {
 	// Convert JSON fields to strings.
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
@@ -1499,7 +1534,7 @@ func (db *SQLiteDatabase) AddArtist(ctx context.Context, artist media.Artist) er
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateArtist(ctx context.Context, artist media.Artist) error {
+func (db *SQLite) UpdateArtist(ctx context.Context, artist media.Artist) error {
 	// Convert JSON fields to strings.
 	albumIDs, err := json.Marshal(artist.AlbumIDs)
 	if err != nil {
@@ -1551,7 +1586,7 @@ func (db *SQLiteDatabase) UpdateArtist(ctx context.Context, artist media.Artist)
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteArtist(ctx context.Context, id string) error {
+func (db *SQLite) DeleteArtist(ctx context.Context, id string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -1567,7 +1602,7 @@ func (db *SQLiteDatabase) DeleteArtist(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
+func (db *SQLite) AllPlaylists(ctx context.Context) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 
 	conn, err := db.pool.Take(ctx)
@@ -1615,7 +1650,7 @@ func (db *SQLiteDatabase) AllPlaylists(ctx context.Context) ([]media.Playlist, e
 	return playlists, err
 }
 
-func (db *SQLiteDatabase) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
+func (db *SQLite) Playlists(ctx context.Context, userID string) ([]media.Playlist, error) {
 	var playlists []media.Playlist
 
 	conn, err := db.pool.Take(ctx)
@@ -1664,7 +1699,7 @@ func (db *SQLiteDatabase) Playlists(ctx context.Context, userID string) ([]media
 	return playlists, err
 }
 
-func (db *SQLiteDatabase) Playlist(ctx context.Context, id string) (media.Playlist, error) {
+func (db *SQLite) Playlist(ctx context.Context, id string) (media.Playlist, error) {
 	playlist := media.Playlist{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1721,7 +1756,7 @@ func (db *SQLiteDatabase) Playlist(ctx context.Context, id string) (media.Playli
 	return playlist, nil
 }
 
-func (db *SQLiteDatabase) AddPlaylist(ctx context.Context, playlist media.Playlist) error {
+func (db *SQLite) AddPlaylist(ctx context.Context, playlist media.Playlist) error {
 	// Convert JSON fields to strings.
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
@@ -1766,7 +1801,7 @@ func (db *SQLiteDatabase) AddPlaylist(ctx context.Context, playlist media.Playli
 	return err
 }
 
-func (db *SQLiteDatabase) UpdatePlaylist(ctx context.Context, playlist media.Playlist) error {
+func (db *SQLite) UpdatePlaylist(ctx context.Context, playlist media.Playlist) error {
 	// Convert JSON fields to strings.
 	trackIDs, err := json.Marshal(playlist.TrackIDs)
 	if err != nil {
@@ -1811,7 +1846,7 @@ func (db *SQLiteDatabase) UpdatePlaylist(ctx context.Context, playlist media.Pla
 	return err
 }
 
-func (db *SQLiteDatabase) DeletePlaylist(ctx context.Context, id string) error {
+func (db *SQLite) DeletePlaylist(ctx context.Context, id string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -1827,7 +1862,7 @@ func (db *SQLiteDatabase) DeletePlaylist(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) Users(ctx context.Context) ([]media.DatabaseUser, error) {
+func (db *SQLite) Users(ctx context.Context) ([]media.DatabaseUser, error) {
 	var users []media.DatabaseUser
 
 	conn, err := db.pool.Take(ctx)
@@ -1875,7 +1910,7 @@ func (db *SQLiteDatabase) Users(ctx context.Context) ([]media.DatabaseUser, erro
 	return users, err
 }
 
-func (db *SQLiteDatabase) User(ctx context.Context, id string) (media.DatabaseUser, error) {
+func (db *SQLite) User(ctx context.Context, id string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1932,7 +1967,7 @@ func (db *SQLiteDatabase) User(ctx context.Context, id string) (media.DatabaseUs
 	return user, nil
 }
 
-func (db *SQLiteDatabase) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
+func (db *SQLite) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
 	user := media.DatabaseUser{}
 
 	conn, err := db.pool.Take(ctx)
@@ -1989,7 +2024,7 @@ func (db *SQLiteDatabase) UserByUsername(ctx context.Context, username string) (
 	return user, nil
 }
 
-func (db *SQLiteDatabase) CreateUser(ctx context.Context, user media.DatabaseUser) error {
+func (db *SQLite) CreateUser(ctx context.Context, user media.DatabaseUser) error {
 	// Convert JSON fields to strings.
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
@@ -2034,7 +2069,7 @@ func (db *SQLiteDatabase) CreateUser(ctx context.Context, user media.DatabaseUse
 	return err
 }
 
-func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user media.DatabaseUser) error {
+func (db *SQLite) UpdateUser(ctx context.Context, user media.DatabaseUser) error {
 	// Convert JSON fields to strings.
 	listenedTo, err := json.Marshal(user.ListenedTo)
 	if err != nil {
@@ -2077,7 +2112,7 @@ func (db *SQLiteDatabase) UpdateUser(ctx context.Context, user media.DatabaseUse
 	return err
 }
 
-func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
+func (db *SQLite) DeleteUser(ctx context.Context, id string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2093,7 +2128,7 @@ func (db *SQLiteDatabase) DeleteUser(ctx context.Context, id string) error {
 	return err
 }
 
-func (db *SQLiteDatabase) ProviderUser(
+func (db *SQLite) ProviderUser(
 	ctx context.Context,
 	provider, providerUserID string,
 ) (media.DatabaseUser, error) {
@@ -2155,7 +2190,7 @@ func (db *SQLiteDatabase) ProviderUser(
 	return user, nil
 }
 
-func (db *SQLiteDatabase) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
+func (db *SQLite) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
 	var exists bool
 
 	conn, err := db.pool.Take(ctx)
@@ -2179,7 +2214,7 @@ func (db *SQLiteDatabase) IsProviderLinked(ctx context.Context, provider, userID
 	return exists, err
 }
 
-func (db *SQLiteDatabase) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
+func (db *SQLite) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2197,7 +2232,7 @@ func (db *SQLiteDatabase) LinkProviderAccount(ctx context.Context, provider, use
 	return err
 }
 
-func (db *SQLiteDatabase) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
+func (db *SQLite) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2214,7 +2249,7 @@ func (db *SQLiteDatabase) DisconnectProviderAccount(ctx context.Context, provide
 	return err
 }
 
-func (db *SQLiteDatabase) UsernameExists(ctx context.Context, username string) (bool, error) {
+func (db *SQLite) UsernameExists(ctx context.Context, username string) (bool, error) {
 	var exists bool
 
 	conn, err := db.pool.Take(ctx)
@@ -2238,7 +2273,7 @@ func (db *SQLiteDatabase) UsernameExists(ctx context.Context, username string) (
 	return exists, err
 }
 
-func (db *SQLiteDatabase) EmailExists(ctx context.Context, email string) (bool, error) {
+func (db *SQLite) EmailExists(ctx context.Context, email string) (bool, error) {
 	var exists bool
 
 	conn, err := db.pool.Take(ctx)
@@ -2262,7 +2297,7 @@ func (db *SQLiteDatabase) EmailExists(ctx context.Context, email string) (bool, 
 	return exists, err
 }
 
-func (db *SQLiteDatabase) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
+func (db *SQLite) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2279,7 +2314,7 @@ func (db *SQLiteDatabase) BlacklistToken(ctx context.Context, token string, expi
 	return err
 }
 
-func (db *SQLiteDatabase) CleanExpiredTokens(ctx context.Context) error {
+func (db *SQLite) CleanExpiredTokens(ctx context.Context) error {
 	conn, err := db.pool.Take(ctx)
 	if err != nil {
 		return err
@@ -2294,7 +2329,7 @@ func (db *SQLiteDatabase) CleanExpiredTokens(ctx context.Context) error {
 	return err
 }
 
-func (db *SQLiteDatabase) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
+func (db *SQLite) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
 	var exists bool
 
 	conn, err := db.pool.Take(ctx)
@@ -2319,6 +2354,5 @@ func (db *SQLiteDatabase) IsTokenBlacklisted(ctx context.Context, token string) 
 }
 
 func init() {
-	db := &SQLiteDatabase{}
-	Registry["sqlite"] = db
+	Register(SQLiteFactory{})
 }

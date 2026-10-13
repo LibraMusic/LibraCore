@@ -3,7 +3,7 @@ package media
 import "math/rand/v2"
 
 type Playable interface {
-	GetType() string
+	GetFormat() Format
 	GetID() string
 	GetUserID() string
 	GetTitle() string

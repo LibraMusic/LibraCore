@@ -1,4 +1,4 @@
-package libracore
+package versions
 
 import (
 	"fmt"
@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	rawVersion      = "0.1.0-DEV"
-	LibraVersion, _ = semver.NewVersion(rawVersion)
+	rawVersion = "0.1.0-DEV"
+	Libra, _   = semver.NewVersion(rawVersion)
 )
 
-func VersionInfo() string {
+func LibraInfo() string {
 	application := "LibraCore"
-	version := "v" + LibraVersion.String()
+	version := "v" + Libra.String()
 
 	info := getBuildInfo()
 	if info == nil {

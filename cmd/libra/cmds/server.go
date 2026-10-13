@@ -18,8 +18,6 @@ import (
 
 	"github.com/libramusic/taurus/v2"
 
-	"github.com/libramusic/libracore/config"
-	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/server"
 	"github.com/libramusic/libracore/server/metrics"
 	"github.com/libramusic/libracore/server/routes/auth"
@@ -35,17 +33,17 @@ var serverCmd = &cobra.Command{
 	ValidArgsFunction: cobra.NoFileCompletions,
 	SilenceUsage:      true,
 	RunE: func(_ *cobra.Command, _ []string) error {
-		if _, err := url.ParseRequestURI(config.Conf.Application.PublicURL); err != nil {
-			return fmt.Errorf("invalid public URL %q: %w", config.Conf.Application.PublicURL, err)
+		if _, err := url.ParseRequestURI(l.Config.Application.PublicURL); err != nil {
+			return fmt.Errorf("invalid public URL %q: %w", l.Config.Application.PublicURL, err)
 		}
 
-		signingMethod := auth.CorrectSigningMethod(config.Conf.Auth.JWT.SigningMethod)
+		signingMethod := auth.CorrectSigningMethod(l.Config.Auth.JWT.SigningMethod)
 		if signingMethod == "" {
-			return fmt.Errorf("invalid or unsupported JWT signing method %q", config.Conf.Auth.JWT.SigningMethod)
+			return fmt.Errorf("invalid or unsupported JWT signing method %q", l.Config.Auth.JWT.SigningMethod)
 		}
-		config.Conf.Auth.JWT.SigningMethod = signingMethod
+		l.Config.Auth.JWT.SigningMethod = signingMethod
 
-		if keyPath, ok := strings.CutPrefix(config.Conf.Auth.JWT.SigningKey, "file:"); ok {
+		if keyPath, ok := strings.CutPrefix(l.Config.Auth.JWT.SigningKey, "file:"); ok {
 			keyPath, err := filepath.Abs(keyPath)
 			if err != nil {
 				return fmt.Errorf("failed to get absolute path of JWT signing key file %q: %w", keyPath, err)
@@ -54,15 +52,15 @@ var serverCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to read JWT signing key file %q: %w", keyPath, err)
 			}
-			config.Conf.Auth.JWT.SigningKey = string(keyData)
+			l.Config.Auth.JWT.SigningKey = string(keyData)
 		}
 
-		if err := auth.LoadPrivateKey(config.Conf.Auth.JWT.SigningMethod, config.Conf.Auth.JWT.SigningKey); err != nil {
+		if err := auth.LoadPrivateKey(l.Config.Auth.JWT.SigningMethod, l.Config.Auth.JWT.SigningKey); err != nil {
 			return fmt.Errorf("failed to load private key: %w", err)
 		}
 
-		providers.RegisterBuiltInProviders(config.Conf.Application.PublicURL)
-		for _, provider := range config.Conf.Auth.Providers {
+		providers.RegisterBuiltInProviders(l.Config.Application.PublicURL)
+		for _, provider := range l.Config.Auth.Providers {
 			if provider.ID == "" {
 				return errors.New("auth provider ID cannot be empty")
 			}
@@ -76,35 +74,35 @@ var serverCmd = &cobra.Command{
 			goth.UseProviders(p)
 		}
 
-		if err := db.Connect(); err != nil {
-			return fmt.Errorf("database connection failed: %w", err)
+		if err := l.Connect(); err != nil {
+			return err
 		}
 		defer func() {
-			// Ensure the database connection is closed even if an error occurs.
+			// Ensure the instance is closed even if an error occurs.
 			// This won't do anything if everything starts and shuts down cleanly.
-			if err := db.DB.Close(); err != nil {
-				log.Error("Error closing database connection", "err", err)
+			if err := l.Close(); err != nil {
+				log.Error("Error shutting down", "err", err)
 			}
 		}()
-		log.Info("Connected to database", "engine", db.DB.EngineName())
+		log.Info("Connected to databases")
 
-		if err := db.DB.CleanExpiredTokens(context.Background()); err != nil {
+		if err := l.AuthDB.CleanExpiredTokens(context.Background()); err != nil {
 			log.Error("Error cleaning expired tokens", "err", err)
 		}
 
-		storage.CleanOverfilledStorage(context.Background())
+		storage.CleanOverfilledStorage(context.Background(), l.Config.Storage, l.MediaDB)
 
-		if err := metrics.RegisterMetrics(); err != nil {
+		if err := metrics.RegisterMetrics(l); err != nil {
 			return fmt.Errorf("failed to register custom metrics: %w", err)
 		}
 
-		e := server.New()
+		e := server.New(l)
 
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
 		errCh := make(chan error, 1)
 		go func() {
-			if err := e.Start(fmt.Sprintf(":%d", config.Conf.Application.Port)); !errors.Is(err, http.ErrServerClosed) {
+			if err := e.Start(fmt.Sprintf(":%d", l.Config.Application.Port)); !errors.Is(err, http.ErrServerClosed) {
 				errCh <- err
 			}
 		}()
@@ -122,8 +120,8 @@ var serverCmd = &cobra.Command{
 		if err := e.Shutdown(ctx); err != nil {
 			return fmt.Errorf("error shutting down server: %w", err)
 		}
-		if err := db.DB.Close(); err != nil {
-			return fmt.Errorf("error closing database connection: %w", err)
+		if err := l.Close(); err != nil {
+			return fmt.Errorf("error shutting down: %w", err)
 		}
 
 		log.Info("Successfully shut down")

@@ -20,13 +20,13 @@ type Track struct {
 	AdditionalMeta map[string]any    `json:"additional_meta"`
 	Permissions    map[string]string `json:"permissions"`
 	LinkedItemIDs  []string          `json:"linked_item_ids"`
-	ContentSource  string            `json:"content_source"`
+	MediaSource    string            `json:"media_source"`
 	MetadataSource string            `json:"metadata_source"`
 	LyricSources   map[string]string `json:"lyric_sources"`
 }
 
-func (Track) GetType() string {
-	return "track"
+func (Track) GetFormat() Format {
+	return FormatTrack
 }
 
 func (t Track) GetID() string {

@@ -1,70 +1,89 @@
 package sources
 
-import (
-	"slices"
-
-	"github.com/charmbracelet/log"
-
-	"github.com/libramusic/libracore/config"
-)
+import "fmt"
 
 var (
-	Registry       = map[string]Source{}
-	enabledSources = []string{}
+	registry    []Factory
+	definitions = map[string]Source{}
+	bindings    []Binding
 )
 
-func IsHigherPriority(first, second string) bool {
-	firstPriority := slices.Index(config.Conf.General.EnabledSources, first)
-	secondPriority := slices.Index(config.Conf.General.EnabledSources, second)
-	return firstPriority < secondPriority || (firstPriority == -1 && secondPriority != -1) || second == ""
+type Factory interface {
+	ID() string
+	Satisfies(id string) bool
+	SupportsMultiple() bool
+	New(alias string, options map[string]any, info SharedInfo) (Source, error)
 }
 
-func EnableAll() {
-	for _, source := range config.Conf.General.EnabledSources {
-		err := Enable(source)
-		if err != nil {
-			log.Warn("Error enabling source", "source", source, "err", err)
+// Register registers a source factory.
+// This is called during init() by each source package.
+func Register(factory Factory) {
+	registry = append(registry, factory)
+}
+
+func Define(id, alias string, options map[string]any, info SharedInfo) (Source, error) {
+	if alias != "" {
+		if _, exists := definitions[alias]; exists {
+			return nil, fmt.Errorf("source alias %q is already defined", alias)
 		}
 	}
-}
 
-func Enable(sourceStr string) error {
-	for _, source := range Registry {
-		if source.Satisfies(sourceStr) {
-			if source.SupportsMultiple() {
-				newSource, err := source.Derive(sourceStr)
-				if err != nil {
-					return err
-				}
-				Registry[newSource.ID()] = newSource
-				enabledSources = append(enabledSources, newSource.ID())
-				return nil
+	var factory Factory
+	for _, f := range registry {
+		if f.Satisfies(id) {
+			factory = f
+			break
+		}
+	}
+	if factory == nil {
+		return nil, ErrUnknownSource
+	}
+
+	if !factory.SupportsMultiple() {
+		for _, source := range definitions {
+			if factory.Satisfies(source.ID()) {
+				return nil, fmt.Errorf("source %q does not support multiple instances", id)
 			}
-			enabledSources = append(enabledSources, source.ID())
-			return nil
 		}
 	}
-	return ErrInvalidSource
+
+	if alias == "" {
+		alias = factory.ID()
+		if factory.SupportsMultiple() {
+			count := 1
+			for _, source := range definitions {
+				if factory.Satisfies(source.ID()) {
+					count++
+				}
+			}
+			alias = fmt.Sprintf("%s_%d", alias, count)
+		}
+	}
+
+	source, err := factory.New(alias, options, info)
+	if err != nil {
+		return nil, err
+	}
+
+	definitions[alias] = source
+	return source, nil
 }
 
-// TODO: Implement Search
-
-// TODO: Implement Content
-
-// TODO: Implement Lyrics
-
-// TODO: Implement CompleteMetadata
-
-/* func Image(searchResult media.SearchResult) ([]byte, error) {
-	if _, ok := Registry[searchResult.ServiceID]; ok {
-		return Registry[searchResult.ServiceID].Image(searchResult)
+func BindAll(infos []BindingInfo) error {
+	for _, info := range infos {
+		if err := Bind(info); err != nil {
+			return err
+		}
 	}
-	return []byte{}, nil
+	return nil
 }
 
-func Content(searchResult media.SearchResult) ([]byte, error) {
-	if _, ok := Registry[searchResult.ServiceID]; ok {
-		return Registry[searchResult.ServiceID].Content(searchResult)
+func Bind(info BindingInfo) error {
+	source, exists := definitions[info.Alias]
+	if !exists {
+		return fmt.Errorf("source alias %q is not defined", info.Alias)
 	}
-	return []byte{}, nil
-} */
+
+	bindings = append(bindings, Binding{Source: source, Info: info})
+	return nil
+}

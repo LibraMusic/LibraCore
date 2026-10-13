@@ -9,52 +9,57 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/charmbracelet/log"
 
-	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/media"
+	"github.com/libramusic/libracore/versions"
 )
 
-type SpotifySource struct{}
+type SpotifyFactory struct{}
 
-func InitSpotifySource() (*SpotifySource, error) {
-	return &SpotifySource{}, nil
+func (SpotifyFactory) ID() string {
+	return "spotify"
 }
 
-func (*SpotifySource) Satisfies(id string) bool {
+func (SpotifyFactory) Satisfies(id string) bool {
 	return slices.Contains([]string{
 		"spotify",
 		"sp",
 	}, strings.ToLower(id))
 }
 
-func (*SpotifySource) SupportsMultiple() bool {
+func (SpotifyFactory) SupportsMultiple() bool {
 	return false
 }
 
-func (*SpotifySource) Derive(_ string) (Source, error) {
-	return nil, ErrMultipleInstancesNotSupported
+func (SpotifyFactory) New(alias string, _ map[string]any, info SharedInfo) (Source, error) {
+	return &Spotify{alias: alias, info: info}, nil
 }
 
-func (*SpotifySource) ID() string {
+type Spotify struct {
+	alias string
+	info  SharedInfo
+}
+
+func (*Spotify) ID() string {
 	return "spotify"
 }
 
-func (*SpotifySource) Name() string {
+func (*Spotify) Name() string {
 	return "Spotify"
 }
 
-func (*SpotifySource) Version() *semver.Version {
-	return libracore.LibraVersion
+func (*Spotify) Version() *semver.Version {
+	return versions.Libra
 }
 
-func (*SpotifySource) SourceTypes() []string {
-	return []string{"metadata", "lyrics"}
+func (*Spotify) Categories() []Category {
+	return []Category{CategoryMetadata, CategoryLyrics}
 }
 
-func (*SpotifySource) MediaTypes() []string {
-	return []string{"music", "video", "playlist"}
+func (*Spotify) Formats() []media.Format {
+	return []media.Format{media.FormatMusic, media.FormatVideo, media.FormatPlaylist}
 }
 
-func (*SpotifySource) Search(_ string, _, _ int, _ map[string]any) ([]media.SourcePlayable, error) {
+func (*Spotify) Search(_ string, _, _ int, _ Filter, _ BindingInfo) ([]media.SourcePlayable, error) {
 	var results []media.SourcePlayable
 
 	log.Error("unimplemented")
@@ -62,37 +67,24 @@ func (*SpotifySource) Search(_ string, _, _ int, _ map[string]any) ([]media.Sour
 	return results, nil
 }
 
-func (*SpotifySource) Content(_ media.SourcePlayable) ([]byte, error) {
-	return nil, ErrUnsupportedSourceType
+func (*Spotify) Media(_ media.SourcePlayable, _ BindingInfo) ([]byte, error) {
+	return nil, ErrUnsupportedCategory
 }
 
-func (s *SpotifySource) Lyrics(playable media.LyricsPlayable) (map[string]string, error) {
+func (*Spotify) Lyrics(_ media.LyricsPlayable, _ BindingInfo) (map[string]string, error) {
 	result := map[string]string{}
-
-	if !SupportsMediaType(s, playable.GetType()) {
-		return result, ErrUnsupportedMediaType
-	}
 
 	log.Error("unimplemented")
 
 	return result, nil
 }
 
-func (s *SpotifySource) CompleteMetadata(playable media.SourcePlayable) (media.SourcePlayable, error) {
-	if !SupportsMediaType(s, playable.GetType()) {
-		return playable, ErrUnsupportedMediaType
-	}
-
+func (*Spotify) CompleteMetadata(playable media.SourcePlayable, _ BindingInfo) (media.SourcePlayable, error) {
 	log.Error("unimplemented")
 
 	return playable, nil
 }
 
 func init() {
-	source, err := InitSpotifySource()
-	if err != nil {
-		log.Warn("Source initialization failed", "source", source.ID(), "error", err)
-	} else {
-		Registry[source.ID()] = source
-	}
+	Register(SpotifyFactory{})
 }

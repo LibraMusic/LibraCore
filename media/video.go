@@ -16,13 +16,13 @@ type Video struct {
 	AdditionalMeta map[string]any    `json:"additional_meta"`
 	Permissions    map[string]string `json:"permissions"`
 	LinkedItemIDs  []string          `json:"linked_item_ids"`
-	ContentSource  string            `json:"content_source"`
+	MediaSource    string            `json:"media_source"`
 	MetadataSource string            `json:"metadata_source"`
 	LyricSources   map[string]string `json:"lyric_sources"`
 }
 
-func (Video) GetType() string {
-	return "video"
+func (Video) GetFormat() Format {
+	return FormatVideo
 }
 
 func (v Video) GetID() string {
