@@ -23,7 +23,16 @@ formatters:
         - prefix(github.com/libramusic/libracore)
 
     gofumpt:
-      extra-rules: true
+      extra:
+        # Groups function parameters with repeated types.
+        # Default: false
+        group-params: true
+        # Clothes naked returns in functions with named results.
+        # Default: false
+        clothe-returns: true
+        # Multi-line function calls with the opening parenthesis at the end of a line should place the closing parenthesis at the start of a line.
+        # Default: false
+        balance-calls: true
 
     golines:
       # Target maximum line length.
@@ -153,6 +162,10 @@ linters:
       check:
         - switch
         - map
+      # Presence of "default" case in switch statements satisfies exhaustiveness,
+      # even if all enum members are not listed.
+      # Default: false
+      default-signifies-exhaustive: true
 
     # funcorder:
     #   # Checks if the exported methods of a structure are placed before the non-exported ones.
