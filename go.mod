@@ -16,7 +16,6 @@ require (
 	github.com/labstack/echo-jwt/v4 v4.4.0
 	github.com/labstack/echo/v4 v4.14.0
 	github.com/libramusic/taurus/v2 v2.0.1
-	github.com/magefile/mage v1.15.0
 	github.com/markbates/goth v1.82.0
 	github.com/muesli/mango-cobra v1.3.0
 	github.com/muesli/roff v0.1.0

@@ -39,5 +39,6 @@ Dependencies:
 
 ## Development
 
-To run all unit tests, run `mage test` or `mage test:unit`.
-To run the integration tests, run `mage test:integration`
+To run just the unit tests, run `just test` or `just test-unit`.
+To run the integration tests, run `just test-integration`.
+To run every test, run `just test-all`.

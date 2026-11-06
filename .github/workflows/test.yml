@@ -19,17 +19,17 @@ jobs:
           go-version: "1.25.x"
           cache: true
 
-      - name: Install Mage
-        run: go install github.com/magefile/mage@latest
+      - name: Install Just
+        uses: extractions/setup-just@v3
 
       - name: Install dependencies
-        run: mage deps
+        run: just deps
 
       - name: Build
-        run: mage build
+        run: just build
 
       - name: Run unit tests
-        run: mage test:unit
+        run: just test-unit
 
       - name: Run integration tests
-        run: mage test:integration
+        run: just test-integration
