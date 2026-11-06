@@ -12,8 +12,8 @@ require (
 	github.com/gorilla/feeds v1.2.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/kohkimakimoto/echo-openapidocs/v5 v5.0.0
-	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/labstack/echo-jwt/v5 v5.0.2
+	github.com/labstack/echo-prometheus v0.0.1
 	github.com/labstack/echo/v5 v5.4.4
 	github.com/libramusic/taurus/v2 v2.0.1
 	github.com/markbates/goth v1.82.0

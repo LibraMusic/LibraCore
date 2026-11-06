@@ -8,7 +8,7 @@ import (
 	"charm.land/log/v2"
 	"github.com/goccy/go-yaml"
 	openapidocs "github.com/kohkimakimoto/echo-openapidocs/v5"
-	"github.com/labstack/echo-contrib/v5/echoprometheus"
+	echoprometheus "github.com/labstack/echo-prometheus"
 	"github.com/labstack/echo/v5"
 
 	"github.com/libramusic/libracore"
