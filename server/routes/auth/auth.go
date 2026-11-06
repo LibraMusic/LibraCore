@@ -85,11 +85,9 @@ func Register(c echo.Context) error {
 	}
 
 	user := media.DatabaseUser{
-		User: media.User{
-			ID:       media.GenerateID(cc.Libra.Config.General.IDLength),
-			Username: req.Username,
-			Email:    req.Email,
-		},
+		ID:           media.GenerateID(cc.Libra.Config.General.IDLength),
+		Username:     req.Username,
+		Email:        req.Email,
 		PasswordHash: generatePassword(req.Password),
 	}
 	err = cc.Libra.AuthDB.AddUser(ctx, user)
@@ -285,12 +283,10 @@ func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser got
 	cc := c.(*httpcontext.Context)
 
 	newUser := media.DatabaseUser{
-		User: media.User{
-			ID:          media.GenerateID(cc.Libra.Config.General.IDLength),
-			Username:    providerUser.UserID,
-			Email:       providerUser.Email,
-			DisplayName: providerUser.Name,
-		},
+		ID:          media.GenerateID(cc.Libra.Config.General.IDLength),
+		Username:    providerUser.UserID,
+		Email:       providerUser.Email,
+		DisplayName: providerUser.Name,
 	}
 
 	// TODO: Profile picture.

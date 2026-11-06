@@ -1,4 +1,4 @@
-# Based on https://gist.github.com/maratori/47a4d00457a92aa426dbd48a18776322
+# Based on https://github.com/maratori/golangci-lint-config
 
 version: "2"
 
@@ -47,7 +47,6 @@ linters:
     - bidichk # checks for dangerous unicode character sequences
     - bodyclose # checks whether HTTP response body is closed successfully
     - canonicalheader # checks whether net/http.Header uses canonical header
-    - copyloopvar # detects places where loop variables are copied (Go 1.22+)
     #- dupl # tool for code clone detection
     - decorder # checks declaration order and count of types, constants, variables and functions
     - durationcheck # checks for two durations multiplied together

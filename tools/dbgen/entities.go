@@ -56,9 +56,7 @@ func goTypeString(t reflect.Type) string {
 // including fields from embedded structs.
 func inferColumns(t reflect.Type) []ColumnDef {
 	var columns []ColumnDef
-	for i := range t.NumField() {
-		field := t.Field(i)
-
+	for field := range t.Fields() {
 		// Handle embedded structs - flatten their fields.
 		if field.Anonymous && field.Type.Kind() == reflect.Struct {
 			embeddedCols := inferColumns(field.Type)

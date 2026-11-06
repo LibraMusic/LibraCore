@@ -25,12 +25,10 @@ func (GoJSONSerializer) Serialize(c echo.Context, i any, indent string) error {
 // Deserialize reads a JSON from a request body and converts it into an interface.
 func (GoJSONSerializer) Deserialize(c echo.Context, i any) error {
 	err := json.NewDecoder(c.Request().Body).Decode(i)
-	var ute *json.UnmarshalTypeError
-	var se *json.SyntaxError
-	if errors.As(err, &ute) {
+	if ute, ok := errors.AsType[*json.UnmarshalTypeError](err); ok {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Unmarshal type error: expected=%v, got=%v, field=%v, offset=%v", ute.Type, ute.Value, ute.Field, ute.Offset)).
 			SetInternal(err)
-	} else if errors.As(err, &se) {
+	} else if se, ok := errors.AsType[*json.SyntaxError](err); ok {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Syntax error: offset=%v, error=%v", se.Offset, se.Error())).
 			SetInternal(err)
 	}
