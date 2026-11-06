@@ -1,0 +1,433 @@
+{{- define "placeholders" -}}
+{{- range $i := until . }}{{ if $i }}, {{ end }}${{ add $i 1 }}{{ end -}}
+{{- end -}}
+
+{{- define "updateSetClause" -}}
+{{- range $i, $c := . }}{{ if $i }}, {{ end }}{{ $c.DBName }} = ${{ add $i 2 }}{{ end -}}
+{{- end -}}
+
+//go:build postgresql_db || !(no_postgresql_db || no_dbs)
+
+package db
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"path/filepath"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/charmbracelet/log"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/libramusic/libracore/media"
+)
+
+// PostgreSQLOptions contains the configuration options for PostgreSQL connections.
+type PostgreSQLOptions struct {
+	Host   string `yaml:"host"`
+	Port   int    `yaml:"port"`
+	User   string `yaml:"user"`
+	Pass   string `yaml:"pass"`
+	DBName string `yaml:"db_name"`
+	Params string `yaml:"params"`
+}
+
+func parsePostgreSQLOptions(options map[string]any) PostgreSQLOptions {
+	opts := PostgreSQLOptions{
+		Host:   "localhost",
+		Port:   5432,
+		User:   "libra",
+		Pass:   "password",
+		DBName: "libra",
+		Params: "sslmode=disable",
+	}
+
+	if host, ok := options["host"].(string); ok {
+		opts.Host = host
+	}
+	if port, ok := options["port"].(int); ok {
+		opts.Port = port
+	}
+	if user, ok := options["user"].(string); ok {
+		opts.User = user
+	}
+	if pass, ok := options["pass"].(string); ok {
+		opts.Pass = pass
+	}
+	if dbName, ok := options["db_name"].(string); ok {
+		opts.DBName = dbName
+	}
+	if params, ok := options["params"].(string); ok {
+		opts.Params = params
+	}
+
+	return opts
+}
+
+// PostgreSQLFactory is a factory for creating PostgreSQL database instances.
+type PostgreSQLFactory struct{}
+
+func (PostgreSQLFactory) EngineName() string {
+	return "PostgreSQL"
+}
+
+func (PostgreSQLFactory) Satisfies(engine string) bool {
+	return slices.Contains([]string{
+		"postgresql",
+		"postgres",
+		"postgre",
+		"pgsql",
+		"pg",
+	}, strings.ToLower(engine))
+}
+
+func (PostgreSQLFactory) New(options map[string]any, _ string) (Database, error) {
+	opts := parsePostgreSQLOptions(options)
+	return &PostgreSQL{options: opts}, nil
+}
+
+type PostgreSQL struct {
+	options   PostgreSQLOptions
+	pool      *pgxpool.Pool
+	closeOnce sync.Once
+}
+
+func (*PostgreSQL) EngineName() string {
+	return "PostgreSQL"
+}
+
+func (db *PostgreSQL) Connect() error {
+	log.Info("Connecting to PostgreSQL...")
+	connStr := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s %s",
+		db.options.Host,
+		db.options.Port,
+		db.options.User,
+		db.options.Pass,
+		db.options.DBName,
+		db.options.Params,
+	)
+	pool, err := pgxpool.New(context.Background(), connStr)
+	db.pool = pool
+	if err != nil {
+		return normalizePostgreSQLError(err)
+	}
+
+	// If the migrations table doesn't exist, create it and run migrations.
+	exists, err := db.migrationsTableExists(context.Background())
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if err := db.createMigrationsTable(context.Background()); err != nil {
+			return err
+		}
+		if err := db.MigrateUp(-1); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *PostgreSQL) Close() error {
+	// Don't attempt to close if not connected.
+	if db.pool == nil {
+		return nil
+	}
+
+	db.closeOnce.Do(func() {
+		log.Info("Closing PostgreSQL connection...")
+		db.pool.Close()
+	})
+	return nil
+}
+
+func normalizePostgreSQLError(err error) error {
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	return err
+}
+
+func (db *PostgreSQL) migrationsTableExists(ctx context.Context) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(ctx, `
+        SELECT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'schema_migrations'
+        );
+    `).Scan(&exists)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return exists, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) createMigrationsTable(ctx context.Context) error {
+	_, err := db.pool.Exec(ctx, `
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version BIGINT PRIMARY KEY,
+            dirty BOOLEAN
+        );
+    `)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) currentVersion(ctx context.Context) (uint64, bool, error) {
+	var version uint64
+	var dirty bool
+	err := db.pool.QueryRow(ctx, `
+        SELECT version, dirty FROM schema_migrations
+        ORDER BY version DESC LIMIT 1;
+    `).Scan(&version, &dirty)
+	if err != nil {
+		return 0, false, normalizePostgreSQLError(err)
+	}
+
+	return version, dirty, nil
+}
+
+func (db *PostgreSQL) setVersion(ctx context.Context, version uint64, dirty bool) error {
+	tx, err := db.pool.Begin(ctx)
+	if err != nil {
+		return normalizePostgreSQLError(err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `DELETE FROM schema_migrations;`); err != nil {
+		return normalizePostgreSQLError(err)
+	}
+
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO schema_migrations (version, dirty) VALUES ($1, $2);`,
+		version, dirty,
+	); err != nil {
+		return normalizePostgreSQLError(err)
+	}
+
+	return normalizePostgreSQLError(tx.Commit(ctx))
+}
+
+{{define "execMigration"}}
+	_, err = db.pool.Exec(context.Background(), string(content))
+	if err != nil {
+		return normalizePostgreSQLError(err)
+	}
+{{end}}
+
+{{template "migrateUp" (dict "Type" "PostgreSQL" "MigrationDir" "migrations/postgresql")}}
+
+{{template "migrateDown" (dict "Type" "PostgreSQL" "MigrationDir" "migrations/postgresql")}}
+
+{{- range .Entities }}
+
+// {{ .Name }} CRUD operations
+
+func (db *PostgreSQL) {{ .AllMethod }}(ctx context.Context) ([]{{ .StructType }}, error) {
+	var items []{{ .StructType }}
+	rows, err := db.pool.Query(ctx, `
+        SELECT {{ join .AllColumnNames ", " }}
+        FROM {{ .TableName }};`)
+	if err != nil {
+		return items, normalizePostgreSQLError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		item := {{ .StructType }}{}
+		err = rows.Scan(
+			{{- range .Columns }}
+			&item.{{ .Name }},
+			{{- end }}
+		)
+		if err != nil {
+			return items, normalizePostgreSQLError(err)
+		}
+		items = append(items, item)
+	}
+	return items, normalizePostgreSQLError(rows.Err())
+}
+
+{{- if .HasUserID }}
+func (db *PostgreSQL) {{ .Name }}s(ctx context.Context, userID string) ([]{{ .StructType }}, error) {
+	var items []{{ .StructType }}
+	rows, err := db.pool.Query(ctx, `
+        SELECT {{ join .AllColumnNames ", " }}
+        FROM {{ .TableName }} WHERE {{ .UserIDColumn }} = $1;`, userID)
+	if err != nil {
+		return items, normalizePostgreSQLError(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		item := {{ .StructType }}{}
+		err = rows.Scan(
+			{{- range .Columns }}
+			&item.{{ .Name }},
+			{{- end }}
+		)
+		if err != nil {
+			return items, normalizePostgreSQLError(err)
+		}
+		items = append(items, item)
+	}
+	return items, normalizePostgreSQLError(rows.Err())
+}
+{{- end }}
+
+func (db *PostgreSQL) {{ .GetMethod }}(ctx context.Context, id string) ({{ .StructType }}, error) {
+	item := {{ .StructType }}{}
+	row := db.pool.QueryRow(ctx, `
+        SELECT {{ join .AllColumnNames ", " }}
+        FROM {{ .TableName }} WHERE {{ .PKColumn }} = $1;`, id)
+	err := row.Scan(
+		{{- range .Columns }}
+		&item.{{ .Name }},
+		{{- end }}
+	)
+	return item, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) {{ .NewMethod }}(ctx context.Context, item {{ .StructType }}) error {
+	_, err := db.pool.Exec(ctx, `
+        INSERT INTO {{ .TableName }} (
+            {{ join (columnNames .InsertColumns) ", " }}
+        ) VALUES (
+            {{ template "placeholders" (len .InsertColumns) }}
+        );`,
+		{{- range .InsertColumns }}
+		{{- if eq .DBName "email" }}
+		strings.ToLower(item.{{ .Name }}),
+		{{- else }}
+		item.{{ .Name }},
+		{{- end }}
+		{{- end }}
+	)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) {{ .UpdateMethod }}(ctx context.Context, item {{ .StructType }}) error {
+	_, err := db.pool.Exec(ctx, `
+        UPDATE {{ .TableName }}
+        SET {{ template "updateSetClause" .UpdateColumns }}
+        WHERE {{ .PKColumn }} = $1;`,
+		item.{{ .PKGoName }},
+		{{- range .UpdateColumns }}
+		{{- if eq .DBName "email" }}
+		strings.ToLower(item.{{ .Name }}),
+		{{- else }}
+		item.{{ .Name }},
+		{{- end }}
+		{{- end }}
+	)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) {{ .DeleteMethod }}(ctx context.Context, id string) error {
+	_, err := db.pool.Exec(ctx, `DELETE FROM {{ .TableName }} WHERE {{ .PKColumn }} = $1;`, id)
+	return normalizePostgreSQLError(err)
+}
+
+{{- end }}
+
+func (db *PostgreSQL) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
+	item := media.DatabaseUser{}
+	row := db.pool.QueryRow(ctx, `
+        SELECT {{ join $.UserEntity.AllColumnNames ", " }}
+        FROM {{ $.UserEntity.TableName }}
+        WHERE LOWER(username) = $1 OR email = $1;`,
+		strings.ToLower(username),
+	)
+	err := row.Scan(
+		{{- range $.UserEntity.Columns }}
+		&item.{{ .Name }},
+		{{- end }}
+	)
+	return item, normalizePostgreSQLError(err)
+}
+
+// Auth provider operations
+
+func (db *PostgreSQL) ProviderUser(
+	ctx context.Context,
+	provider, providerUserID string,
+) (media.DatabaseUser, error) {
+	var user media.DatabaseUser
+	row := db.pool.QueryRow(ctx, `
+        SELECT {{ join (prefixedColumns $.UserEntity.Columns "u.") ", " }}
+        FROM users u
+        JOIN auth_providers p ON u.id = p.user_id
+        WHERE p.provider = $1 AND p.provider_user_id = $2;`, provider, providerUserID)
+	err := row.Scan(
+		{{- range $.UserEntity.Columns }}
+		&user.{{ .Name }},
+		{{- end }}
+	)
+	return user, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(ctx, `
+        SELECT EXISTS(
+            SELECT 1 FROM auth_providers WHERE user_id = $1 AND provider = $2
+        );`, userID, provider).Scan(&exists)
+	return exists, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
+	_, err := db.pool.Exec(ctx, `
+        INSERT INTO auth_providers (user_id, provider, provider_user_id)
+        VALUES ($1, $2, $3);`, userID, provider, providerUserID)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
+	_, err := db.pool.Exec(ctx, `
+        DELETE FROM auth_providers WHERE user_id = $1 AND provider = $2;`, userID, provider)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) UsernameExists(ctx context.Context, username string) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username)=$1);`, strings.ToLower(username)).
+		Scan(&exists)
+	return exists, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) EmailExists(ctx context.Context, email string) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM users WHERE email=$1);`, strings.ToLower(email)).
+		Scan(&exists)
+	return exists, normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
+	_, err := db.pool.Exec(
+		ctx,
+		`INSERT INTO blacklisted_tokens (token, expiration) VALUES ($1, $2);`,
+		token,
+		expiration,
+	)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) CleanExpiredTokens(ctx context.Context) error {
+	_, err := db.pool.Exec(ctx, `DELETE FROM blacklisted_tokens WHERE expiration < NOW();`)
+	return normalizePostgreSQLError(err)
+}
+
+func (db *PostgreSQL) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token=$1);`, token).Scan(&exists)
+	return exists, normalizePostgreSQLError(err)
+}
+
+func init() {
+	Register(&PostgreSQLFactory{})
+}

@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS playlists (
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
-  username TEXT NOT NULL,
-  email TEXT NOT NULL,
+  username TEXT COLLATE NOCASE NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   display_name TEXT,
   description TEXT,
@@ -123,5 +123,5 @@ CREATE TABLE IF NOT EXISTS auth_providers (
 
 CREATE TABLE IF NOT EXISTS blacklisted_tokens (
   token TEXT PRIMARY KEY,
-  expiration TEXT
+  expiration INTEGER
 );

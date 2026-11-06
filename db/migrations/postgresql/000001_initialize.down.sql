@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS albums;
 DROP TABLE IF EXISTS videos;
 DROP TABLE IF EXISTS artists;
 DROP TABLE IF EXISTS playlists;
+DROP INDEX IF EXISTS users_username_lower_idx;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS auth_providers;
 DROP TABLE IF EXISTS blacklisted_tokens;

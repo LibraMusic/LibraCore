@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS playlists (
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   display_name TEXT,
   description TEXT,
@@ -115,6 +115,9 @@ CREATE TABLE IF NOT EXISTS users (
   linked_artist_id TEXT,
   linked_sources jsonb
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx
+  ON users (LOWER(username));
 
 CREATE TABLE IF NOT EXISTS auth_providers (
   user_id TEXT,

@@ -1,0 +1,127 @@
+{{define "migrateUp"}}
+func (db *{{.Type}}) MigrateUp(steps int) error {
+	if err := db.createMigrationsTable(context.Background()); err != nil {
+		return err
+	}
+
+	currentVersion, dirty, err := db.currentVersion(context.Background())
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if dirty {
+		return errors.New("database is in dirty state")
+	}
+
+	entries, err := migrationsFS.ReadDir("{{.MigrationDir}}")
+	if err != nil {
+		return err
+	}
+	files := OrderedMigrationFiles(entries, true)
+
+	appliedCount := 0
+	for _, file := range files {
+		versionStr, _, _ := strings.Cut(file, "_")
+		version, err := strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if version <= currentVersion {
+			continue
+		}
+
+		if steps >= 0 && appliedCount >= steps {
+			break
+		}
+
+		// Set dirty flag before applying migration.
+		if err = db.setVersion(context.Background(), version, true); err != nil {
+			return err
+		}
+
+		// Read and execute migration.
+		content, err := migrationsFS.ReadFile(filepath.Join("{{.MigrationDir}}", file))
+		if err != nil {
+			return err
+		}
+		{{template "execMigration" .}}
+
+		// Clear dirty flag after successful migration.
+		if err = db.setVersion(context.Background(), version, false); err != nil {
+			return err
+		}
+
+		appliedCount++
+	}
+
+	return nil
+}
+{{end}}
+
+{{define "migrateDown"}}
+func (db *{{.Type}}) MigrateDown(steps int) error {
+	if err := db.createMigrationsTable(context.Background()); err != nil {
+		return err
+	}
+
+	currentVersion, dirty, err := db.currentVersion(context.Background())
+	if err != nil && !errors.Is(err, ErrNotFound) {
+		return err
+	}
+	if dirty {
+		return errors.New("database is in dirty state")
+	}
+
+	entries, err := migrationsFS.ReadDir("{{.MigrationDir}}")
+	if err != nil {
+		return err
+	}
+	files := OrderedMigrationFiles(entries, false)
+
+	appliedCount := 0
+	for i, file := range files {
+		versionStr, _, _ := strings.Cut(file, "_")
+		version, err := strconv.ParseUint(versionStr, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if version > currentVersion {
+			continue
+		}
+
+		if steps >= 0 && appliedCount >= steps {
+			break
+		}
+
+		// Set dirty flag before applying migration.
+		if err = db.setVersion(context.Background(), version, true); err != nil {
+			return err
+		}
+
+		// Read and execute migration.
+		content, err := migrationsFS.ReadFile(filepath.Join("{{.MigrationDir}}", file))
+		if err != nil {
+			return err
+		}
+		{{template "execMigration" .}}
+
+		// Set version to previous migration and clear dirty flag.
+		prevVersion := uint64(0)
+		if i+1 < len(files) {
+			prevVersionStr, _, _ := strings.Cut(files[i+1], "_")
+			prevVersion, err = strconv.ParseUint(prevVersionStr, 10, 64)
+			if err != nil {
+				return err
+			}
+		}
+		if err = db.setVersion(context.Background(), prevVersion, false); err != nil {
+			return err
+		}
+
+		appliedCount++
+	}
+
+	return nil
+}
+{{end}}

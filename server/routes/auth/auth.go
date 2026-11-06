@@ -92,7 +92,7 @@ func Register(c echo.Context) error {
 		},
 		PasswordHash: generatePassword(req.Password),
 	}
-	err = cc.Libra.AuthDB.CreateUser(ctx, user)
+	err = cc.Libra.AuthDB.AddUser(ctx, user)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
@@ -295,7 +295,7 @@ func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser got
 
 	// TODO: Profile picture.
 
-	if err := cc.Libra.AuthDB.CreateUser(ctx, newUser); err != nil {
+	if err := cc.Libra.AuthDB.AddUser(ctx, newUser); err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})

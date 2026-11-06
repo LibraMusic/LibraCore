@@ -1,5 +1,7 @@
 package db
 
+//go:generate go run ../tools/dbgen/main.go
+
 import (
 	"context"
 	"embed"
@@ -102,7 +104,7 @@ type Database interface {
 	Users(ctx context.Context) ([]media.DatabaseUser, error)
 	User(ctx context.Context, id string) (media.DatabaseUser, error)
 	UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error)
-	CreateUser(ctx context.Context, user media.DatabaseUser) error
+	AddUser(ctx context.Context, user media.DatabaseUser) error
 	UpdateUser(ctx context.Context, user media.DatabaseUser) error
 	UsernameExists(ctx context.Context, username string) (bool, error)
 	EmailExists(ctx context.Context, email string) (bool, error)

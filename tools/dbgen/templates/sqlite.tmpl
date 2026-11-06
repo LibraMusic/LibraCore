@@ -1,0 +1,682 @@
+{{- define "placeholders" -}}
+{{- range $i := until . }}{{ if $i }}, {{ end }}?{{ end -}}
+{{- end -}}
+
+{{- define "updateSetClause" -}}
+{{- range $i, $c := . }}{{ if $i }}, {{ end }}{{ $c.DBName }} = ?{{ end -}}
+{{- end -}}
+
+{{- define "scanColumns" -}}
+{{- range $i, $col := .Columns }}
+{{- if $col.NeedsEncoding }}
+				if err = json.Unmarshal([]byte(stmt.ColumnText({{ $i }})), &{{ $.Target }}.{{ $col.Name }}); err != nil {
+					return fmt.Errorf("failed to parse {{ $col.DBName }}: %w", err)
+				}
+{{- else if eq $col.GoType "int64" }}
+				{{ $.Target }}.{{ $col.Name }} = stmt.ColumnInt64({{ $i }})
+{{- else if eq $col.GoType "int" }}
+				{{ $.Target }}.{{ $col.Name }} = stmt.ColumnInt({{ $i }})
+{{- else }}
+				{{ $.Target }}.{{ $col.Name }} = stmt.ColumnText({{ $i }})
+{{- end }}
+{{- end }}
+{{- end -}}
+
+//go:build sqlite_db || !(no_sqlite_db || no_dbs)
+
+package db
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"path/filepath"
+	"slices"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/charmbracelet/log"
+	"github.com/goccy/go-json"
+	"zombiezen.com/go/sqlite"
+	"zombiezen.com/go/sqlite/sqlitex"
+
+	"github.com/libramusic/libracore/media"
+)
+
+// SQLiteOptions contains the configuration options for SQLite connections.
+type SQLiteOptions struct {
+	Path string `yaml:"path"`
+}
+
+func parseSQLiteOptions(options map[string]any) SQLiteOptions {
+	opts := SQLiteOptions{
+		Path: "libra.db",
+	}
+
+	if path, ok := options["path"].(string); ok {
+		opts.Path = path
+	}
+
+	return opts
+}
+
+// SQLiteFactory is a factory for creating SQLite database instances.
+type SQLiteFactory struct{}
+
+func (SQLiteFactory) EngineName() string {
+	return "SQLite"
+}
+
+func (SQLiteFactory) Satisfies(engine string) bool {
+	return slices.Contains([]string{
+		"sqlite",
+		"sqlite3",
+	}, strings.ToLower(engine))
+}
+
+func (SQLiteFactory) New(options map[string]any, dataDir string) (Database, error) {
+	opts := parseSQLiteOptions(options)
+	return &SQLite{options: opts, dataDir: dataDir}, nil
+}
+
+type SQLite struct {
+	options   SQLiteOptions
+	dataDir   string
+	pool      *sqlitex.Pool
+	closeOnce sync.Once
+}
+
+func (*SQLite) EngineName() string {
+	return "SQLite"
+}
+
+func (db *SQLite) Connect() error {
+	log.Info("Connecting to SQLite...")
+	dbPath := db.options.Path
+	if !filepath.IsAbs(dbPath) && db.dataDir != "" {
+		dbPath = filepath.Join(db.dataDir, dbPath)
+	}
+	pool, err := sqlitex.NewPool(dbPath, sqlitex.PoolOptions{})
+	db.pool = pool
+	if err != nil {
+		return err
+	}
+
+	// If the migrations table doesn't exist, create it and run migrations.
+	exists, err := db.migrationsTableExists(context.Background())
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if err = db.createMigrationsTable(context.Background()); err != nil {
+			return err
+		}
+		if err = db.MigrateUp(-1); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (db *SQLite) Close() error {
+	// Don't attempt to close if not connected.
+	if db.pool == nil {
+		return nil
+	}
+
+	var err error
+	db.closeOnce.Do(func() {
+		log.Info("Closing SQLite connection...")
+		err = db.pool.Close()
+	})
+	return err
+}
+
+func (db *SQLite) migrationsTableExists(ctx context.Context) (bool, error) {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer db.pool.Put(conn)
+
+	var exists bool
+	err = sqlitex.Execute(conn,
+		`SELECT name FROM sqlite_master WHERE type='table' AND name='schema_migrations';`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(_ *sqlite.Stmt) error {
+				exists = true
+				return nil
+			},
+		},
+	)
+	return exists, err
+}
+
+func (db *SQLite) createMigrationsTable(ctx context.Context) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        CREATE TABLE IF NOT EXISTS schema_migrations (
+            version BIGINT PRIMARY KEY,
+            dirty BOOLEAN
+        );`,
+		nil,
+	)
+	return err
+}
+
+func (db *SQLite) currentVersion(ctx context.Context) (uint64, bool, error) {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return 0, false, err
+	}
+	defer db.pool.Put(conn)
+
+	var version uint64
+	var dirty bool
+	found := false
+
+	err = sqlitex.Execute(conn, `
+        SELECT version, dirty FROM schema_migrations
+        ORDER BY version DESC LIMIT 1;`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				version = uint64(stmt.ColumnInt64(0))
+				dirty = stmt.ColumnBool(1)
+				found = true
+				return nil
+			},
+		},
+	)
+	if err != nil {
+		return 0, false, err
+	}
+
+	if !found {
+		return 0, false, ErrNotFound
+	}
+
+	return version, dirty, nil
+}
+
+func (db *SQLite) setVersion(ctx context.Context, version uint64, dirty bool) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	endTx, err := sqlitex.ImmediateTransaction(conn)
+	if err != nil {
+		return err
+	}
+	defer endTx(&err)
+
+	err = sqlitex.Execute(conn,
+		`DELETE FROM schema_migrations;`,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = sqlitex.Execute(conn,
+		`INSERT INTO schema_migrations (version, dirty) VALUES (?, ?);`,
+		&sqlitex.ExecOptions{
+			Args: []any{version, dirty},
+		},
+	)
+	return err
+}
+
+{{ define "execMigration" }}
+	conn, err := db.pool.Take(context.Background())
+	if err != nil {
+		return err
+	}
+
+  err = sqlitex.ExecuteScript(conn, string(content), nil)
+  db.pool.Put(conn)
+	if err != nil {
+		return err
+	}
+{{ end }}
+
+{{ template "migrateUp" (dict "Type" "SQLite" "MigrationDir" "migrations/sqlite") }}
+
+{{ template "migrateDown" (dict "Type" "SQLite" "MigrationDir" "migrations/sqlite") }}
+
+{{- range .Entities }}
+
+// {{ .Name }} CRUD operations
+
+func (db *SQLite) {{ .AllMethod }}(ctx context.Context) ([]{{ .StructType }}, error) {
+	var items []{{ .StructType }}
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return items, err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        SELECT {{ join .AllColumnNames ", " }}
+        FROM {{ .TableName }};`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				item := {{ .StructType }}{}
+
+				{{ template "scanColumns" (dict "Columns" .Columns "Target" "item") }}
+
+				items = append(items, item)
+
+				return nil
+			},
+		},
+	)
+
+	return items, err
+}
+
+{{- if .HasUserID }}
+func (db *SQLite) {{ .Name }}s(ctx context.Context, userID string) ([]{{ .StructType }}, error) {
+	var items []{{ .StructType }}
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return items, err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        SELECT {{ join .AllColumnNames ", " }}
+        FROM {{ .TableName }} WHERE {{ .UserIDColumn }} = ?;`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				item := {{ .StructType }}{}
+
+				{{ template "scanColumns" (dict "Columns" .Columns "Target" "item") }}
+
+				items = append(items, item)
+
+				return nil
+			},
+			Args: []any{userID},
+		},
+	)
+
+	return items, err
+}
+{{- end }}
+
+func (db *SQLite) {{ .GetMethod }}(ctx context.Context, id string) ({{ .StructType }}, error) {
+	item := {{ .StructType }}{}
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return item, err
+	}
+	defer db.pool.Put(conn)
+
+	scanned := false
+	err = sqlitex.Execute(conn, `
+        SELECT {{ join .AllColumnNames ", " }}
+        FROM {{ .TableName }} WHERE {{ .PKColumn }} = ?;`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				if scanned {
+					return ErrTooMany
+				}
+				scanned = true
+
+				{{- template "scanColumns" (dict "Columns" .Columns "Target" "item") }}
+
+				return nil
+			},
+			Args: []any{id},
+		},
+	)
+	if err != nil {
+		return item, err
+	}
+	if !scanned {
+		return item, ErrNotFound
+	}
+
+	return item, nil
+}
+
+func (db *SQLite) {{ .NewMethod }}(ctx context.Context, item {{ .StructType }}) error {
+  // Convert JSON fields to strings.
+	{{- range .InsertColumns }}
+	{{- if .NeedsEncoding }}
+	{{ .Name }}, err := json.Marshal(item.{{ .Name }})
+	if err != nil {
+		return fmt.Errorf("failed to marshal {{ .DBName }}: %w", err)
+	}
+	{{- end }}
+	{{- end }}
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        INSERT INTO {{ .TableName }} (
+            {{ join (columnNames .InsertColumns) ", " }}
+        ) VALUES (
+            {{ template "placeholders" (len .InsertColumns) }}
+        );`,
+		&sqlitex.ExecOptions{
+			Args: []any{
+				{{- range .InsertColumns }}
+				{{- if .NeedsEncoding }}
+				string({{ .Name }}),
+				{{- else if eq .DBName "email" }}
+				strings.ToLower(item.{{ .Name }}),
+				{{- else }}
+				item.{{ .Name }},
+				{{- end }}
+				{{- end }}
+			},
+		},
+	)
+
+	return err
+}
+
+func (db *SQLite) {{ .UpdateMethod }}(ctx context.Context, item {{ .StructType }}) error {
+  // Convert JSON fields to strings.
+	{{- range .UpdateColumns }}
+	{{- if .NeedsEncoding }}
+	{{ .Name }}, err := json.Marshal(item.{{ .Name }})
+	if err != nil {
+		return fmt.Errorf("failed to marshal {{ .DBName }}: %w", err)
+	}
+	{{- end }}
+	{{- end }}
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        UPDATE {{ .TableName }}
+        SET {{ template "updateSetClause" .UpdateColumns }}
+        WHERE {{ .PKColumn }} = ?;`,
+		&sqlitex.ExecOptions{
+			Args: []any{
+				{{- range .UpdateColumns }}
+				{{- if .NeedsEncoding }}
+				string({{ .Name }}),
+				{{- else if eq .DBName "email" }}
+				strings.ToLower(item.{{ .Name }}),
+				{{- else }}
+				item.{{ .Name }},
+				{{- end }}
+				{{- end }}
+				item.{{ .PKGoName }},
+			},
+		},
+	)
+
+	return err
+}
+
+func (db *SQLite) {{ .DeleteMethod }}(ctx context.Context, id string) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn,
+		`DELETE FROM {{ .TableName }} WHERE {{ .PKColumn }} = ?;`,
+		&sqlitex.ExecOptions{
+			Args: []any{id},
+		},
+	)
+	return err
+}
+
+{{- end }}
+
+func (db *SQLite) UserByUsername(ctx context.Context, username string) (media.DatabaseUser, error) {
+	item := media.DatabaseUser{}
+
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return item, err
+	}
+	defer db.pool.Put(conn)
+
+	scanned := false
+	err = sqlitex.Execute(conn, `
+        SELECT {{ join $.UserEntity.AllColumnNames ", " }}
+        FROM {{ $.UserEntity.TableName }}
+        WHERE username = ? OR email = ?;`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				if scanned {
+					return ErrTooMany
+				}
+				scanned = true
+
+				{{- template "scanColumns" (dict "Columns" $.UserEntity.Columns "Target" "item") }}
+
+				return nil
+			},
+			Args: []any{username, strings.ToLower(username)},
+		},
+	)
+	if err != nil {
+		return item, err
+	}
+	if !scanned {
+		return item, ErrNotFound
+	}
+
+	return item, nil
+}
+
+// Auth provider operations
+
+func (db *SQLite) ProviderUser(ctx context.Context, provider, providerUserID string) (media.DatabaseUser, error) {
+	var user media.DatabaseUser
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return user, err
+	}
+	defer db.pool.Put(conn)
+
+	scanned := false
+	err = sqlitex.Execute(conn, `
+        SELECT {{ join (prefixedColumns $.UserEntity.Columns "u.") ", " }}
+        FROM users u
+        JOIN auth_providers p ON u.id = p.user_id
+        WHERE p.provider = ? AND p.provider_user_id = ?;`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				if scanned {
+					return ErrTooMany
+				}
+				scanned = true
+
+				{{- template "scanColumns" (dict "Columns" $.UserEntity.Columns "Target" "user") }}
+
+				return nil
+			},
+			Args: []any{provider, providerUserID},
+		},
+	)
+	if err != nil {
+		return user, err
+	}
+	if !scanned {
+		return user, ErrNotFound
+	}
+
+	return user, nil
+}
+
+func (db *SQLite) IsProviderLinked(ctx context.Context, provider, userID string) (bool, error) {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer db.pool.Put(conn)
+
+	var exists bool
+	err = sqlitex.Execute(conn, `
+        SELECT EXISTS(
+            SELECT 1 FROM auth_providers WHERE user_id = ? AND provider = ?
+        );`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				exists = stmt.ColumnBool(0)
+				return nil
+			},
+			Args: []any{userID, provider},
+		},
+	)
+	return exists, err
+}
+
+func (db *SQLite) LinkProviderAccount(ctx context.Context, provider, userID, providerUserID string) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        INSERT INTO auth_providers (user_id, provider, provider_user_id)
+        VALUES (?, ?, ?);`,
+		&sqlitex.ExecOptions{
+			Args: []any{userID, provider, providerUserID},
+		},
+	)
+	return err
+}
+
+func (db *SQLite) DisconnectProviderAccount(ctx context.Context, provider, userID string) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        DELETE FROM auth_providers WHERE user_id = ? AND provider = ?;`,
+		&sqlitex.ExecOptions{
+			Args: []any{userID, provider},
+		},
+	)
+	return err
+}
+
+func (db *SQLite) UsernameExists(ctx context.Context, username string) (bool, error) {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer db.pool.Put(conn)
+
+	var exists bool
+	err = sqlitex.Execute(conn, `SELECT EXISTS(SELECT 1 FROM users WHERE username=?);`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				exists = stmt.ColumnBool(0)
+				return nil
+			},
+			Args: []any{username},
+		},
+	)
+	return exists, err
+}
+
+func (db *SQLite) EmailExists(ctx context.Context, email string) (bool, error) {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer db.pool.Put(conn)
+
+	var exists bool
+	err = sqlitex.Execute(conn, `SELECT EXISTS(SELECT 1 FROM users WHERE email=?);`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				exists = stmt.ColumnBool(0)
+				return nil
+			},
+			Args: []any{strings.ToLower(email)},
+		},
+	)
+	return exists, err
+}
+
+func (db *SQLite) BlacklistToken(ctx context.Context, token string, expiration time.Time) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `
+        INSERT INTO blacklisted_tokens (token, expiration) VALUES (?, ?);`,
+		&sqlitex.ExecOptions{
+			Args: []any{token, expiration.Unix()},
+		},
+	)
+	return err
+}
+
+func (db *SQLite) CleanExpiredTokens(ctx context.Context) error {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return err
+	}
+	defer db.pool.Put(conn)
+
+	err = sqlitex.Execute(conn, `DELETE FROM blacklisted_tokens WHERE expiration < ?;`,
+		&sqlitex.ExecOptions{
+			Args: []any{time.Now().Unix()},
+		},
+	)
+	return err
+}
+
+func (db *SQLite) IsTokenBlacklisted(ctx context.Context, token string) (bool, error) {
+	conn, err := db.pool.Take(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer db.pool.Put(conn)
+
+	var exists bool
+	err = sqlitex.Execute(conn, `SELECT EXISTS(SELECT 1 FROM blacklisted_tokens WHERE token=?);`,
+		&sqlitex.ExecOptions{
+			ResultFunc: func(stmt *sqlite.Stmt) error {
+				exists = stmt.ColumnBool(0)
+				return nil
+			},
+			Args: []any{token},
+		},
+	)
+	return exists, err
+}
+
+func init() {
+	Register(&SQLiteFactory{})
+}
