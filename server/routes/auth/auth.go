@@ -9,13 +9,13 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/config"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/internal/httpcontext"
 	"github.com/libramusic/libracore/media"
 )
 
@@ -32,137 +32,137 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func Register(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func Register(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
-	if cc.Libra.Config.Auth.DisableAccountCreation {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+	if l.Config.Auth.DisableAccountCreation {
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": "account creation is disabled",
 		})
 	}
 
 	var req registerRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
-	if IsUsernameReserved(&cc.Libra.Config, req.Username) {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+	if IsUsernameReserved(&l.Config, req.Username) {
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": "username is reserved",
 		})
 	}
 
 	ctx := c.Request().Context()
 
-	usernameExists, err := cc.Libra.AuthDB.UsernameExists(ctx, req.Username)
+	usernameExists, err := l.AuthDB.UsernameExists(ctx, req.Username)
 	if err != nil {
 		log.Error("error checking if username exists", "err", err)
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": "internal server error",
 		})
 	}
 	if usernameExists {
-		return c.JSON(http.StatusConflict, echo.Map{
+		return c.JSON(http.StatusConflict, map[string]any{
 			"message": "username already exists",
 		})
 	}
 
 	if req.Email != "" {
-		emailExists, err := cc.Libra.AuthDB.EmailExists(ctx, req.Email)
+		emailExists, err := l.AuthDB.EmailExists(ctx, req.Email)
 		if err != nil {
 			log.Error("error checking if email exists", "err", err)
-			return c.JSON(http.StatusInternalServerError, echo.Map{
+			return c.JSON(http.StatusInternalServerError, map[string]any{
 				"message": "internal server error",
 			})
 		}
 		if emailExists {
-			return c.JSON(http.StatusConflict, echo.Map{
+			return c.JSON(http.StatusConflict, map[string]any{
 				"message": "email already exists",
 			})
 		}
 	}
 
 	user := media.DatabaseUser{
-		ID:           media.GenerateID(cc.Libra.Config.General.IDLength),
+		ID:           media.GenerateID(l.Config.General.IDLength),
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: generatePassword(req.Password),
 	}
-	err = cc.Libra.AuthDB.AddUser(ctx, user)
+	err = l.AuthDB.AddUser(ctx, user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
 	token, err := GenerateToken(
 		user.ID,
-		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
-		cc.Libra.Config.Auth.JWT.SigningMethod,
-		cc.Libra.Config.Auth.JWT.SigningKey,
+		l.Config.Auth.JWT.AccessTokenExpiration,
+		l.Config.Auth.JWT.SigningMethod,
+		l.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"token": token,
 	})
 }
 
-func Login(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func Login(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
 	var req loginRequest
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
 	ctx := c.Request().Context()
 
-	user, err := cc.Libra.AuthDB.UserByUsername(ctx, req.Username)
+	user, err := l.AuthDB.UserByUsername(ctx, req.Username)
 	if errors.Is(err, db.ErrNotFound) {
-		return c.JSON(http.StatusNotFound, echo.Map{
+		return c.JSON(http.StatusNotFound, map[string]any{
 			"message": "user not found",
 		})
 	} else if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 	if !comparePassword(user.PasswordHash, req.Password) {
-		return c.JSON(http.StatusUnauthorized, echo.Map{
+		return c.JSON(http.StatusUnauthorized, map[string]any{
 			"message": "incorrect password",
 		})
 	}
 
 	token, err := GenerateToken(
 		user.ID,
-		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
-		cc.Libra.Config.Auth.JWT.SigningMethod,
-		cc.Libra.Config.Auth.JWT.SigningKey,
+		l.Config.Auth.JWT.AccessTokenExpiration,
+		l.Config.Auth.JWT.SigningMethod,
+		l.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
+	return c.JSON(http.StatusOK, map[string]any{
 		"token": token,
 	})
 }
 
-func LoginProvider(c echo.Context) error {
+func LoginProvider(c *echo.Context) error {
 	redirectURI := c.QueryParam(RedirectURIQueryParam)
 	if redirectURI == "" {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": RedirectURIQueryParam + " is required",
 		})
 	}
@@ -172,7 +172,7 @@ func LoginProvider(c echo.Context) error {
 	}
 
 	if err := gothic.StoreInSession(RedirectURIQueryParam, redirectURI, c.Request(), c.Response()); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": "failed to store " + RedirectURIQueryParam + " in session: " + err.Error(),
 		})
 	}
@@ -181,23 +181,23 @@ func LoginProvider(c echo.Context) error {
 	return nil
 }
 
-func Logout(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func Logout(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims.(*TokenClaims)
 	expiration, err := claims.GetExpirationTime()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
 	ctx := c.Request().Context()
 
-	err = cc.Libra.AuthDB.BlacklistToken(ctx, user.Raw, expiration.Time)
+	err = l.AuthDB.BlacklistToken(ctx, user.Raw, expiration.Time)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
@@ -205,10 +205,10 @@ func Logout(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-func ConnectProvider(c echo.Context) error {
+func ConnectProvider(c *echo.Context) error {
 	redirectURI := c.QueryParam(RedirectURIQueryParam)
 	if redirectURI == "" {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": RedirectURIQueryParam + " is required",
 		})
 	}
@@ -218,7 +218,7 @@ func ConnectProvider(c echo.Context) error {
 	}
 
 	if err := gothic.StoreInSession(RedirectURIQueryParam, redirectURI, c.Request(), c.Response()); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": "failed to store " + RedirectURIQueryParam + " in session: " + err.Error(),
 		})
 	}
@@ -227,12 +227,12 @@ func ConnectProvider(c echo.Context) error {
 	return nil
 }
 
-func ProviderCallback(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func ProviderCallback(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
-	providerUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
+	providerUser, err := gothic.CompleteUserAuth(c.Response(), c.Request())
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": "failed to complete user auth: " + err.Error(),
 		})
 	}
@@ -240,12 +240,12 @@ func ProviderCallback(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Check if the provider account is already linked to a user.
-	user, err := cc.Libra.AuthDB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	user, err := l.AuthDB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if errors.Is(err, db.ErrNotFound) {
 		return handleNewProviderUser(ctx, c, providerUser)
 	}
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
@@ -253,24 +253,24 @@ func ProviderCallback(c echo.Context) error {
 	return handleExistingProviderUser(c, user)
 }
 
-func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
-	cc := c.(*httpcontext.Context)
+func handleExistingProviderUser(c *echo.Context, user media.DatabaseUser) error {
+	l := c.Get("libra").(*libracore.Libra)
 
 	redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
 	if err != nil || redirectURI == "" {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": RedirectURIQueryParam + " not found in session",
 		})
 	}
 
 	token, err := GenerateToken(
 		user.ID,
-		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
-		cc.Libra.Config.Auth.JWT.SigningMethod,
-		cc.Libra.Config.Auth.JWT.SigningKey,
+		l.Config.Auth.JWT.AccessTokenExpiration,
+		l.Config.Auth.JWT.SigningMethod,
+		l.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
@@ -279,11 +279,11 @@ func handleExistingProviderUser(c echo.Context, user media.DatabaseUser) error {
 	return c.Redirect(http.StatusFound, redirectURL)
 }
 
-func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser goth.User) error {
-	cc := c.(*httpcontext.Context)
+func handleNewProviderUser(ctx context.Context, c *echo.Context, providerUser goth.User) error {
+	l := c.Get("libra").(*libracore.Libra)
 
 	newUser := media.DatabaseUser{
-		ID:          media.GenerateID(cc.Libra.Config.General.IDLength),
+		ID:          media.GenerateID(l.Config.General.IDLength),
 		Username:    providerUser.UserID,
 		Email:       providerUser.Email,
 		DisplayName: providerUser.Name,
@@ -291,38 +291,38 @@ func handleNewProviderUser(ctx context.Context, c echo.Context, providerUser got
 
 	// TODO: Profile picture.
 
-	if err := cc.Libra.AuthDB.AddUser(ctx, newUser); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+	if err := l.AuthDB.AddUser(ctx, newUser); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
-	if err := cc.Libra.AuthDB.LinkProviderAccount(
+	if err := l.AuthDB.LinkProviderAccount(
 		ctx,
 		providerUser.Provider,
 		newUser.ID,
 		providerUser.UserID,
 	); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
 
 	redirectURI, err := gothic.GetFromSession(RedirectURIQueryParam, c.Request())
 	if err != nil || redirectURI == "" {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": RedirectURIQueryParam + " not found in session",
 		})
 	}
 
 	token, err := GenerateToken(
 		newUser.ID,
-		cc.Libra.Config.Auth.JWT.AccessTokenExpiration,
-		cc.Libra.Config.Auth.JWT.SigningMethod,
-		cc.Libra.Config.Auth.JWT.SigningKey,
+		l.Config.Auth.JWT.AccessTokenExpiration,
+		l.Config.Auth.JWT.SigningMethod,
+		l.Config.Auth.JWT.SigningKey,
 	)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
@@ -338,31 +338,31 @@ func buildRedirectURL(redirectURI, token string) string {
 	return redirectURI + "?token=" + token
 }
 
-func DisconnectProvider(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func DisconnectProvider(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
-	providerUser, err := gothic.CompleteUserAuth(c.Response().Writer, c.Request())
+	providerUser, err := gothic.CompleteUserAuth(c.Response(), c.Request())
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{
+		return c.JSON(http.StatusBadRequest, map[string]any{
 			"message": "failed to complete user auth: " + err.Error(),
 		})
 	}
-	_ = gothic.Logout(c.Response().Writer, c.Request())
+	_ = gothic.Logout(c.Response(), c.Request())
 
 	ctx := c.Request().Context()
 
-	_, err = cc.Libra.AuthDB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
+	_, err = l.AuthDB.ProviderUser(ctx, providerUser.Provider, providerUser.UserID)
 	if errors.Is(err, db.ErrNotFound) {
-		return c.JSON(http.StatusNotFound, echo.Map{
+		return c.JSON(http.StatusNotFound, map[string]any{
 			"message": "provider account not found",
 		})
 	} else if err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}
-	if err := cc.Libra.AuthDB.DisconnectProviderAccount(ctx, providerUser.Provider, providerUser.UserID); err != nil {
-		return c.JSON(http.StatusInternalServerError, echo.Map{
+	if err := l.AuthDB.DisconnectProviderAccount(ctx, providerUser.Provider, providerUser.UserID); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"message": err.Error(),
 		})
 	}

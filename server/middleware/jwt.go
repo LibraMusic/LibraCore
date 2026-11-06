@@ -1,16 +1,19 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
-	echojwt "github.com/labstack/echo-jwt/v4"
-	"github.com/labstack/echo/v4"
+	echojwt "github.com/labstack/echo-jwt/v5"
+	"github.com/labstack/echo/v5"
 
 	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/server/routes/auth"
 )
+
+var errTokenInvalidated = errors.New("token invalidated")
 
 func JWTProtected(l *libracore.Libra) echo.MiddlewareFunc {
 	key := auth.SigningKey(l.Config.Auth.JWT.SigningMethod, l.Config.Auth.JWT.SigningKey)
@@ -20,7 +23,7 @@ func JWTProtected(l *libracore.Libra) echo.MiddlewareFunc {
 		ErrorHandler:   jwtErrorHandler,
 		SigningKey:     key,
 		SigningMethod:  l.Config.Auth.JWT.SigningMethod,
-		NewClaimsFunc: func(_ echo.Context) jwt.Claims {
+		NewClaimsFunc: func(_ *echo.Context) jwt.Claims {
 			return new(auth.TokenClaims)
 		},
 	})
@@ -44,28 +47,34 @@ func UserJWTProtected(l *libracore.Libra) echo.MiddlewareFunc {
 	}
 }
 
-func jwtSuccessHandler(authDB db.Database) func(c echo.Context) {
-	return func(c echo.Context) {
+func jwtSuccessHandler(authDB db.Database) func(c *echo.Context) error {
+	return func(c *echo.Context) error {
 		user := c.Get("user").(*jwt.Token)
 		isBlacklisted, err := authDB.IsTokenBlacklisted(c.Request().Context(), user.Raw)
 		if err != nil {
-			_ = c.JSON(http.StatusInternalServerError, echo.Map{
+			if jerr := c.JSON(http.StatusInternalServerError, map[string]any{
 				"error": true,
 				"msg":   err.Error(),
-			})
-			return
+			}); jerr != nil {
+				return jerr
+			}
+			return err
 		}
 		if isBlacklisted {
-			_ = c.JSON(http.StatusUnauthorized, echo.Map{
+			if jerr := c.JSON(http.StatusUnauthorized, map[string]any{
 				"error": true,
 				"msg":   "Token invalidated",
-			})
+			}); jerr != nil {
+				return jerr
+			}
+			return errTokenInvalidated
 		}
+		return nil
 	}
 }
 
-func jwtErrorHandler(c echo.Context, err error) error {
-	return c.JSON(http.StatusUnauthorized, echo.Map{
+func jwtErrorHandler(c *echo.Context, err error) error {
+	return c.JSON(http.StatusUnauthorized, map[string]any{
 		"error": true,
 		"msg":   err.Error(),
 	})

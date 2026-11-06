@@ -5,14 +5,13 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
-	"github.com/labstack/echo/v4"
 
 	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/server/routes"
 	"github.com/libramusic/libracore/versions"
 )
 
-func OpenAPISpec(l *libracore.Libra) echo.Map {
+func OpenAPISpec(l *libracore.Libra) map[string]any {
 	v1Spec := loadBaseOpenAPISpec(l)
 
 	processSchemas(v1Spec)
@@ -26,10 +25,10 @@ func OpenAPISpec(l *libracore.Libra) echo.Map {
 }
 
 // loadBaseOpenAPISpec loads the OpenAPI spec and updates version and server URL info.
-func loadBaseOpenAPISpec(l *libracore.Libra) echo.Map {
+func loadBaseOpenAPISpec(l *libracore.Libra) map[string]any {
 	SwaggerInfo.Version = versions.Libra.String()
 	v1SpecJSON := SwaggerInfo.ReadDoc()
-	var v1Spec echo.Map
+	var v1Spec map[string]any
 	if err := json.Unmarshal([]byte(v1SpecJSON), &v1Spec); err != nil {
 		log.Fatal("Error unmarshalling OpenAPI spec", "err", err)
 	}
@@ -47,7 +46,7 @@ func loadBaseOpenAPISpec(l *libracore.Libra) echo.Map {
 }
 
 // processSchemas cleans up schema references and creates a proper Playable interface schema.
-func processSchemas(v1Spec echo.Map) {
+func processSchemas(v1Spec map[string]any) {
 	schemas := v1Spec["components"].(map[string]any)["schemas"].(map[string]any)
 
 	// Remove "media." prefix from schema names
@@ -74,7 +73,7 @@ func processSchemas(v1Spec echo.Map) {
 }
 
 // processPaths removes placeholder paths and standardizes path definitions.
-func processPaths(v1Spec echo.Map) {
+func processPaths(v1Spec map[string]any) {
 	paths := v1Spec["paths"].(map[string]any)
 	delete(paths, "/fake")
 
@@ -163,7 +162,7 @@ func updateReference(ref string) string {
 }
 
 // addFeedRoutesDocumentation adds feed endpoints (RSS, Atom, JSON) to the API spec.
-func addFeedRoutesDocumentation(v1Spec echo.Map) {
+func addFeedRoutesDocumentation(v1Spec map[string]any) {
 	paths := v1Spec["paths"].(map[string]any)
 
 	for _, feedRoute := range routes.FeedRoutesDoc {

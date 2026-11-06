@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/log"
 	"github.com/gorilla/feeds"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // FeedRouteDoc definition for dynamic OpenAPI documentation.
@@ -58,7 +58,7 @@ func CreateFeedRoutes(e *echo.Group, basePath, baseSummary string, handlers ...e
 		e.GET(fullPath, h, handlers...)
 	}
 
-	addRoute("/feed", "RSS", func(c echo.Context) error {
+	addRoute("/feed", "RSS", func(c *echo.Context) error {
 		rss, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToRss()
 		if err != nil {
 			log.Error("Error creating RSS feed", "err", err)
@@ -67,7 +67,7 @@ func CreateFeedRoutes(e *echo.Group, basePath, baseSummary string, handlers ...e
 		return c.XMLBlob(http.StatusOK, []byte(rss))
 	})
 
-	addRoute("/feed/rss", "RSS", func(c echo.Context) error {
+	addRoute("/feed/rss", "RSS", func(c *echo.Context) error {
 		rss, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToRss()
 		if err != nil {
 			log.Error("Error creating RSS feed", "err", err)
@@ -76,7 +76,7 @@ func CreateFeedRoutes(e *echo.Group, basePath, baseSummary string, handlers ...e
 		return c.XMLBlob(http.StatusOK, []byte(rss))
 	})
 
-	addRoute("/feed/atom", "Atom", func(c echo.Context) error {
+	addRoute("/feed/atom", "Atom", func(c *echo.Context) error {
 		atom, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToAtom()
 		if err != nil {
 			log.Error("Error creating Atom feed", "err", err)
@@ -85,7 +85,7 @@ func CreateFeedRoutes(e *echo.Group, basePath, baseSummary string, handlers ...e
 		return c.XMLBlob(http.StatusOK, []byte(atom))
 	})
 
-	addRoute("/feed/json", "JSON", func(c echo.Context) error {
+	addRoute("/feed/json", "JSON", func(c *echo.Context) error {
 		json, err := CreateFeed(c.Scheme()+"://"+c.Request().Host, c.Path()).ToJSON()
 		if err != nil {
 			log.Error("Error creating JSON feed", "err", err)

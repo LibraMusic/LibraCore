@@ -2,16 +2,16 @@ package server
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/charmbracelet/log"
 	"github.com/goccy/go-yaml"
-	openapidocs "github.com/kohkimakimoto/echo-openapidocs"
-	"github.com/labstack/echo-contrib/echoprometheus"
-	"github.com/labstack/echo/v4"
+	openapidocs "github.com/kohkimakimoto/echo-openapidocs/v5"
+	"github.com/labstack/echo-contrib/v5/echoprometheus"
+	"github.com/labstack/echo/v5"
 
 	"github.com/libramusic/libracore"
-	"github.com/libramusic/libracore/internal/httpcontext"
 	"github.com/libramusic/libracore/server/middleware"
 	"github.com/libramusic/libracore/server/routes"
 	"github.com/libramusic/libracore/server/routes/auth"
@@ -34,7 +34,7 @@ import (
 //	@servers.url	http://localhost:8080/api/v1
 
 func New(l *libracore.Libra) *echo.Echo {
-	libraSource := echo.Map{
+	libraSource := map[string]any{
 		"id":      l.Config.Application.SourceID,
 		"name":    l.Config.Application.SourceName,
 		"version": versions.Libra.String(),
@@ -46,7 +46,7 @@ func New(l *libracore.Libra) *echo.Echo {
 		"formats": l.Config.Application.SourceFormats,
 	}
 
-	libraMeta := echo.Map{
+	libraMeta := map[string]any{
 		"version":  versions.Libra.String(),
 		"database": l.MediaDB.EngineName(),
 	}
@@ -60,22 +60,19 @@ func New(l *libracore.Libra) *echo.Echo {
 	}
 
 	e := echo.New()
-	e.HideBanner = true
+	e.Logger = slog.New(log.Default())
 	e.JSONSerializer = &GoJSONSerializer{}
 
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			cc := &httpcontext.Context{
-				Context: c,
-				Libra:   l,
-			}
-			return next(cc)
+		return func(c *echo.Context) error {
+			c.Set("libra", l)
+			return next(c)
 		}
 	})
 
 	e.Use(echoprometheus.NewMiddleware("libra"))
 
-	e.GET("/", func(c echo.Context) error {
+	e.GET("/", func(c *echo.Context) error {
 		accept := c.Request().Header.Get(echo.HeaderAccept)
 		switch accept {
 		case echo.MIMEApplicationJSON:
@@ -88,15 +85,15 @@ func New(l *libracore.Libra) *echo.Echo {
 		return c.NoContent(http.StatusNotAcceptable)
 	})
 
-	e.GET("/source", func(c echo.Context) error {
+	e.GET("/source", func(c *echo.Context) error {
 		return c.JSON(http.StatusOK, &libraSource)
 	})
 
-	e.GET("/meta", func(c echo.Context) error {
+	e.GET("/meta", func(c *echo.Context) error {
 		return c.JSON(http.StatusOK, &libraMeta)
 	})
 
-	e.GET("/app", func(c echo.Context) error {
+	e.GET("/app", func(c *echo.Context) error {
 		// TODO: Implement.
 		return c.HTML(http.StatusOK, "<h1>Libra</h1>")
 	})
@@ -164,11 +161,11 @@ func New(l *libracore.Libra) *echo.Echo {
 		log.Fatal("Error marshalling OpenAPI spec to YAML", "err", err)
 	}
 
-	v1Group.GET("/openapi.json", func(c echo.Context) error {
+	v1Group.GET("/openapi.json", func(c *echo.Context) error {
 		return c.JSON(http.StatusOK, v1Spec)
 	})
 
-	v1Group.GET("/openapi.yaml", func(c echo.Context) error {
+	v1Group.GET("/openapi.yaml", func(c *echo.Context) error {
 		return c.String(http.StatusOK, string(v1SpecYAML))
 	})
 

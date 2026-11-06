@@ -4,14 +4,12 @@ import (
 	"net/http"
 
 	"github.com/charmbracelet/log"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 
+	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/db"
-	"github.com/libramusic/libracore/internal/httpcontext"
 	"github.com/libramusic/libracore/storage"
 )
-
-// mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 
 // @Summary	Get all playables
 // @ID			getAllPlayables
@@ -19,16 +17,16 @@ import (
 // @Success	200	"Returns a list of all playables"
 // @Failure	500	{object}	any
 // @Router		/playables [get]
-func V1Playables(c echo.Context) error {
+func V1Playables(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
-	playables, err := db.AllPlayables(ctx, cc.Libra.MediaDB)
+	playables, err := db.AllPlayables(ctx, l.MediaDB)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve playables"})
 	}
-	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
+	return c.JSON(http.StatusOK, map[string]any{"playables": playables})
 }
 
 // @Summary	Get user's playables
@@ -38,17 +36,17 @@ func V1Playables(c echo.Context) error {
 // @Success	200	"Returns a list of user's playables"
 // @Failure	500	{object}	any
 // @Router		/playables/{id} [get]
-func V1UserPlayables(c echo.Context) error {
+func V1UserPlayables(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	userID := c.Param("id")
-	playables, err := db.Playables(ctx, cc.Libra.MediaDB, userID)
+	playables, err := db.Playables(ctx, l.MediaDB, userID)
 	if err != nil {
 		log.Error("Error getting playables", "err", err)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve playables"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve playables"})
 	}
-	return c.JSON(http.StatusOK, echo.Map{"playables": playables})
+	return c.JSON(http.StatusOK, map[string]any{"playables": playables})
 }
 
 // @Summary	Search for playables by query
@@ -58,65 +56,68 @@ func V1UserPlayables(c echo.Context) error {
 // @Success	200	"Returns a list of playables matching the search query"
 // @Failure	500	{object}	any
 // @Router		/search [get]
-func V1Search(c echo.Context) error {
+func V1Search(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
 // START TO REFACTOR
 
-func V1Track(c echo.Context) error {
+func V1Track(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	trackID := c.Param("id")
-	track, err := cc.Libra.MediaDB.Track(ctx, trackID)
+	track, err := l.MediaDB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve track"})
 	}
 	return c.JSON(http.StatusOK, track)
 }
 
-func V1TrackIsStored(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func V1TrackIsStored(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
 	trackID := c.Param("id")
-	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored(cc.Libra.Config.Storage, "track", trackID)})
+	return c.JSON(
+		http.StatusOK,
+		map[string]any{"stored": storage.IsContentStored(l.Config.Storage, "track", trackID)},
+	)
 }
 
-func V1TrackStream(c echo.Context) error {
+func V1TrackStream(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1TrackCover(c echo.Context) error {
+func V1TrackCover(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1TrackLyrics(c echo.Context) error {
+func V1TrackLyrics(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	trackID := c.Param("id")
-	track, err := cc.Libra.MediaDB.Track(ctx, trackID)
+	track, err := l.MediaDB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve track"})
 	}
 	return c.JSON(http.StatusOK, track.Lyrics)
 }
 
-func V1TrackLyricsLang(c echo.Context) error {
+func V1TrackLyricsLang(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	trackID := c.Param("id")
-	track, err := cc.Libra.MediaDB.Track(ctx, trackID)
+	track, err := l.MediaDB.Track(ctx, trackID)
 	if err != nil {
 		log.Error("Error getting track", "err", err, "trackID", trackID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve track"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve track"})
 	}
 
 	lang := c.Param("lang")
@@ -126,73 +127,76 @@ func V1TrackLyricsLang(c echo.Context) error {
 	return c.NoContent(http.StatusNotFound)
 }
 
-func V1Album(c echo.Context) error {
+func V1Album(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1AlbumCover(c echo.Context) error {
+func V1AlbumCover(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1AlbumTracks(c echo.Context) error {
+func V1AlbumTracks(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1Video(c echo.Context) error {
+func V1Video(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	videoID := c.Param("id")
-	video, err := cc.Libra.MediaDB.Video(ctx, videoID)
+	video, err := l.MediaDB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve video"})
 	}
 	return c.JSON(http.StatusOK, video)
 }
 
-func V1VideoIsStored(c echo.Context) error {
-	cc := c.(*httpcontext.Context)
+func V1VideoIsStored(c *echo.Context) error {
+	l := c.Get("libra").(*libracore.Libra)
 
 	videoID := c.Param("id")
-	return c.JSON(http.StatusOK, echo.Map{"stored": storage.IsContentStored(cc.Libra.Config.Storage, "video", videoID)})
+	return c.JSON(
+		http.StatusOK,
+		map[string]any{"stored": storage.IsContentStored(l.Config.Storage, "video", videoID)},
+	)
 }
 
-func V1VideoStream(c echo.Context) error {
+func V1VideoStream(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1VideoCover(c echo.Context) error {
+func V1VideoCover(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1VideoSubtitles(c echo.Context) error {
+func V1VideoSubtitles(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	videoID := c.Param("id")
-	video, err := cc.Libra.MediaDB.Video(ctx, videoID)
+	video, err := l.MediaDB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve video"})
 	}
 	return c.JSON(http.StatusOK, video.Subtitles)
 }
 
-func V1VideoSubtitlesLang(c echo.Context) error {
+func V1VideoSubtitlesLang(c *echo.Context) error {
 	ctx := c.Request().Context()
-	cc := c.(*httpcontext.Context)
+	l := c.Get("libra").(*libracore.Libra)
 
 	videoID := c.Param("id")
-	video, err := cc.Libra.MediaDB.Video(ctx, videoID)
+	video, err := l.MediaDB.Video(ctx, videoID)
 	if err != nil {
 		log.Error("Error getting video", "err", err, "videoID", videoID)
-		return c.JSON(http.StatusInternalServerError, echo.Map{"message": "failed to retrieve video"})
+		return c.JSON(http.StatusInternalServerError, map[string]any{"message": "failed to retrieve video"})
 	}
 	lang := c.Param("lang")
 	if subtitles, ok := video.Subtitles[lang]; ok {
@@ -201,39 +205,39 @@ func V1VideoSubtitlesLang(c echo.Context) error {
 	return c.NoContent(http.StatusNotFound)
 }
 
-func V1Playlist(c echo.Context) error {
+func V1Playlist(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1PlaylistCover(c echo.Context) error {
+func V1PlaylistCover(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1PlaylistTracks(c echo.Context) error {
+func V1PlaylistTracks(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1Artist(c echo.Context) error {
+func V1Artist(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1ArtistCover(c echo.Context) error {
+func V1ArtistCover(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1ArtistAlbums(c echo.Context) error {
+func V1ArtistAlbums(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
-func V1ArtistTracks(c echo.Context) error {
+func V1ArtistTracks(c *echo.Context) error {
 	log.Error("unimplemented")
-	return c.JSON(http.StatusOK, echo.Map{})
+	return c.JSON(http.StatusOK, map[string]any{})
 }
 
 // END TO REFACTOR

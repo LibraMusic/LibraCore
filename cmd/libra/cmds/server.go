@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/log"
+	"github.com/labstack/echo/v5"
 	"github.com/markbates/goth"
 	"github.com/spf13/cobra"
 
@@ -98,11 +99,16 @@ var serverCmd = &cobra.Command{
 
 		e := server.New(l)
 
+		sc := echo.StartConfig{
+			Address:    fmt.Sprintf(":%d", l.Config.Application.Port),
+			HideBanner: true,
+		}
+
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 		defer stop()
 		errCh := make(chan error, 1)
 		go func() {
-			if err := e.Start(fmt.Sprintf(":%d", l.Config.Application.Port)); !errors.Is(err, http.ErrServerClosed) {
+			if err := sc.Start(ctx, e); !errors.Is(err, http.ErrServerClosed) {
 				errCh <- err
 			}
 		}()
@@ -117,9 +123,6 @@ var serverCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		if err := e.Shutdown(ctx); err != nil {
-			return fmt.Errorf("error shutting down server: %w", err)
-		}
 		if err := l.Close(); err != nil {
 			return fmt.Errorf("error shutting down: %w", err)
 		}
