@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 
 	"github.com/libramusic/taurus/v2"
 

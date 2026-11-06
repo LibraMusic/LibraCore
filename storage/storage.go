@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/log/v2"
 	"github.com/c2h5oh/datasize"
-	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/libracore/db"
 	"github.com/libramusic/libracore/media"

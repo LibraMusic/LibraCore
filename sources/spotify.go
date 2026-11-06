@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	"charm.land/log/v2"
 	"github.com/Masterminds/semver/v3"
-	"github.com/charmbracelet/log"
 
 	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/versions"

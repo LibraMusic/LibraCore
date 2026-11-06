@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/labstack/echo/v5"
 	"github.com/markbates/goth"
 	"github.com/spf13/cobra"

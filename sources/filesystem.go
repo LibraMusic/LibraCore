@@ -9,8 +9,8 @@ import (
 	"slices"
 	"strings"
 
+	"charm.land/log/v2"
 	"github.com/Masterminds/semver/v3"
-	"github.com/charmbracelet/log"
 	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 

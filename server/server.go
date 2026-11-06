@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/goccy/go-yaml"
 	openapidocs "github.com/kohkimakimoto/echo-openapidocs/v5"
 	"github.com/labstack/echo-contrib/v5/echoprometheus"

@@ -1,6 +1,6 @@
 package libracore
 
-import "github.com/charmbracelet/log"
+import "charm.land/log/v2"
 
 func SetupLogger(logFormat string, logLevel log.Level) {
 	log.SetLevel(logLevel)

@@ -3,7 +3,7 @@ package server
 import (
 	"strings"
 
-	"github.com/charmbracelet/log"
+	"charm.land/log/v2"
 	"github.com/goccy/go-json"
 
 	"github.com/libramusic/libracore"
