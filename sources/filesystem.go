@@ -3,6 +3,7 @@
 package sources
 
 import (
+	"encoding/json/v2"
 	"errors"
 	"io/fs"
 	"os"
@@ -11,7 +12,6 @@ import (
 
 	"charm.land/log/v2"
 	"github.com/Masterminds/semver/v3"
-	"github.com/goccy/go-json"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 
 	"github.com/libramusic/libracore/media"

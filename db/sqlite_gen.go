@@ -6,6 +6,7 @@ package db
 
 import (
 	"context"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -16,7 +17,6 @@ import (
 	"time"
 
 	"charm.land/log/v2"
-	"github.com/goccy/go-json"
 	"zombiezen.com/go/sqlite"
 	"zombiezen.com/go/sqlite/sqlitex"
 

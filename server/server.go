@@ -61,7 +61,7 @@ func New(l *libracore.Libra) *echo.Echo {
 
 	e := echo.New()
 	e.Logger = slog.New(log.Default())
-	e.JSONSerializer = &GoJSONSerializer{}
+	e.JSONSerializer = &JSONSerializer{}
 
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {

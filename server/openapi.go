@@ -1,10 +1,10 @@
 package server
 
 import (
+	"encoding/json/v2"
 	"strings"
 
 	"charm.land/log/v2"
-	"github.com/goccy/go-json"
 
 	"github.com/libramusic/libracore"
 	"github.com/libramusic/libracore/server/routes"

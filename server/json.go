@@ -2,14 +2,15 @@ package server
 
 import (
 	"bytes"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"sync"
 
-	"github.com/goccy/go-json"
 	"github.com/labstack/echo/v5"
 )
 
-// GoJSONSerializer implements JSON encoding using github.com/goccy/go-json.
-type GoJSONSerializer struct{}
+// JSONSerializer implements JSON encoding using encoding/json/v2.
+type JSONSerializer struct{}
 
 // jsonBufPool reuses buffers for reading request bodies during JSON
 // deserialization, avoiding the per-request decoder and its internal read
@@ -24,12 +25,11 @@ const maxPooledJSONBuf = 1 << 16 // 64 KiB
 
 // Serialize converts an interface into a json and writes it to the response.
 // You can optionally use the indent parameter to produce pretty JSONs.
-func (GoJSONSerializer) Serialize(c *echo.Context, target any, indent string) error {
-	enc := json.NewEncoder(c.Response())
+func (JSONSerializer) Serialize(c *echo.Context, target any, indent string) error {
 	if indent != "" {
-		enc.SetIndent("", indent)
+		return json.MarshalWrite(c.Response(), target, jsontext.WithIndent(indent))
 	}
-	return enc.Encode(target)
+	return json.MarshalWrite(c.Response(), target)
 }
 
 // Deserialize reads a JSON from a request body and converts it into an interface.
@@ -43,7 +43,7 @@ func (GoJSONSerializer) Serialize(c *echo.Context, target any, indent string) er
 // JSON parser, decoding untrusted input can allocate large amounts of memory;
 // guard such endpoints with middleware.BodyLimit (or http.MaxBytesReader),
 // which makes the body read here fail fast once the limit is exceeded.
-func (GoJSONSerializer) Deserialize(c *echo.Context, target any) error {
+func (JSONSerializer) Deserialize(c *echo.Context, target any) error {
 	buf := jsonBufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer func() {

@@ -4,6 +4,7 @@ package sources
 
 import (
 	_ "embed"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/goccy/go-json"
 
 	"github.com/libramusic/libracore/media"
 	"github.com/libramusic/libracore/storage"
